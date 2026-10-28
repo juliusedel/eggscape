@@ -67,3 +67,38 @@ public struct EggAppearance: Codable, Hashable, Sendable {
         self.seed = seed
     }
 }
+
+// MARK: - Kinds, for the shop and its tests
+
+/// Declared in this file because `CaseIterable` is only synthesized next to the enum's declaration.
+extension EggAppearance.Finish: CaseIterable {}
+
+public extension EggAppearance.Pattern {
+    /// A pattern without its parameters, e.g. to group skins in the shop or to check that every pattern is sold.
+    enum Kind: String, CaseIterable, Codable, Hashable, Sendable {
+        case plain
+        case speckles
+        case dots
+        case stripes
+        case zigzag
+        case marble
+        case dipDye
+        case confetti
+        case stars
+    }
+
+    /// The exhaustive switch makes a new pattern case add its kind, which the catalog tests then require a skin for.
+    var kind: Kind {
+        switch self {
+        case .plain: .plain
+        case .speckles: .speckles
+        case .dots: .dots
+        case .stripes: .stripes
+        case .zigzag: .zigzag
+        case .marble: .marble
+        case .dipDye: .dipDye
+        case .confetti: .confetti
+        case .stars: .stars
+        }
+    }
+}

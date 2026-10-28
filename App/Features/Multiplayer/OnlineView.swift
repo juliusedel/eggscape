@@ -6,6 +6,10 @@ struct OnlineView: View {
     var invite: GKInvite?
     @Environment(AppServices.self) private var services
     @State private var session: NearbySession?
+    /// A match whose players are still connecting; the race room opens once all of them are there.
+    @State private var pendingMatch: GameKitTransport?
+    /// Why the last match did not get going.
+    @State private var failure: String?
     @State private var showsMatchmaker = false
 
     var body: some View {
@@ -15,12 +19,16 @@ struct OnlineView: View {
                     session.leave()
                     self.session = nil
                 }
+            } else if pendingMatch != nil {
+                waiting
             } else {
                 start
             }
         }
         .navigationTitle("Online")
         .navigationBarTitleDisplayMode(.inline)
+        // A tab switch would leave the match (see onDisappear), which ends it for everybody when this phone referees.
+        .toolbar(session == nil && pendingMatch == nil ? .automatic : .hidden, for: .tabBar)
         .onAppear {
             services.gameCenter.signIn()
             if invite != nil {
@@ -30,11 +38,13 @@ struct OnlineView: View {
         .onDisappear {
             session?.leave()
             session = nil
+            pendingMatch?.close()
+            pendingMatch = nil
         }
         .sheet(isPresented: $showsMatchmaker) {
             MatchmakerView(invite: invite) { match in
                 showsMatchmaker = false
-                session = NearbySession(match: GameKitTransport(match: match), services: services)
+                open(GameKitTransport(match: match))
             } onCancel: {
                 showsMatchmaker = false
             }
@@ -51,6 +61,11 @@ struct OnlineView: View {
             Text("Lauf über das Internet gegen Freunde oder andere Spieler. Dafür meldest du dich bei Game Center an.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+            if let failure {
+                Text(failure)
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+            }
             switch services.gameCenter.status {
             case .signedIn:
                 Button {
@@ -75,5 +90,37 @@ struct OnlineView: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var waiting: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text("Warte auf Mitspieler …")
+                .foregroundStyle(.secondary)
+            Button("Abbrechen", role: .cancel) {
+                pendingMatch?.close()
+                pendingMatch = nil
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Opens the race room once every player is connected: until then, the phones could disagree on who is in the
+    /// race and who referees it.
+    private func open(_ match: GameKitTransport) {
+        failure = nil
+        pendingMatch = match
+        Task {
+            let isComplete = await match.waitForAllPlayers()
+            // Cancelled or left meanwhile.
+            guard pendingMatch === match else { return }
+            pendingMatch = nil
+            if isComplete {
+                session = NearbySession(match: match, services: services)
+            } else {
+                match.close()
+                failure = String(localized: "Nicht alle Mitspieler konnten sich verbinden.")
+            }
+        }
     }
 }

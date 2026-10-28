@@ -19,6 +19,8 @@ enum TransportEvent: Sendable {
     case connected(RemotePeer)
     case disconnected(RemotePeer)
     case received(Data, from: RemotePeer)
+    /// Joiner: the host turned the invitation down (racing, showing results or full) or did not answer in time.
+    case joinFailed
     /// The room could not be joined or the host stopped hosting.
     case failed(String)
 }

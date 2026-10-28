@@ -34,11 +34,20 @@ final class NearbySession: Identifiable {
 
     let role: Role
     let me: PlayerInfo
-    private(set) var stage: Stage
+    /// A nearby host advertises the room only while it takes players, which depends on the stage and the lobby.
+    private(set) var stage: Stage {
+        didSet { nearby?.updateAdvertising() }
+    }
+
     /// The host's lobby; joiners mirror the last `lobbyState` they received.
-    private(set) var lobby: LobbyState
+    private(set) var lobby: LobbyState {
+        didSet { nearby?.updateAdvertising() }
+    }
+
     /// Rooms found nearby while browsing.
     private(set) var rooms: [DiscoveredRoom] = []
+    /// Joiner: why the last room could not be joined, shown with the room list until the next attempt.
+    private(set) var joinFailure: String?
     /// The run of the current race.
     private(set) var run: RunSession?
     /// Coins this player earned in the last race.
@@ -93,7 +102,8 @@ final class NearbySession: Identifiable {
         }
     }
 
-    /// Online: everybody in the Game Center match races; the player with the lowest id is the referee.
+    /// Online: everybody in the Game Center match races; the player with the lowest id is the referee. Only for a
+    /// match with every player connected (`GameKitTransport.waitForAllPlayers`), so all phones agree on the referee.
     init(match: GameKitTransport, services: AppServices) {
         self.services = services
         role = match.refereeID == match.localPlayerID ? .host : .joiner
@@ -108,7 +118,7 @@ final class NearbySession: Identifiable {
         lobby = LobbyState(host: me)
         transport = match
         nearby = nil
-        let referee = match.connectedPeers.first { $0.id == match.refereeID }
+        let referee = match.refereePeer
         stage = role == .host ? .lobby : .connecting(host: referee?.displayName ?? "")
         hostPeer = role == .host ? nil : referee
         listen()
@@ -139,6 +149,11 @@ final class NearbySession: Identifiable {
         role == .host
     }
 
+    /// A nearby room rather than an online match: joiners pick it from a list.
+    var isNearby: Bool {
+        nearby != nil
+    }
+
     /// Seconds on this phone's monotonic clock since the session began.
     private var now: Double {
         (ContinuousClock.now - epoch).seconds
@@ -147,11 +162,41 @@ final class NearbySession: Identifiable {
     // MARK: Lobby actions
 
     func join(_ room: DiscoveredRoom) {
+        guard stage == .browsing else { return }
         let request = JoinRequest(playerID: me.id.rawValue, nickname: me.nickname, eggSkinID: me.eggSkinID)
         guard let context = try? JSONEncoder().encode(request) else { return }
+        joinFailure = nil
         stage = .connecting(host: room.hostName)
         joiningRoomID = room.id
         nearby?.join(room, context: context)
+    }
+
+    /// Nearby joiner: stops waiting for the host and goes back to the room list.
+    func cancelJoin() {
+        guard let nearby, case .connecting = stage else { return }
+        nearby.cancelJoin()
+        returnToRoomList()
+    }
+
+    /// Joiner: gives up on the room because of `reason`. Nearby, the room list shows it; online, there is no list.
+    private func leaveRoom(_ reason: String) {
+        guard let nearby else {
+            leave()
+            stage = .failed(reason)
+            return
+        }
+        nearby.cancelJoin()
+        returnToRoomList()
+        joinFailure = reason
+    }
+
+    /// Nearby joiner: looks for rooms again, with a fresh list.
+    private func returnToRoomList() {
+        pinger?.cancel()
+        hostPeer = nil
+        joiningRoomID = nil
+        stage = .browsing
+        nearby?.startBrowsing()
     }
 
     /// Host only: distance and weather for the next race.
@@ -190,10 +235,11 @@ final class NearbySession: Identifiable {
         beginRace(seed: seed, startsIn: startAt - now)
     }
 
-    /// Host only: "Nochmal" with the same players.
+    /// Host only: "Nochmal" with the players who are still there.
     func rematch() {
         guard isHost else { return }
         referee.rematch()
+        lobby.removeDisconnected()
         lobby.resetReadiness()
         reward = nil
         run = nil
@@ -226,7 +272,7 @@ final class NearbySession: Identifiable {
             }
         )
         let session = RunSession(setup: setup, services: services, rules: .race, race: hooks)
-        session.opponents = lobby.players.filter { $0.id != me.id }.map { player in
+        session.opponents = lobby.connectedPlayers.filter { $0.id != me.id }.map { player in
             OpponentProgress(
                 id: player.id.rawValue,
                 name: player.nickname,
@@ -323,6 +369,9 @@ final class NearbySession: Identifiable {
             } catch {
                 logger.error("Dropped a message: \(String(describing: error))")
             }
+        case .joinFailed:
+            guard case .connecting = stage else { return }
+            leaveRoom(String(localized: "Der Raum ist voll oder das Rennen läuft schon."))
         case let .failed(message):
             stage = .failed(message)
         }
@@ -347,7 +396,6 @@ final class NearbySession: Identifiable {
                 )
             }
             let id = PlayerID(request.playerID)
-            playersByPeer[peer.id] = id
             let player = PlayerInfo(
                 id: id,
                 nickname: request.nickname,
@@ -356,7 +404,12 @@ final class NearbySession: Identifiable {
                 isReady: false,
                 isConnected: true
             )
-            guard lobby.join(player) else { return }
+            guard lobby.join(player) else {
+                // No seat left: a full lobby without the phone in it tells it so, and it leaves.
+                send(.lobbyState(lobby), to: [peer])
+                return
+            }
+            playersByPeer[peer.id] = id
             broadcastLobby()
         case .joiner:
             // Other joiners connect too (the session is a mesh); only the room's phone is the host.
@@ -364,6 +417,9 @@ final class NearbySession: Identifiable {
                 hostPeer = peer
                 nearby?.stopBrowsing()
                 startPinging()
+            } else if hostPeer == nil, joiningRoomID == nil {
+                // A host that let us in after we gave up on its room.
+                nearby?.cancelJoin()
             }
         }
     }
@@ -376,11 +432,13 @@ final class NearbySession: Identifiable {
             if stage == .racing {
                 referee.markDisconnected(id)
                 markOpponent(id) { $0.isConnected = false }
+                // Before the results that may follow: a later `lobbyState` would end the joiners' results.
+                broadcastLobby()
                 finishIfComplete()
             } else {
                 lobby.remove(id)
+                broadcastLobby()
             }
-            broadcastLobby()
         case .joiner:
             if peer == hostPeer {
                 pinger?.cancel()
@@ -396,6 +454,14 @@ final class NearbySession: Identifiable {
         }
         switch message {
         case let .lobbyState(state):
+            guard state.player(me.id) != nil else {
+                // Until the host has added us, only a full lobby means there is no seat; after that, we were dropped.
+                if case .connecting = stage, !state.isFull {
+                    return
+                }
+                leaveRoom(String(localized: "Der Raum ist voll."))
+                return
+            }
             lobby = state
             for player in state.players where player.id != me.id {
                 markOpponent(player.id) { $0.isConnected = player.isConnected }
@@ -472,7 +538,11 @@ final class NearbySession: Identifiable {
         }
     }
 
+    /// Not while showing results: joiners take the next `lobbyState` as the host's "Nochmal".
     private func broadcastLobby() {
+        if case .results = stage {
+            return
+        }
         broadcast(.lobbyState(lobby))
     }
 

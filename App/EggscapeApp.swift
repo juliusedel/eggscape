@@ -6,7 +6,7 @@ struct EggscapeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            StartView()
+            RootView()
                 .environment(services)
         }
     }

@@ -3,8 +3,10 @@ import SwiftUI
 struct PauseMenu: View {
     let session: RunSession
     var onQuit: () -> Void
+    @Environment(AppServices.self) private var services
 
     var body: some View {
+        @Bindable var settings = services.settings
         VStack(spacing: 14) {
             Text("Pause")
                 .font(.title.bold())
@@ -23,6 +25,10 @@ struct PauseMenu: View {
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
             .secondaryActionStyle()
+            Toggle(isOn: $settings.isSoundOn) {
+                Label("Ton", systemImage: settings.isSoundOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
+            }
+            .padding(.horizontal, 6)
             Button(role: .destructive, action: onQuit) {
                 Label("Beenden", systemImage: "xmark")
                     .frame(maxWidth: .infinity, minHeight: 32)

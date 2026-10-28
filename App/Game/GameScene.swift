@@ -31,6 +31,8 @@ final class GameScene: SKScene {
     /// Receives everything that happened during a frame.
     var onEvents: ([RunEvent]) -> Void = { _ in }
     var onHUD: (HUDSnapshot) -> Void = { _ in }
+    /// Called once per rendered frame while running, e.g. for the rim-distance haptics.
+    var onFrame: (RunEngine) -> Void = { _ in }
     /// Finger steering for devices without motion sensors.
     var usesTouchSteering = false
     private(set) var touchSteering = TouchSteering()
@@ -99,6 +101,7 @@ final class GameScene: SKScene {
             if !events.isEmpty {
                 onEvents(events)
             }
+            onFrame(engine)
             hudCountdown -= frameDuration
             if hudCountdown <= 0 || engine.isOver {
                 hudCountdown = 0.1

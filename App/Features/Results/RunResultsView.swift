@@ -11,6 +11,11 @@ struct RunResultsView: View {
             Text(outcome.finished ? "Im Ziel!" : "Alle Eier kaputt")
                 .font(.largeTitle.bold())
                 .accessibilityIdentifier("results.title")
+            if outcome.isPersonalBest {
+                Label("Neue Bestleistung!", systemImage: "star.fill")
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+            }
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 10) {
                 if outcome.finished {
                     GridRow {

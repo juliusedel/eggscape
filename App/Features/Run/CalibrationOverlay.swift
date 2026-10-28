@@ -19,7 +19,7 @@ struct CalibrationOverlay: View {
                         "Halte es so, wie du gleich laufen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade."
                     )
                     .multilineTextAlignment(.center)
-                    SpiritLevel(session: session)
+                    SpiritLevelView(tilt: { session.rawTilt })
                 }
                 Button {
                     session.calibrate()
@@ -44,16 +44,17 @@ struct CalibrationOverlay: View {
 }
 
 /// A bubble that shows how the phone is currently held.
-private struct SpiritLevel: View {
-    let session: RunSession
+struct SpiritLevelView: View {
+    /// Raw device tilt in radians, read every frame.
+    var tilt: () -> SIMD2<Double>?
 
     var body: some View {
         TimelineView(.animation) { _ in
-            let tilt = session.rawTilt ?? .zero
+            let current = tilt() ?? .zero
             let limit = Double.pi / 6
             let offset = CGSize(
-                width: CGFloat(max(-1, min(1, tilt.x / limit))) * 34,
-                height: CGFloat(max(-1, min(1, -tilt.y / limit))) * 34
+                width: CGFloat(max(-1, min(1, current.x / limit))) * 34,
+                height: CGFloat(max(-1, min(1, -current.y / limit))) * 34
             )
             ZStack {
                 Circle().stroke(.secondary, lineWidth: 2)

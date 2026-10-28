@@ -4,11 +4,12 @@ import Foundation
 
 /// The preview sheets: each composes artwork the way the game (or a product photo) shows it.
 enum Previews {
-    static let sheets = ["frame-white", "egg-studio", "skins", "broken", "effects"]
+    static let sheets = ["frame-white", "spoon", "egg-studio", "skins", "broken", "effects"]
 
     static func render(_ name: String) -> PixelImage? {
         switch name {
         case "frame-white": frameWhite()
+        case "spoon": spoon()
         case "egg-studio": eggStudio()
         case "skins": skins()
         case "broken": broken()
@@ -44,6 +45,24 @@ enum Previews {
             centerY: eggY + shadowOffset.y * Double(eggWidth) * 0.8
         )
         canvas.draw(EggArt.egg(Samples.farmBrown, width: eggWidth), centerX: eggX, centerY: eggY)
+        return canvas.image
+    }
+
+    /// The spoon alone at game size (`u = 498`): with its shadow on the white background (left) and on a mid-gray,
+    /// camera-like ground without a shadow (right), to judge the metal against both.
+    static func spoon() -> PixelImage {
+        let unit = 498.0
+        let layout = SpoonArt.layout(unit: unit)
+        let spoon = SpoonArt.spoon(unit: unit)
+        let highlight = SpoonArt.highlight(unit: unit)
+        var canvas = whiteBackground(width: 2 * layout.width, height: layout.height)
+        canvas.fill(x: layout.width, y: 0, width: layout.width, height: layout.height, gray: 0.45)
+        canvas.draw(SpoonArt.shadow(unit: unit), left: 0, top: 0)
+        for side in 0 ..< 2 {
+            let left = Double(side * layout.width)
+            canvas.draw(spoon, left: left, top: 0)
+            canvas.draw(highlight, left: left, top: 0, blend: .additive)
+        }
         return canvas.image
     }
 

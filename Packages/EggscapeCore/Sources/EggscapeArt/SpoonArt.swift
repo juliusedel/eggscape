@@ -40,7 +40,8 @@ public enum SpoonArt {
     /// The reflection of the key soft box alone, for additive blending over `spoon(unit:)` (same size and
     /// registration). Unshifted, spoon plus highlight is the complete render; the game shifts this layer slightly
     /// with the tilt so the metal reacts to movement. It fades out towards the outline, so a small shift never
-    /// spills past the spoon's edge.
+    /// spills past the spoon's edge. Pixels that add light are opaque and all others fully transparent, so additive
+    /// blending gives the same result whether or not the renderer multiplies the source by its alpha.
     public static func highlight(unit: Double) -> PixelImage {
         SpoonRenderer.render(.highlight, unit: unit)
     }

@@ -21,8 +21,9 @@ struct RunSetup: Hashable {
         mode.course
     }
 
+    /// The shared weather plan; every player of a race derives the same one from `raceSeed`.
     var weatherSchedule: WeatherSchedule {
-        WeatherSchedule(seed: raceSeed)
+        WeatherSchedule(seed: raceSeed, option: mode.weather, course: course)
     }
 }
 

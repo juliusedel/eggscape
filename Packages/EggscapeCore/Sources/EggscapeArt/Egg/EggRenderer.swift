@@ -73,7 +73,7 @@ enum EggRenderer {
             let core = Self.blurredEdge(Self.smoothEggDistance(shape, x: x / 0.7, y: y / 0.7) * 0.7, sigma: 0.06)
             // Cast shadow: the outline, softened by the size of the soft box.
             let cast = Self.blurredEdge(distance + 0.01, sigma: 0.085)
-            let density = 1 - (1 - 0.72 * core) * (1 - 0.5 * cast)
+            let density = 1 - (1 - 0.72 * core) * (1 - 0.58 * cast)
             return Encoder.pixel(tint, alpha: density, x: column, y: row)
         }
     }

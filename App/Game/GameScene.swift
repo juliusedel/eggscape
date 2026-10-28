@@ -272,15 +272,17 @@ final class GameScene: SKScene {
         if egg.action(forKey: "squash") == nil, egg.action(forKey: "place") == nil {
             egg.setScale(1 + 0.05 * CGFloat(engine.egg.rimDistance * engine.egg.rimDistance))
         }
-        // The shadow falls to the bottom left and stretches as the egg climbs away from the center.
+        // The light is at the top right (`Studio.shadowDirection`), so the shadow falls to the bottom left, a little
+        // shorter than the egg's height would cast on a flat table because the bowl rises towards it. It stretches as
+        // the egg climbs away from the center.
         let away = CGVector(dx: CGFloat(position.x) * layout.unit, dy: CGFloat(position.y) * layout.unit)
         eggShadow.position = egg.position
-            + CGVector(dx: -layout.unit * 0.05, dy: -layout.unit * 0.07)
+            + CGVector(dx: -layout.unit * 0.11, dy: -layout.unit * 0.07)
             + away * 0.08
         eggShadow.xScale = 1 + 0.3 * CGFloat(abs(position.x) / engine.config.bowlRadiusX)
         eggShadow.yScale = 1 + 0.25 * CGFloat(abs(position.y) / engine.config.bowlRadiusY)
         if eggShadow.action(forKey: "fade") == nil {
-            eggShadow.alpha = 0.9 - 0.25 * CGFloat(engine.egg.rimDistance)
+            eggShadow.alpha = 1 - 0.25 * CGFloat(engine.egg.rimDistance)
         }
     }
 
@@ -371,7 +373,7 @@ final class GameScene: SKScene {
         egg.run(.group([.fadeIn(withDuration: 0.2), .scale(to: 1, duration: 0.28)]), withKey: "place")
         eggShadow.removeAction(forKey: "fade")
         eggShadow.alpha = 0
-        eggShadow.run(.fadeAlpha(to: 0.9, duration: 0.28), withKey: "fade")
+        eggShadow.run(.fadeAlpha(to: 1, duration: 0.28), withKey: "fade")
     }
 
     // MARK: Camera

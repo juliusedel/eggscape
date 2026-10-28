@@ -34,14 +34,13 @@ enum SpoonRenderer {
         let pixel = 1 / unit
         let shader = SteelShader()
 
-        /// The spoon layer's color and the highlight's encoded increment at one sample.
+        // The spoon layer's color and the highlight's encoded increment at one sample.
         @Sendable func sample(_ x: Double, _ y: Double, distance: Double) -> (color: RGB, added: RGB) {
             let point = SpoonGeometry.surface(x, y)
             let light = shader.radiance(point, x: x, y: y, footprint: pixel)
             let moving = Num.smoothstep(highlightInset.start, highlightInset.full, -distance)
             let still = Film.develop(light.base + light.key * (1 - moving))
-            guard highlight else { return (still, .black) }
-            guard moving > 0 else { return (still, .black) }
+            guard highlight, moving > 0 else { return (still, .black) }
             let full = Film.develop(light.base + light.key)
             let added = RGB(
                 max(ColorCurve.fastEncoded(full.r) - ColorCurve.fastEncoded(still.r), 0),

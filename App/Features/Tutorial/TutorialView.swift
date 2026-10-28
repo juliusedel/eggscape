@@ -4,6 +4,9 @@ import SwiftUI
 struct TutorialView: View {
     var onFinish: () -> Void
     @State private var page = 0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Keeps a page's text clear of the skip button above and the page dots below, also with large text.
+    @ScaledMetric private var pageInset = 40.0
 
     private struct Step {
         let symbol: String
@@ -34,21 +37,31 @@ struct TutorialView: View {
             TabView(selection: $page) {
                 ForEach(steps.indices, id: \.self) { index in
                     let step = steps[index]
-                    VStack(spacing: 24) {
-                        Spacer()
-                        Image(systemName: step.symbol)
-                            .font(.system(size: 96, weight: .regular))
-                            .foregroundStyle(.tint)
-                            .symbolRenderingMode(.hierarchical)
-                            .accessibilityHidden(true)
-                        Text(step.title)
-                            .font(.largeTitle.bold())
-                        Text(step.text)
-                            .font(.title3)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 32)
-                        Spacer()
+                    GeometryReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // Decorative, and it does not grow with the text: at accessibility sizes the text
+                                // needs the room.
+                                if !dynamicTypeSize.isAccessibilitySize {
+                                    Image(systemName: step.symbol)
+                                        .font(.system(size: 96, weight: .regular))
+                                        .foregroundStyle(.tint)
+                                        .symbolRenderingMode(.hierarchical)
+                                        .accessibilityHidden(true)
+                                }
+                                Text(step.title)
+                                    .font(.largeTitle.bold())
+                                Text(step.text)
+                                    .font(.title3)
+                                    .multilineTextAlignment(.center)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 32)
+                            }
+                            .padding(.vertical, pageInset)
+                            // At least a page high, so a step that fits stays centered and only a longer one scrolls.
+                            .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
                     .tag(index)
                 }

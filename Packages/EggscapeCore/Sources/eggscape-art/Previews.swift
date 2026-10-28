@@ -81,9 +81,10 @@ enum Previews {
         return canvas.image
     }
 
-    /// Broken eggs of a few skins on white (top) and on a mid-gray, camera-like ground (bottom).
+    /// Broken eggs of a few skins (farm brown, classic white, gold metallic, polka dots) on white (top) and on a
+    /// mid-gray, camera-like ground (bottom).
     static func broken() -> PixelImage {
-        let appearances = [Samples.farmBrown, Samples.skins[1], Samples.skins[4], Samples.skins[7]]
+        let appearances = [Samples.farmBrown, Samples.skins[1], Samples.skins[6], Samples.skins[7]]
         let size = 400
         let cellWidth = 440, cellHeight = 360
         var canvas = Canvas(width: appearances.count * cellWidth, height: 2 * cellHeight, hex: 0xF7F6F3)

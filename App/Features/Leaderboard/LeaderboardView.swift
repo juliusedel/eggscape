@@ -110,12 +110,19 @@ struct LeaderboardView: View {
 
     private func load() async {
         guard services.gameCenter.isSignedIn else { return }
+        // GameKit answers even after the task was cancelled; an answer for a board or scope no longer selected is
+        // dropped instead of replacing the one on screen.
+        let selection = (leaderboard: leaderboard, scope: scope)
         state = .loading
+        let result: LoadState
         do {
-            state = try await .loaded(services.gameCenter.loadBoard(leaderboard.rawValue, scope: scope))
+            let board = try await services.gameCenter.loadBoard(selection.leaderboard.rawValue, scope: selection.scope)
+            result = .loaded(board)
         } catch {
-            state = .failed
+            result = .failed
         }
+        guard !Task.isCancelled, selection == (leaderboard, scope) else { return }
+        state = result
     }
 
     private var personalBest: String? {

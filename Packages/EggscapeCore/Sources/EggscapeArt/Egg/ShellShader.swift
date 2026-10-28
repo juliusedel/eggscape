@@ -14,8 +14,10 @@ enum ShellShader {
         let blur = Studio.blur(roughness: surface.roughness)
 
         if let metal = surface.metal {
+            // Polished metal is shot in a white tent (see `MetalStudio`): bright, smooth reflections of the sweep, the
+            // cards and the soft boxes, tinted by the metal's own color and paling to white at grazing angles.
             let fresnel = Shading.fresnel(metal, cosine: cosView, roughness: surface.roughness)
-            return fresnel * Studio.radiance(mirror, blur: blur)
+            return fresnel * MetalStudio.radiance(mirror, blur: blur)
         }
 
         let fresnel = Shading.fresnel(surface.reflectance, cosine: cosView, roughness: surface.roughness)
@@ -31,15 +33,15 @@ enum ShellShader {
 
         var specular = RGB(gray: fresnel * Studio.radiance(mirror, blur: blur) * surface.specularOcclusion)
         if surface.iridescence > 0 {
-            // Thin-film interference of nacre: the hue shifts with the viewing angle; pastel, not rainbow.
-            let phase = surface.filmPhase + 1.4 * (1 - cosView) + 0.15
-            let film = RGB(
-                0.5 + 0.5 * cos(2 * .pi * phase),
-                0.5 + 0.5 * cos(2 * .pi * (phase + 0.33)),
-                0.5 + 0.5 * cos(2 * .pi * (phase + 0.67))
-            ).mixed(with: .white, 0.4) * 1.5
-            specular = specular * film * surface.iridescence + specular * (1 - surface.iridescence)
-            color += film * (0.035 * irradiance / .pi * surface.iridescence)
+            // Nacre: interference in its thin layers tints the sheen. Only the palest first orders show, so the tint
+            // drifts from warm white facing the camera through a breath of rose to a cool lavender and aqua at the
+            // outline, where the light crosses the layers more steeply. Never a rainbow: every tint stays within a
+            // few percent of white, and the body takes on only a little of it.
+            let grazing = 1 - cosView
+            let tint = nacre(Num.clamp(1.3 * grazing * grazing + surface.filmPhase))
+            let strength = surface.iridescence
+            specular = specular * RGB.white.mixed(with: tint, strength)
+            color = color * RGB.white.mixed(with: tint, strength * (0.3 + 0.7 * Num.smoothstep(0.05, 0.6, grazing)))
         }
         color += specular
 
@@ -49,5 +51,21 @@ enum ShellShader {
             color = color * (1 - coatFresnel) + RGB(gray: coatFresnel * reflection)
         }
         return color
+    }
+
+    /// Stops of `nacre(_:)`: warm white, rose, lavender, aqua.
+    private static let nacreStops = [
+        RGB(1.0, 0.98, 0.95),
+        RGB(1.0, 0.9, 0.92),
+        RGB(0.89, 0.88, 1.0),
+        RGB(0.84, 0.97, 0.96),
+    ]
+
+    /// The pastel interference colors of nacre along `t` (0 ... 1), as multipliers close to white.
+    static func nacre(_ t: Double) -> RGB {
+        let position = Num.clamp(t) * Double(nacreStops.count - 1)
+        let index = min(Int(position), nacreStops.count - 2)
+        let fraction = Num.smoothstep(0, 1, position - Double(index))
+        return nacreStops[index].mixed(with: nacreStops[index + 1], fraction)
     }
 }

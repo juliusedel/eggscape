@@ -47,7 +47,8 @@ enum Previews {
         return canvas.image
     }
 
-    /// The brown egg alone on white, composed like the owner's reference photo (1333 × 2000, egg 320 px wide).
+    /// The shop's brown egg ("farm-brown") alone on white, composed like the owner's reference photo (1333 × 2000,
+    /// egg 320 px wide).
     static func eggStudio() -> PixelImage {
         var canvas = Canvas(width: 1333, height: 2000, hex: 0xFFFFFF)
         let eggWidth = 320
@@ -57,18 +58,19 @@ enum Previews {
             centerX: centerX + shadowOffset.x * Double(eggWidth),
             centerY: centerY + shadowOffset.y * Double(eggWidth)
         )
-        canvas.draw(EggArt.egg(Samples.farmBrown, width: eggWidth), centerX: centerX, centerY: centerY)
+        canvas.draw(EggArt.egg(SkinCatalog.farmBrown.appearance, width: eggWidth), centerX: centerX, centerY: centerY)
         return canvas.image
     }
 
-    /// Every sample skin with its shadow on the game's white background.
+    /// Every skin the shop sells, in catalog order, with its shadow on the game's white background.
     static func skins() -> PixelImage {
+        let appearances = SkinCatalog.all.map(\.appearance)
         let columns = 5
         let eggWidth = 200
         let cellWidth = 270, cellHeight = 340
-        let rows = (Samples.skins.count + columns - 1) / columns
+        let rows = (appearances.count + columns - 1) / columns
         var canvas = Canvas(width: columns * cellWidth, height: rows * cellHeight, hex: 0xF7F6F3)
-        for (index, appearance) in Samples.skins.enumerated() {
+        for (index, appearance) in appearances.enumerated() {
             let centerX = Double(index % columns * cellWidth + cellWidth / 2)
             let centerY = Double(index / columns * cellHeight + cellHeight / 2)
             canvas.draw(

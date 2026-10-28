@@ -76,45 +76,57 @@ struct ShellMaterial: Sendable {
         )
 
         // Natural irregularity: the shell's pigment (or a dye) is never perfectly even. A concentration change is an
-        // exponent on the color, so dark eggs vary more than white ones, as real shells do.
+        // exponent on the color, so dark eggs vary more than white ones, as real shells do. Polished metal has none
+        // of it: its color is the metal's, and any blotch in it would read as tarnish.
         let large = mottle.fractal(position * 3.2, octaves: 3)
-        // Fine mottling: the dense, sandy pattern of slightly darker pigment that covers a real shell.
-        let fine = grain.fractal(position * 95, octaves: 3, footprint: footprint * 95)
-        let sand = grain.fractal(position * 210 + Vec3(7, 3, 11), octaves: 2, footprint: footprint * 210)
-        let mottles = Num.smoothstep(0.04, 0.34, fine + 0.35 * sand)
-        let pore = poreDepth(position, footprint: footprint)
-        let concentration = 1 + 0.12 * large + 0.06 * fine + 0.22 * mottles + 0.1 * pore
-        // Mottles and pores mostly darken; pigmented shells show them more than white ones.
-        let pigmentation = 0.04 + 0.13 * (1 - base.luminance)
-        let shade = 1 + 0.04 * fine + 0.03 * sand - pigmentation * mottles - 0.2 * pore
-        surface.albedo = base.power(concentration) * shade
-        surface.specularOcclusion = 1 - 0.4 * pore - 0.15 * mottles
-        let bumpScale = footprint < 0.006 ? 0.035 : 0.035 * 0.006 / footprint
-        surface.bump = Vec3(grain.value(position * 95), grain.value(position * 95 + Vec3(31, 7, 3)), 0) * bumpScale
+        if finish != .metallic {
+            // Fine mottling: the dense, sandy pattern of slightly darker pigment that covers a real shell. Nacre is
+            // laid down in smooth layers and hides most of it; pores under it would read as dust.
+            let smooth = finish == .pearl ? 0.35 : 1
+            let fine = grain.fractal(position * 95, octaves: 3, footprint: footprint * 95) * smooth
+            let sand = grain.fractal(position * 210 + Vec3(7, 3, 11), octaves: 2, footprint: footprint * 210) * smooth
+            let mottles = Num.smoothstep(0.04, 0.34, fine + 0.35 * sand)
+            let pore = poreDepth(position, footprint: footprint) * smooth * smooth
+            let concentration = 1 + 0.12 * large + 0.06 * fine + 0.22 * mottles + 0.1 * pore
+            // Mottles and pores mostly darken; pigmented shells show them more than white ones.
+            let pigmentation = 0.04 + 0.13 * (1 - base.luminance)
+            let shade = 1 + 0.04 * fine + 0.03 * sand - pigmentation * mottles - 0.2 * pore
+            surface.albedo = base.power(concentration) * shade
+            surface.specularOcclusion = 1 - 0.4 * pore - 0.15 * mottles
+            let bumpScale = footprint < 0.006 ? 0.035 : 0.035 * 0.006 / footprint
+            surface.bump = Vec3(grain.value(position * 95), grain.value(position * 95 + Vec3(31, 7, 3)), 0) * bumpScale
+        }
 
         let pattern = position.rotatedAboutX(-Self.patternTilt)
         applyPattern(&surface, at: pattern, normal: normal.rotatedAboutX(-Self.patternTilt), footprint: footprint)
 
         switch finish {
         case .pearl:
-            // Nacre: a pale, slightly milky body under the shimmering film.
-            surface.albedo = surface.albedo.mixed(with: RGB(gray: 0.86), 0.28)
-            surface.filmPhase = 0.35 * mottle.value(position * 2.2) + 0.15 * large
+            // Nacre: a pale, slightly milky body under the film, whose thickness drifts slowly across the shell.
+            surface.albedo = surface.albedo.mixed(with: RGB(gray: 0.76), 0.4)
+            surface.filmPhase = 0.08 * mottle.value(position * 2.2) + 0.04 * large
         case .metallic:
-            // Gold or silver leaf: the color becomes the reflectance, with the crinkles and seams of beaten foil.
-            let crinkle = warp.fractal(position * 14, octaves: 3, footprint: footprint * 14)
-            let seams = 1 - Num.smoothstep(0.0, 0.07, abs(patternNoise.value(position * 4.5)))
-            surface.metal = metallicReflectance(surface.albedo) * (1 - 0.12 * seams)
-            surface.roughness = Num.clamp(0.24 + 0.08 * crinkle + 0.1 * seams, 0.12, 0.5)
-            surface.bump = Vec3(
-                warp.value(position * 22),
-                warp.value(position * 22 + Vec3(5, 11, 17)),
-                0
-            ) * 0.12
+            applyMetal(&surface, at: position, footprint: footprint)
         default:
             break
         }
         return surface
+    }
+
+    /// Polished gold or silver: the color becomes the reflectance. Real leaf is never perfectly flat, so a very faint
+    /// crinkle tilts the normal by a degree or so; it shows as a fine ripple in the reflections, never as blotches,
+    /// and fades out where a pixel would only average it into noise.
+    private func applyMetal(_ surface: inout ShellSurface, at position: Vec3, footprint: Double) {
+        surface.metal = metallicReflectance(surface.albedo)
+        let frequency = 55.0
+        let fade = Num.smoothstep(1.2, 0.4, footprint * frequency)
+        let crinkle = warp.fractal(position * frequency, octaves: 2, footprint: footprint * frequency)
+        surface.roughness = 0.22 + 0.012 * crinkle
+        surface.bump = Vec3(
+            warp.value(position * frequency),
+            warp.value(position * frequency + Vec3(5, 11, 17)),
+            0
+        ) * (0.0045 * fade)
     }
 
     static func roughness(_ finish: EggAppearance.Finish) -> Double {
@@ -183,10 +195,18 @@ struct ShellMaterial: Sendable {
         case .plain:
             break
         case let .speckles(color, density, size):
-            let amount = speckles(p, density: Num.clamp(density), size: Num.clamp(size), footprint: footprint)
+            let amount = speckles(
+                p,
+                normal: normal,
+                density: Num.clamp(density),
+                size: Num.clamp(size),
+                footprint: footprint
+            )
             // Speckles are a denser deposit of pigment in the shell: deep and saturated, with a little grain left.
+            // The more pigment, the deeper the color, as in any translucent dye.
             let pigment = RGB(color).saturated(1.3).clamped(0.0005, 1)
-            let speckled = pigment.power(1.25) * (0.8 + 0.2 * surface.albedo.luminance / max(base.luminance, 0.05))
+            let texture = 0.8 + 0.2 * surface.albedo.luminance / max(base.luminance, 0.05)
+            let speckled = pigment.power(1.2 + 0.5 * amount) * texture
             surface.albedo = surface.albedo.mixed(with: speckled, amount)
             surface.specularOcclusion *= 1 - 0.35 * amount
         case let .dots(color, size):
@@ -205,7 +225,10 @@ struct ShellMaterial: Sendable {
         case let .dipDye(color):
             let (coverage, tide) = dipDye(p, footprint: footprint)
             let dye = RGB(color).power(1 + 0.35 * tide)
-            surface.albedo = surface.albedo.mixed(with: dye * (surface.albedo.luminance / max(base.luminance, 0.05)), coverage)
+            surface.albedo = surface.albedo.mixed(
+                with: dye * (surface.albedo.luminance / max(base.luminance, 0.05)),
+                coverage
+            )
         case let .confetti(colors):
             guard !colors.isEmpty else { return }
             let (index, coverage) = confetti(p, normal: normal, footprint: footprint)
@@ -238,35 +261,74 @@ struct ShellMaterial: Sendable {
         p.y / shape.halfHeight
     }
 
-    /// Natural speckles: crisp dots, a few larger soft spots and, for dense large settings, quail-like blotches.
-    private func speckles(_ p: Vec3, density: Double, size: Double, footprint: Double) -> Double {
+    /// Natural speckles, layered like on a real brown shell: many tiny flecks, fewer small speckles, a few larger
+    /// spots that lie deeper in the shell (soft-edged and paler), crisp coarse dots for large settings and, for dense
+    /// large settings, quail-like blotches. Every layer is a little denser on the lower left flank.
+    private func speckles(_ p: Vec3, normal: Vec3, density: Double, size: Double, footprint: Double) -> Double {
         // Real brown eggs carry more speckles on one flank; the reference photo has them towards the lower left.
-        let flank = Num.clamp(0.45 + 0.55 * (-0.55 * p.x - 0.45 * p.y / shape.halfHeight) + 0.35 * patternNoise.value(p * 2.5))
+        let lean = -0.55 * p.x - 0.45 * p.y / shape.halfHeight
+        let flank = Num.clamp(0.45 + 0.55 * lean + 0.35 * patternNoise.value(p * 2.5))
         let bias = Num.mix(flank, 1, density * density)
-        let warped = p + Vec3(warp.value(p * 30), warp.value(p * 30 + Vec3(9, 3, 1)), warp.value(p * 30 + Vec3(2, 8, 5)))
-            * 0.006
+        // The fine flecks follow the flank only gently, so the whole egg stays speckled.
+        let gentleBias = Num.mix(0.65, 1.2, flank)
+        let shift = Vec3(warp.value(p * 30), warp.value(p * 30 + Vec3(9, 3, 1)), warp.value(p * 30 + Vec3(2, 8, 5)))
+        let warped = p + shift * 0.006
+        // A finer warp frays the outlines of the small marks, so no fleck is a perfect ellipse.
+        let frayed = warped + Vec3(
+            grain.value(p * 160 + Vec3(3, 1, 4)),
+            grain.value(p * 160 + Vec3(1, 5, 9)),
+            grain.value(p * 160 + Vec3(2, 6, 5))
+        ) * 0.0012
         var amount = 0.0
-        // Coarse dots.
-        let coarseCell = Num.mix(0.075, 0.16, size)
-        amount = max(amount, cellularDots(
-            warped,
-            cell: coarseCell,
-            probability: Num.mix(0.2, 0.9, density) * bias,
-            radius: (Num.mix(0.05, 0.26, size), Num.mix(0.16, 0.42, size)),
-            softness: 0.28,
-            footprint: footprint,
-            seed: patternSeed
-        ))
-        // Pepper: many tiny dots.
-        amount = max(amount, cellularDots(
-            warped,
-            cell: coarseCell * 0.42,
-            probability: Num.mix(0.07, 0.5, density) * bias,
-            radius: (0.07, 0.17),
+        // Tiny flecks: most of the speckling, about 250 on the visible side; many are smaller than a pixel at game
+        // size and only tint it.
+        amount = max(amount, spots(frayed, normal: normal, SpotLayer(
+            cell: 0.06,
+            probability: Num.mix(0.5, 0.9, density) * gentleBias,
+            radius: (0.0012, Num.mix(0.0038, 0.0055, size)),
+            skew: 2.2,
+            elongation: 2.2,
+            softness: 0.35,
+            darkness: (0.35, 1),
+            seed: patternSeed ^ 0xF1EC
+        ), footprint: footprint))
+        // Small speckles, a few dozen.
+        amount = max(amount, spots(frayed, normal: normal, SpotLayer(
+            cell: 0.12,
+            probability: Num.mix(0.35, 0.8, density) * bias,
+            radius: (0.003, Num.mix(0.008, 0.013, size)),
+            skew: 1.8,
+            elongation: 1.8,
             softness: 0.3,
-            footprint: footprint,
+            darkness: (0.6, 1),
             seed: patternSeed ^ 0x5151
-        ))
+        ), footprint: footprint))
+        // A few larger spots deposited deeper in the shell: blurred by the shell above them, and paler.
+        amount = max(amount, spots(warped, normal: normal, SpotLayer(
+            cell: 0.3,
+            probability: Num.mix(0.45, 0.8, density) * bias,
+            radius: (Num.mix(0.008, 0.02, size), Num.mix(0.016, 0.04, size)),
+            skew: 1.5,
+            elongation: 1.5,
+            softness: 0.9,
+            darkness: (0.22, 0.5),
+            seed: patternSeed ^ 0x50F7
+        ), footprint: footprint))
+        // Crisp coarse dots for large settings.
+        let coarse = Num.smoothstep(0.3, 0.6, size)
+        if coarse > 0 {
+            let cell = Num.mix(0.075, 0.16, size)
+            amount = max(amount, spots(warped, normal: normal, SpotLayer(
+                cell: cell,
+                probability: Num.mix(0.12, 0.55, density) * bias * coarse,
+                radius: (Num.mix(0.05, 0.26, size) * cell, Num.mix(0.16, 0.42, size) * cell),
+                skew: 2,
+                elongation: 1.3,
+                softness: 0.28,
+                darkness: (0.6, 1),
+                seed: patternSeed
+            ), footprint: footprint))
+        }
         // Blotches for quail-like settings.
         if size > 0.45, density > 0.35 {
             let strength = Num.smoothstep(0.45, 0.8, size) * Num.smoothstep(0.35, 0.7, density)
@@ -279,41 +341,72 @@ struct ShellMaterial: Sendable {
         return Num.clamp(amount)
     }
 
-    /// Round spots at random positions of a 3D cell grid; spheres cut by the shell give round, foreshortened dots.
-    private func cellularDots(
-        _ p: Vec3,
-        cell: Double,
-        probability: Double,
-        radius: (Double, Double),
-        softness: Double,
-        footprint: Double,
-        seed: UInt64
-    ) -> Double {
-        let q = p / cell
+    /// One layer of scattered marks for `spots(_:normal:_:footprint:)`. Lengths are in egg units.
+    private struct SpotLayer {
+        /// Each cell of a 3D grid holds at most one mark, so a layer has about `probability / cell²` marks per unit
+        /// of shell area.
+        var cell: Double
+        var probability: Double
+        /// Radius range; `skew` above 1 makes small marks more common than large ones.
+        var radius: (Double, Double)
+        var skew: Double
+        /// Largest ratio of length to width.
+        var elongation: Double
+        /// Width of the soft edge as a fraction of the radius.
+        var softness: Double
+        /// Range of pigment density.
+        var darkness: (Double, Double)
+        var seed: UInt64
+    }
+
+    /// Marks at random points of a 3D cell grid, projected onto the shell along its normal: every mark within half a
+    /// cell of the surface shows at full size, so the density per area is exact, and each mark is stretched along a
+    /// random direction, so they foreshorten towards the outline and no two look alike.
+    ///
+    /// Anti-aliasing keeps the amount of pigment: a mark smaller than a pixel spreads over the pixel with
+    /// proportionally less strength, instead of flickering or growing to a full pixel, so a 64-pixel shop icon shows
+    /// the same overall speckling as a large preview.
+    private func spots(_ p: Vec3, normal: Vec3, _ layer: SpotLayer, footprint: Double) -> Double {
+        let q = p / layer.cell
         let fx = q.x.rounded(.down), fy = q.y.rounded(.down), fz = q.z.rounded(.down)
-        let pixel = footprint / cell
+        let pixel = 0.6 * footprint
+        let reach = layer.radius.1 * layer.elongation * (1 + layer.softness) + pixel
+        let slab = 0.5 * layer.cell
         var amount = 0.0
         for k in -1 ... 1 {
             for j in -1 ... 1 {
                 for i in -1 ... 1 {
                     let cx = Int(fx) + i, cy = Int(fy) + j, cz = Int(fz) + k
-                    let hash = Hash.of(cx, cy, cz, seed: seed)
-                    guard Hash.unit(hash) < probability else { continue }
+                    let hash = Hash.of(cx, cy, cz, seed: layer.seed)
+                    guard Hash.unit(hash) < layer.probability else { continue }
                     let feature = Vec3(
                         Double(cx) + Hash.unit(hash, 1),
                         Double(cy) + Hash.unit(hash, 2),
                         Double(cz) + Hash.unit(hash, 3)
-                    )
-                    // Mostly small spots with the occasional big one.
-                    let pick = Hash.unit(hash, 4)
-                    let r = radius.0 + (radius.1 - radius.0) * pick * pick
-                    let distance = (q - feature).length
-                    let soft = max(r * softness, pixel)
-                    guard distance < r + soft else { continue }
-                    // Most speckles are crisp and dark; about one in five has faded into the shell.
-                    let fadedPick = Hash.unit(hash, 5)
-                    let darkness = fadedPick < 0.2 ? 0.35 + fadedPick : 0.85 + 0.15 * fadedPick
-                    amount = max(amount, darkness * Num.smoothstep(r + soft, r - soft, distance))
+                    ) * layer.cell
+                    let offset = p - feature
+                    let depth = offset.dot(normal)
+                    guard abs(depth) < slab else { continue }
+                    let tangent = offset - normal * depth
+                    let squared = tangent.dot(tangent)
+                    guard squared < reach * reach else { continue }
+                    let radius = layer.radius.0 + (layer.radius.1 - layer.radius.0)
+                        * pow(Hash.unit(hash, 4), layer.skew)
+                    // Stretch along a random axis by shrinking the offset's component along it.
+                    let cosine = 2 * Hash.unit(hash, 6) - 1
+                    let angle = 2 * Double.pi * Hash.unit(hash, 7)
+                    let sine = (1 - cosine * cosine).squareRoot()
+                    let axis = Vec3(sine * cos(angle), sine * sin(angle), cosine)
+                    let stretch = 1 + (layer.elongation - 1) * Hash.unit(hash, 8)
+                    let along = tangent.dot(axis)
+                    let distance = max(squared - along * along * (1 - 1 / (stretch * stretch)), 0).squareRoot()
+                    // A mark convolved with the pixel: wider and proportionally fainter when it is tiny.
+                    let spread = (radius * radius + pixel * pixel).squareRoot()
+                    let soft = max(radius * layer.softness, pixel)
+                    guard distance < spread + soft else { continue }
+                    let darkness = layer.darkness.0 + (layer.darkness.1 - layer.darkness.0) * Hash.unit(hash, 5)
+                    let strength = darkness * radius * radius / (spread * spread)
+                    amount = max(amount, strength * Num.smoothstep(spread + soft, spread - soft, distance))
                 }
             }
         }
@@ -412,7 +505,7 @@ struct ShellMaterial: Sendable {
             let half = Vec2(0.012 + 0.006 * Hash.unit(hash, 7), 0.0055 + 0.002 * Hash.unit(hash, 8))
             let q = Vec2(abs(local.x) - half.x + 0.003, abs(local.y) - half.y + 0.003)
             let outside = Vec2(max(q.x, 0), max(q.y, 0)).length + min(max(q.x, q.y), 0) - 0.003
-            return self.edge(-outside, footprint)
+            return edge(-outside, footprint)
         }
     }
 
@@ -420,11 +513,17 @@ struct ShellMaterial: Sendable {
     private func stars(_ p: Vec3, normal: Vec3, footprint: Double) -> Double {
         let big = decals(p, normal: normal, cell: 0.13, probability: 0.7, seed: patternSeed ^ 0x57A2) { local, hash in
             let radius = 0.02 + 0.022 * Hash.unit(hash, 7)
-            return self.edge(-Self.starDistance(local, radius: radius), footprint)
+            return edge(-Self.starDistance(local, radius: radius), footprint)
         }.1
-        let small = decals(p, normal: normal, cell: 0.055, probability: 0.45, seed: patternSeed ^ 0x0D07) { local, hash in
+        let small = decals(
+            p,
+            normal: normal,
+            cell: 0.055,
+            probability: 0.45,
+            seed: patternSeed ^ 0x0D07
+        ) { local, hash in
             let radius = 0.0035 + 0.004 * Hash.unit(hash, 7)
-            return self.edge(radius - local.length, footprint)
+            return edge(radius - local.length, footprint)
         }.1
         return max(big, small)
     }
@@ -437,11 +536,12 @@ struct ShellMaterial: Sendable {
         p = p - k1 * (2 * max(k1.dot(p), 0))
         p = p - k2 * (2 * max(k2.dot(p), 0))
         p = Vec2(abs(p.x), p.y - radius)
+        // From the tip to the inner vertex, which lies at `ratio · radius`, 36° from the tip: `(-k1.y, k1.x)`.
         let ratio = 0.42
-        let ba = Vec2(-0.951_056_516_295, 0.309_016_994_375) * ratio - Vec2(0, 1)
+        let ba = Vec2(-k1.y, k1.x) * ratio - Vec2(0, 1)
         let h = Num.clamp(p.dot(ba) / ba.dot(ba), 0, radius)
         let d = p - ba * h
-        return d.length * (p.y * ba.x - p.x * ba.y > 0 ? -1 : 1)
+        return d.length * (p.y * ba.x - p.x * ba.y < 0 ? -1 : 1)
     }
 
     /// Evaluates small decals placed at random points of a 3D cell grid, snapped onto the shell.

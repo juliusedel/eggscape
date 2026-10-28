@@ -13,30 +13,8 @@ enum Previews {
         case "skins": skins()
         case "broken": broken()
         case "effects": effects()
-        case "dev": dev()
         default: nil
         }
-    }
-
-    // TEMPORARY: large special finishes for art direction; removed before the final commit.
-    static func dev() -> PixelImage {
-        let appearances = [
-            SkinCatalog.goldMetallic, SkinCatalog.silverMetallic, SkinCatalog.pearlWhite, SkinCatalog.farmBrown,
-        ].map(\.appearance)
-        let eggWidth = 320
-        let cellWidth = 400, cellHeight = 500
-        var canvas = Canvas(width: appearances.count * cellWidth, height: cellHeight, hex: 0xF7F6F3)
-        for (index, appearance) in appearances.enumerated() {
-            let centerX = Double(index * cellWidth + cellWidth / 2)
-            let centerY = Double(cellHeight / 2)
-            canvas.draw(
-                EggArt.shadow(width: eggWidth * 3 / 2),
-                centerX: centerX + shadowOffset.x * Double(eggWidth),
-                centerY: centerY + shadowOffset.y * Double(eggWidth)
-            )
-            canvas.draw(EggArt.egg(appearance, width: eggWidth), centerX: centerX, centerY: centerY)
-        }
-        return canvas.image
     }
 
     /// Offset of the egg's shadow relative to the egg, as a fraction of the egg width (away from the key light).

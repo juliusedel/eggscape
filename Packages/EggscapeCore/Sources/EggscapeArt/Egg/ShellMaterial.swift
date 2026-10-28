@@ -80,11 +80,13 @@ struct ShellMaterial: Sendable {
         // of it: its color is the metal's, and any blotch in it would read as tarnish.
         let large = mottle.fractal(position * 3.2, octaves: 3)
         if finish != .metallic {
-            // Fine mottling: the dense, sandy pattern of slightly darker pigment that covers a real shell.
-            let fine = grain.fractal(position * 95, octaves: 3, footprint: footprint * 95)
-            let sand = grain.fractal(position * 210 + Vec3(7, 3, 11), octaves: 2, footprint: footprint * 210)
+            // Fine mottling: the dense, sandy pattern of slightly darker pigment that covers a real shell. Nacre is
+            // laid down in smooth layers and hides most of it; pores under it would read as dust.
+            let smooth = finish == .pearl ? 0.35 : 1
+            let fine = grain.fractal(position * 95, octaves: 3, footprint: footprint * 95) * smooth
+            let sand = grain.fractal(position * 210 + Vec3(7, 3, 11), octaves: 2, footprint: footprint * 210) * smooth
             let mottles = Num.smoothstep(0.04, 0.34, fine + 0.35 * sand)
-            let pore = poreDepth(position, footprint: footprint)
+            let pore = poreDepth(position, footprint: footprint) * smooth * smooth
             let concentration = 1 + 0.12 * large + 0.06 * fine + 0.22 * mottles + 0.1 * pore
             // Mottles and pores mostly darken; pigmented shells show them more than white ones.
             let pigmentation = 0.04 + 0.13 * (1 - base.luminance)
@@ -116,7 +118,7 @@ struct ShellMaterial: Sendable {
     /// and fades out where a pixel would only average it into noise.
     private func applyMetal(_ surface: inout ShellSurface, at position: Vec3, footprint: Double) {
         surface.metal = metallicReflectance(surface.albedo)
-        let frequency = 70.0
+        let frequency = 55.0
         let fade = Num.smoothstep(1.2, 0.4, footprint * frequency)
         let crinkle = warp.fractal(position * frequency, octaves: 2, footprint: footprint * frequency)
         surface.roughness = 0.22 + 0.012 * crinkle
@@ -124,7 +126,7 @@ struct ShellMaterial: Sendable {
             warp.value(position * frequency),
             warp.value(position * frequency + Vec3(5, 11, 17)),
             0
-        ) * (0.006 * fade)
+        ) * (0.0045 * fade)
     }
 
     static func roughness(_ finish: EggAppearance.Finish) -> Double {
@@ -223,7 +225,10 @@ struct ShellMaterial: Sendable {
         case let .dipDye(color):
             let (coverage, tide) = dipDye(p, footprint: footprint)
             let dye = RGB(color).power(1 + 0.35 * tide)
-            surface.albedo = surface.albedo.mixed(with: dye * (surface.albedo.luminance / max(base.luminance, 0.05)), coverage)
+            surface.albedo = surface.albedo.mixed(
+                with: dye * (surface.albedo.luminance / max(base.luminance, 0.05)),
+                coverage
+            )
         case let .confetti(colors):
             guard !colors.isEmpty else { return }
             let (index, coverage) = confetti(p, normal: normal, footprint: footprint)
@@ -266,8 +271,8 @@ struct ShellMaterial: Sendable {
         let bias = Num.mix(flank, 1, density * density)
         // The fine flecks follow the flank only gently, so the whole egg stays speckled.
         let gentleBias = Num.mix(0.65, 1.2, flank)
-        let warped = p + Vec3(warp.value(p * 30), warp.value(p * 30 + Vec3(9, 3, 1)), warp.value(p * 30 + Vec3(2, 8, 5)))
-            * 0.006
+        let shift = Vec3(warp.value(p * 30), warp.value(p * 30 + Vec3(9, 3, 1)), warp.value(p * 30 + Vec3(2, 8, 5)))
+        let warped = p + shift * 0.006
         // A finer warp frays the outlines of the small marks, so no fleck is a perfect ellipse.
         let frayed = warped + Vec3(
             grain.value(p * 160 + Vec3(3, 1, 4)),
@@ -500,7 +505,7 @@ struct ShellMaterial: Sendable {
             let half = Vec2(0.012 + 0.006 * Hash.unit(hash, 7), 0.0055 + 0.002 * Hash.unit(hash, 8))
             let q = Vec2(abs(local.x) - half.x + 0.003, abs(local.y) - half.y + 0.003)
             let outside = Vec2(max(q.x, 0), max(q.y, 0)).length + min(max(q.x, q.y), 0) - 0.003
-            return self.edge(-outside, footprint)
+            return edge(-outside, footprint)
         }
     }
 
@@ -508,11 +513,17 @@ struct ShellMaterial: Sendable {
     private func stars(_ p: Vec3, normal: Vec3, footprint: Double) -> Double {
         let big = decals(p, normal: normal, cell: 0.13, probability: 0.7, seed: patternSeed ^ 0x57A2) { local, hash in
             let radius = 0.02 + 0.022 * Hash.unit(hash, 7)
-            return self.edge(-Self.starDistance(local, radius: radius), footprint)
+            return edge(-Self.starDistance(local, radius: radius), footprint)
         }.1
-        let small = decals(p, normal: normal, cell: 0.055, probability: 0.45, seed: patternSeed ^ 0x0D07) { local, hash in
+        let small = decals(
+            p,
+            normal: normal,
+            cell: 0.055,
+            probability: 0.45,
+            seed: patternSeed ^ 0x0D07
+        ) { local, hash in
             let radius = 0.0035 + 0.004 * Hash.unit(hash, 7)
-            return self.edge(radius - local.length, footprint)
+            return edge(radius - local.length, footprint)
         }.1
         return max(big, small)
     }
@@ -525,11 +536,12 @@ struct ShellMaterial: Sendable {
         p = p - k1 * (2 * max(k1.dot(p), 0))
         p = p - k2 * (2 * max(k2.dot(p), 0))
         p = Vec2(abs(p.x), p.y - radius)
+        // From the tip to the inner vertex, which lies at `ratio · radius`, 36° from the tip: `(-k1.y, k1.x)`.
         let ratio = 0.42
-        let ba = Vec2(-0.951_056_516_295, 0.309_016_994_375) * ratio - Vec2(0, 1)
+        let ba = Vec2(-k1.y, k1.x) * ratio - Vec2(0, 1)
         let h = Num.clamp(p.dot(ba) / ba.dot(ba), 0, radius)
         let d = p - ba * h
-        return d.length * (p.y * ba.x - p.x * ba.y > 0 ? -1 : 1)
+        return d.length * (p.y * ba.x - p.x * ba.y < 0 ? -1 : 1)
     }
 
     /// Evaluates small decals placed at random points of a 3D cell grid, snapped onto the shell.

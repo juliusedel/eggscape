@@ -29,3 +29,26 @@ revisited deliberately.
 - **MultipeerConnectivity is deprecated in the iOS 27 SDK** ("Use Network Framework instead"). It still works and the
   spec asks for it, so Nearby play uses it, but only behind a small transport protocol so a Network framework
   implementation can replace it later without touching the lobby or race logic.
+
+## Product direction changed by the owner (2026-10-27)
+
+See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec:
+
+- **§8 art direction is replaced.** Instead of a cartoon meadow with parallax layers, runner, fence and SVG vector art,
+  the game shows a photo-realistic spoon and egg from directly above on a white studio background or on the live rear
+  camera image. "Spoon fills the lower 40 %" became "spoon fills most of the screen", because without a landscape the
+  spoon is the whole game view. Parallax layers and the runner are dropped; footsteps show up as a very subtle bob.
+- **Realistic artwork is procedural** (`EggscapeArt`, pure Swift) instead of hand-made SVG: photo-real shading cannot be
+  expressed well in the SVG subset that asset catalogs support, and generating eggs from data makes every shop skin
+  cheap to add. UI icons are SF Symbols. Any procedural image can be replaced by a real photo (PNG) later.
+- **The owner's reference photo of a brown egg is not committed**, because its license is unknown. It was only used
+  to judge realism.
+- **Global leaderboards and in-app purchases are now in scope** (out of scope in the original spec): Game Center
+  leaderboards, and consumable coin packs via StoreKit 2. Skins are bought with coins, which are earned by playing or
+  bought as packs. Coins and skins are stored locally (no cloud save, as in the original spec), so they are lost when
+  the app is deleted; consumable purchases cannot be restored by design.
+- **Navigation** is a tab bar (Einzelspieler, Mehrspieler, Bestenliste, Shop) instead of the start screen with
+  Spielen / Mehrspieler / Einstellungen / Anleitung. Settings and the tutorial open from a toolbar button.
+- **Camera mode** needs `NSCameraUsageDescription`. The camera image is only shown on screen, never recorded, stored
+  or sent, so the privacy label stays "Data Not Collected". The prompt appears only when the player turns on camera
+  mode.

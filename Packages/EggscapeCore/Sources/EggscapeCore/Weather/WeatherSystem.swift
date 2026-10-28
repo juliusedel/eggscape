@@ -12,7 +12,7 @@ public struct WeatherImpact: Sendable, Equatable {
     public init() {}
 }
 
-/// The weather a runner experiences: clear skies for now.
+/// The weather a runner experiences. Placeholder: always clear until the weather milestone lands.
 public struct WeatherSystem: Sendable {
     public let schedule: WeatherSchedule
     public let config: GameConfig
@@ -38,7 +38,7 @@ public struct WeatherSystem: Sendable {
     }
 }
 
-/// The race's weather plan, derived from the race seed.
+/// The race's weather plan, derived from the race seed. Placeholder until the weather milestone lands.
 public struct WeatherSchedule: Sendable, Equatable {
     public let seed: UInt64
 
@@ -47,9 +47,4 @@ public struct WeatherSchedule: Sendable, Equatable {
     }
 
     public static let clear = WeatherSchedule(seed: 0)
-}
-
-/// The weather at one point of the track.
-public struct WeatherConditions: Sendable, Equatable, Hashable {
-    public static let clear = WeatherConditions()
 }

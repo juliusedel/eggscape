@@ -1,0 +1,83 @@
+{
+  "identifier" : "4E6D2C8A",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "6754000001",
+      "localizations" : [
+        {
+          "description" : "600 Münzen für neue Eier im Shop.",
+          "displayName" : "Handvoll Münzen",
+          "locale" : "de"
+        },
+        {
+          "description" : "600 coins for new eggs in the shop.",
+          "displayName" : "Handful of Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.juliusedel.eggscape.coins.small",
+      "referenceName" : "Coins small (600)",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "6754000002",
+      "localizations" : [
+        {
+          "description" : "2000 Münzen für neue Eier im Shop.",
+          "displayName" : "Eierkarton voll Münzen",
+          "locale" : "de"
+        },
+        {
+          "description" : "2000 coins for new eggs in the shop.",
+          "displayName" : "Egg Box of Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.juliusedel.eggscape.coins.medium",
+      "referenceName" : "Coins medium (2000)",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "5.99",
+      "familyShareable" : false,
+      "internalID" : "6754000003",
+      "localizations" : [
+        {
+          "description" : "5000 Münzen für neue Eier im Shop.",
+          "displayName" : "Hühnerstall voll Münzen",
+          "locale" : "de"
+        },
+        {
+          "description" : "5000 coins for new eggs in the shop.",
+          "displayName" : "Henhouse of Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.juliusedel.eggscape.coins.large",
+      "referenceName" : "Coins large (5000)",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "de",
+    "_storefront" : "DEU",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

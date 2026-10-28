@@ -44,6 +44,7 @@ targets:
         PRODUCT_NAME: Eggscape
         PRODUCT_BUNDLE_IDENTIFIER: de.juliusedel.eggscape
         INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Eggscape.entitlements
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
@@ -85,6 +86,8 @@ schemes:
         EggscapeUITests: [test]
     run:
       config: Debug
+      # Local StoreKit testing of the coin packs; App Store builds use the real products.
+      storeKitConfiguration: StoreKit/Eggscape.storekit
     test:
       config: Debug
       targets:

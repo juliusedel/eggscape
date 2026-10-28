@@ -213,6 +213,7 @@ private struct CoinPacksSection: View {
 
     var body: some View {
         let store = services.store
+        let notice = PurchaseNotice(store.purchaseState)
         VStack(alignment: .leading, spacing: 12) {
             Text("Münzen")
                 .font(.title2.bold())
@@ -234,11 +235,36 @@ private struct CoinPacksSection: View {
                     CoinPackRow(product: product, coins: CoinPack.pack(productID: product.id)?.coins ?? 0)
                 }
             }
-            if store.purchaseState == .pending {
-                Text("Dein Kauf wartet auf Bestätigung.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+        }
+        // Shown once: StoreKit does not report a declined "Ask to Buy", so a lasting note would go stale.
+        .alert(item: Binding(get: { notice }, set: {
+            if $0 == nil {
+                store.purchaseState = .idle
             }
+        })) { notice in
+            Alert(title: notice.title, message: notice.message)
+        }
+    }
+}
+
+/// A purchase waiting for approval (e.g. "Ask to Buy") or a failed one, as an alert.
+private struct PurchaseNotice: Identifiable {
+    let id: String
+    let title: Text
+    let message: Text
+
+    init?(_ state: StoreService.PurchaseState) {
+        switch state {
+        case .idle, .purchasing:
+            return nil
+        case .pending:
+            id = "pending"
+            title = Text("Kauf ausstehend")
+            message = Text("Dein Kauf wartet auf Bestätigung. Die Münzen kommen, sobald er bestätigt ist.")
+        case let .failed(reason):
+            id = "failed"
+            title = Text("Kauf nicht möglich")
+            message = Text(reason)
         }
     }
 }

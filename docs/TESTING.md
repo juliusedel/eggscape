@@ -64,7 +64,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### In-app purchases (Sandbox account)
 - [ ] The three coin packs load with localized prices.
 - [ ] Buying a pack credits the coins exactly once, also after force-quitting the app during the purchase.
-- [ ] "Ask to Buy" (Family Sharing child account) shows the pending state and credits after approval.
+- [ ] "Ask to Buy" (Family Sharing child account) says once that the purchase waits for approval, and credits the
+      coins after approval; cancelling the App Store sheet shows no message.
 
 ### Game Center
 - [ ] Signed in to Game Center: launching the app signs in silently, without a sheet.

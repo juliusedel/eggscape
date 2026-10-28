@@ -2,17 +2,22 @@ import SwiftUI
 
 extension View {
     /// The prominent action of a screen; Liquid Glass on iOS 26 and later. It is filled with `AccentFill`, a deeper
-    /// orange than the dark-mode accent, so the white label stays readable (4.7:1) in both appearances.
-    @ViewBuilder
+    /// orange than the dark-mode accent, so the white label stays readable (4.7:1) in both appearances. The label is
+    /// white explicitly because list rows would otherwise tint its icon with the accent, invisible on the fill.
     func primaryActionStyle() -> some View {
+        prominentButtonStyle().tint(Color(.accentFill)).foregroundStyle(.white)
+    }
+
+    @ViewBuilder
+    private func prominentButtonStyle() -> some View {
         #if compiler(>=6.2)
             if #available(iOS 26, *) {
-                buttonStyle(.glassProminent).tint(Color(.accentFill))
+                buttonStyle(.glassProminent)
             } else {
-                buttonStyle(.borderedProminent).tint(Color(.accentFill))
+                buttonStyle(.borderedProminent)
             }
         #else
-            buttonStyle(.borderedProminent).tint(Color(.accentFill))
+            buttonStyle(.borderedProminent)
         #endif
     }
 

@@ -67,7 +67,10 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] "Ask to Buy" (Family Sharing child account) shows the pending state and credits after approval.
 
 ### Game Center
-- [ ] Opening Bestenliste asks to sign in to Game Center (Apple's sheet) only then.
+- [ ] Signed in to Game Center: launching the app signs in silently, without a sheet.
+- [ ] Signed out: no sheet at launch or during a run; Apple's sign-in sheet appears when Bestenliste or Online opens.
+- [ ] Accept a friend's Online invitation while the app is not running: the app opens straight into the online room
+      (after the tutorial on a first launch).
 - [ ] After a finished time trial the score appears in the right leaderboard; Endlos submits meters.
 - [ ] Global and friends scopes load; without Game Center the tab still shows personal bests.
 

@@ -4,8 +4,9 @@ import Observation
 import os
 import UIKit
 
-/// Game Center sign-in, score submission and leaderboard loading. Signing in is lazy: it starts only when the player
-/// opens the leaderboards or online play, and uses Apple's own sheet.
+/// Game Center sign-in, score submission, invitations and leaderboard loading. The player is signed in silently at
+/// launch, so scores and invitations work right away; Apple's sign-in sheet, if GameKit needs one, waits until the
+/// player opens the leaderboards or online play (see `GameCenterSignIn`).
 @MainActor
 @Observable
 final class GameCenterService {
@@ -40,16 +41,19 @@ final class GameCenterService {
         var totalPlayers: Int
     }
 
-    private(set) var status = Status.signedOut
     /// A friend's invitation the player accepted from a notification; the app opens the online room for it.
     var acceptedInvite: AcceptedInvite?
-    @ObservationIgnored private lazy var inviteListener = InviteListener { [weak self] invite in
-        self?.acceptedInvite = AcceptedInvite(invite: invite)
-    }
+    private var signInFlow = GameCenterSignIn<UIViewController>()
+    /// Registered with the first sign-in; GameKit then also delivers an invitation that launched the app.
+    @ObservationIgnored private var inviteListener: InviteListener?
 
     /// Called after every successful sign-in, e.g. to submit bests reached while signed out.
     @ObservationIgnored var onSignIn: () -> Void = {}
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "gamecenter")
+
+    var status: Status {
+        signInFlow.status
+    }
 
     var isSignedIn: Bool {
         if case .signedIn = status {
@@ -59,39 +63,51 @@ final class GameCenterService {
         }
     }
 
+    /// Signs in silently, once at launch. A sign-in sheet GameKit asks for waits for `signIn()`.
+    func authenticate() {
+        perform(signInFlow.authenticateAtLaunch())
+    }
+
+    /// For screens that need Game Center, and "Erneut versuchen": shows Apple's sign-in sheet if GameKit asks for one.
     func signIn() {
-        switch status {
-        case .signingIn, .signedIn:
-            return
-        case .signedOut, .unavailable:
+        perform(signInFlow.signIn())
+    }
+
+    private func perform(_ step: GameCenterSignIn<UIViewController>.Step) {
+        switch step {
+        case .nothing:
             break
-        }
-        status = .signingIn
-        // GameKit may call this several times and on any thread.
-        GKLocalPlayer.local.authenticateHandler = { @Sendable [weak self] viewController, error in
-            let message = error?.localizedDescription
-            let sheet = SendableViewController(viewController)
-            Task { @MainActor in
-                self?.handleAuthentication(sheet: sheet.value, errorMessage: message)
+        case .authenticate:
+            // GameKit may call this several times (again whenever the app returns to the foreground) and on any thread.
+            GKLocalPlayer.local.authenticateHandler = { @Sendable [weak self] viewController, error in
+                let message = error?.localizedDescription
+                let sheet = SendableViewController(viewController)
+                Task { @MainActor in
+                    self?.handleAuthentication(sheet: sheet.value, errorMessage: message)
+                }
             }
+        case let .present(sheet):
+            present(sheet)
+        case .didSignIn:
+            if inviteListener == nil {
+                let listener = InviteListener { [weak self] invite in
+                    self?.acceptedInvite = AcceptedInvite(invite: invite)
+                }
+                GKLocalPlayer.local.register(listener)
+                inviteListener = listener
+            }
+            onSignIn()
         }
     }
 
     private func handleAuthentication(sheet: UIViewController?, errorMessage: String?) {
-        if let sheet {
-            present(sheet)
-            return
-        }
         let player = GKLocalPlayer.local
-        if player.isAuthenticated {
-            let wasSignedIn = isSignedIn
-            status = .signedIn(name: player.displayName)
-            if !wasSignedIn {
-                player.register(inviteListener)
-                onSignIn()
-            }
+        if let sheet {
+            perform(signInFlow.needsSignIn(sheet))
+        } else if player.isAuthenticated {
+            perform(signInFlow.signedIn(name: player.displayName))
         } else {
-            status = .unavailable(errorMessage ?? String(localized: "Game Center ist nicht verfügbar."))
+            signInFlow.failed(errorMessage)
         }
     }
 

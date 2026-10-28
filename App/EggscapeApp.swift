@@ -8,7 +8,13 @@ struct EggscapeApp: App {
         WindowGroup {
             RootView()
                 .environment(services)
-                .task { services.store.start() }
+                .task {
+                    services.store.start()
+                    // UI tests and staged screenshots never touch GameKit, so their records never reach a leaderboard.
+                    if !LaunchOptions.current.usesEphemeralData {
+                        services.gameCenter.authenticate()
+                    }
+                }
         }
     }
 

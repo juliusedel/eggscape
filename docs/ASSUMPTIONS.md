@@ -64,9 +64,11 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   grouped background (light and dark), which the first tab shows.
 - **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
-- **Game Center.** Sign-in starts when the Bestenliste tab opens or a run ends with a score; scores reached while
-  signed out are submitted from the personal bests right after signing in. Time-trial leaderboards take the best time
-  of any weather, because one board per weather option would split the few players.
+- **Game Center.** The player is signed in silently at launch (not in UI tests or screenshot mode), so scores reach
+  the leaderboards right after a run and an accepted invitation opens the online room, also when it launched the app.
+  Apple's sign-in sheet, if GameKit asks for one, waits until Bestenliste or Online opens instead of popping up over a
+  run. Scores reached while signed out are submitted from the personal bests right after signing in. Time-trial
+  leaderboards take the best time of any weather, because one board per weather option would split the few players.
 - **MultipeerConnectivity warnings.** The deprecation warnings are silenced only inside `MultipeerTransport.swift` with
   `@diagnose(DeprecatedDeclaration, as: ignored)`, guarded by `#if hasAttribute(diagnose)` so older compilers (CI)
   still build it, just with warnings.

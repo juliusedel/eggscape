@@ -7,7 +7,7 @@ struct RootView: View {
     var body: some View {
         @Bindable var navigation = services.navigation
         @Bindable var launcher = services.launcher
-        @Bindable var gameCenter = services.gameCenter
+        let gameCenter = services.gameCenter
         TabView(selection: $navigation.tab) {
             SingleplayerView()
                 .tabItem { Label("Einzelspieler", systemImage: "figure.run") }
@@ -34,7 +34,7 @@ struct RootView: View {
         .fullScreenCover(item: $launcher.flow) { flow in
             GameFlowView(flow: flow)
         }
-        .fullScreenCover(item: $gameCenter.acceptedInvite) { accepted in
+        .fullScreenCover(item: invite) { accepted in
             NavigationStack {
                 OnlineView(invite: accepted.invite)
                     .toolbar {
@@ -56,6 +56,22 @@ struct RootView: View {
                 navigation.showsTutorial = true
             }
         }
+        .onChange(of: gameCenter.acceptedInvite?.id) { _, id in
+            // An invitation does not wait behind the settings sheet: settings closes for it.
+            if id != nil {
+                navigation.showsSettings = false
+            }
+        }
+    }
+
+    /// An accepted invitation waits until no run, tutorial or settings sheet is on screen, because only one of them
+    /// can be presented at a time.
+    private var invite: Binding<AcceptedInvite?> {
+        let navigation = services.navigation
+        let gameCenter = services.gameCenter
+        let isFree = services.launcher.flow == nil && !navigation.showsTutorial && !navigation.showsSettings
+        let invite = isFree ? gameCenter.acceptedInvite : nil
+        return Binding(get: { invite }, set: { gameCenter.acceptedInvite = $0 })
     }
 }
 

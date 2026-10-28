@@ -201,6 +201,16 @@
         }
       }
     },
+    "2 bis 4 Spieler über Game Center, auch mit Einladungen an Freunde." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 to 4 players over Game Center, including invites to friends."
+          }
+        }
+      }
+    },
     "Abbrechen" : {
       "localizations" : {
         "en" : {
@@ -637,16 +647,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eggs"
-          }
-        }
-      }
-    },
-    "Eierlauf für die Hosentasche" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Egg-and-spoon race in your pocket"
           }
         }
       }
@@ -1191,6 +1191,16 @@
         }
       }
     },
+    "Lauf über das Internet gegen Freunde oder andere Spieler. Dafür meldest du dich bei Game Center an." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Race friends or other players over the internet. To do that, sign in to Game Center."
+          }
+        }
+      }
+    },
     "Lauf, so weit du kommst. Alle 100 m wird das Wetter rauer." : {
       "localizations" : {
         "en" : {
@@ -1317,6 +1327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Players"
+          }
+        }
+      }
+    },
+    "Mitspieler finden" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find Players"
           }
         }
       }
@@ -1487,6 +1507,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        }
+      }
+    },
+    "Online" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online"
           }
         }
       }
@@ -1667,6 +1697,16 @@
         }
       }
     },
+    "Schließen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
     "Selten" : {
       "localizations" : {
         "en" : {
@@ -1713,16 +1753,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Game"
-          }
-        }
-      }
-    },
-    "Spielen" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Play"
           }
         }
       }

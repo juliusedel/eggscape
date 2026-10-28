@@ -199,6 +199,9 @@ final class GameScene: SKScene {
                 handle(events)
                 onEvents(events)
             }
+            // Ending the run in `onEvents` stopped the danger haptic, the weather sounds and the emitters; going on
+            // with this frame would start them again for good.
+            guard mode == .running else { break }
             onFrame(engine)
             weather?.update(weather: engine.weather, dt: frameDuration)
             hudCountdown -= frameDuration

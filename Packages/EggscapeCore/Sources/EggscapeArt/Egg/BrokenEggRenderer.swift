@@ -368,7 +368,7 @@ struct BrokenEgg: Sendable {
         let base = Num.smoothstep(0.55, 1, s)
         color += Self.yolkColor.power(1.6) * (0.9 * base * (1 - direct))
         // The wet membrane mirrors the studio.
-        color += RGB(gray: 0.7 * Water.reflection(normal, roughness: 0.12))
+        color += RGB(gray: 0.5 * Water.reflection(normal, roughness: 0.16) + 2.5 * Water.glint(normal))
         return color
     }
 

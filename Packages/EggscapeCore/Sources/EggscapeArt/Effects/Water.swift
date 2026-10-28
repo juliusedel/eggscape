@@ -19,19 +19,66 @@ enum Water {
     /// Light focused by the liquid: the warm white of the soft box.
     static let causticTint = RGB(1, 0.995, 0.97)
 
-    /// Scene radiance mirrored by a liquid surface with normal `normal`.
-    static func reflection(_ normal: Vec3, roughness: Double) -> Double {
+    /// Scene radiance mirrored by a liquid surface with normal `normal`; `boost` scales the soft boxes.
+    static func reflection(_ normal: Vec3, roughness: Double, boost: Double = coreBoost) -> Double {
         let cosine = max(normal.z, 1e-4)
         let mirror = Vec3.up.reflected(about: normal)
         let blur = Studio.blur(roughness: roughness)
         let fresnel = Shading.fresnel(reflectance, cosine: cosine, roughness: roughness)
         let boxes = Studio.key.radiance(mirror, blur: blur) + Studio.fill.radiance(mirror, blur: blur)
-        return fresnel * (Studio.ambient(mirror, blur: blur) + coreBoost * boxes)
+        return fresnel * (Studio.ambient(mirror, blur: blur) + boost * boxes)
+    }
+
+    /// The tiny, sharp glint of the soft box's hottest spot (about 2° across), 0 ... 1.
+    static func glint(_ normal: Vec3) -> Double {
+        let mirror = Vec3.up.reflected(about: normal)
+        // 1 − cos θ ≈ θ² / 2.
+        return exp(-(1 - mirror.dot(Studio.key.center)) / 0.0011)
     }
 
     /// The display value of that reflection: the opacity of white to lay over whatever is below.
-    static func highlight(_ normal: Vec3, roughness: Double) -> Double {
-        Film.curve(reflection(normal, roughness: roughness))
+    static func highlight(_ normal: Vec3, roughness: Double, boost: Double = coreBoost) -> Double {
+        Film.curve(reflection(normal, roughness: roughness, boost: boost))
+    }
+
+    /// The look of one point of a lens-shaped body of water (a drop, the crown of a splash) as a translucent layer.
+    ///
+    /// - Parameters:
+    ///   - normal: The surface normal.
+    ///   - rim: 0 in the middle of the body, 1 at its outline.
+    ///   - lit: 1 where the outline faces the key light, 0 on the far side.
+    ///   - line: Width of the contact line, as a fraction of the body's radius.
+    ///   - crescent: Strength of the dark crescent on the lit side.
+    ///   - caustic: Strength of the focused light on the far side.
+    ///   - outline: Strength of the contact line (tiny drops have none worth drawing).
+    static func layer(
+        normal: Vec3,
+        rim s: Double,
+        lit: Double,
+        line: Double,
+        crescent: Double,
+        caustic: Double,
+        outline: Double = 1
+    ) -> Premultiplied {
+        var layer = Premultiplied.clear
+        // The lit half lets less light reach the surface below it (it is bent towards the far half).
+        layer.over(refractionTint, alpha: 0.12 * lit * s)
+        // Caustic: the drop focuses the key light into a bright crescent near its far edge.
+        let far = (1 - lit) * (1 - lit)
+        let ring = (s - 0.7) / 0.15
+        layer.over(causticTint, alpha: caustic * exp(-ring * ring) * far)
+        // Dark crescent where the steep, lit side refracts the dark room.
+        let dark = Num.smoothstep(0.35, 0.95, s) * (0.15 + 0.85 * pow(lit, 1.2))
+        layer.over(refractionTint, alpha: crescent * dark)
+        // Contact line around the outline, and a sliver of refracted light just inside the far edge.
+        let edge = (1 - s) / line
+        layer.over(refractionTint, alpha: 0.32 * outline * exp(-edge * edge))
+        let sliver = edge - 2.2
+        layer.over(causticTint, alpha: 0.5 * caustic * (1 - lit) * exp(-sliver * sliver))
+        // Mirror reflection of the studio: the soft box as a soft window, and its hot core as a crisp glint.
+        layer.over(.white, alpha: 0.8 * highlight(normal, roughness: 0.05, boost: 3))
+        layer.over(.white, alpha: 0.95 * glint(normal))
+        return layer
     }
 }
 
@@ -101,20 +148,15 @@ struct Droplet: Sendable {
         let pixels = max(outline / pixel, 1)
         let line = max(1.1 / pixels, 0.07)
 
-        var layer = Premultiplied.clear
-        // The lit half lets less light reach the surface below it (it is bent towards the far half).
-        layer.over(Water.refractionTint, alpha: 0.1 * lit * s)
-        // Caustic: the drop focuses the key light into a bright crescent on the far side.
-        let focus = exp(-pow((s - 0.6) / 0.24, 2)) * pow(1 - lit, 1.6)
-        layer.over(Water.causticTint, alpha: caustic * focus)
-        // Dark crescent where the steep, lit side refracts the dark room.
-        let crescent = Num.smoothstep(0.5, 0.96, s) * (0.25 + 0.75 * pow(lit, 0.8))
-        layer.over(Water.refractionTint, alpha: rim * crescent)
-        // Contact line around the outline, and a glint of refracted light on the far edge.
-        layer.over(Water.refractionTint, alpha: 0.45 * exp(-pow((1 - s) / line, 2)))
-        layer.over(Water.causticTint, alpha: 0.5 * caustic * (1 - lit) * exp(-pow((1 - s - 2.2 * line) / line, 2)))
-        // Mirror reflection of the studio: the soft box as a small window towards the light.
-        layer.over(.white, alpha: Water.highlight(normal, roughness: 0.035))
+        let layer = Water.layer(
+            normal: normal,
+            rim: s,
+            lit: lit,
+            line: line,
+            crescent: rim,
+            caustic: caustic,
+            outline: Num.smoothstep(1.5, 8, pixels)
+        )
         return (layer * coverage, distance)
     }
 }

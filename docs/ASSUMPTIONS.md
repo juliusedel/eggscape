@@ -58,6 +58,10 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Art tournament.** Three agents built competing procedural renderers. All three eggs matched the reference photo
   closely; candidate A (physically based: exact surface of revolution, analytic studio lighting) won because its skin
   system was complete. The spoon, the broken egg and the weather effects were finished afterwards on top of it.
+- **App icon** is rendered from the same spoon and brown egg as the game (`eggscape-art icon`, `make icon`), laid
+  diagonally on the warm yolk gradient of the first, hand-drawn icon. The egg is drawn a little larger than in the game
+  (0.8 instead of 0.62 bowl units) so it still reads at home-screen size. The launch screen color is the system's
+  grouped background (light and dark), which the first tab shows.
 - **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
 - **Game Center.** Sign-in starts when the Bestenliste tab opens or a run ends with a score; scores reached while

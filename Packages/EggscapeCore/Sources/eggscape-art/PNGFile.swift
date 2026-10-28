@@ -17,7 +17,9 @@ enum ToolError: Error, CustomStringConvertible {
 
 /// Writes `PixelImage`s as PNG through ImageIO (which stores straight alpha, as PNG requires).
 enum PNGFile {
-    static func cgImage(_ image: PixelImage) throws -> CGImage {
+    /// With `opaque`, the alpha bytes are ignored and the PNG has no alpha channel (for images that are opaque anyway,
+    /// such as the app icon).
+    static func cgImage(_ image: PixelImage, opaque: Bool = false) throws -> CGImage {
         guard
             let provider = CGDataProvider(data: Data(image.rgba) as CFData),
             let space = CGColorSpace(name: CGColorSpace.sRGB),
@@ -28,7 +30,9 @@ enum PNGFile {
                 bitsPerPixel: 32,
                 bytesPerRow: image.width * 4,
                 space: space,
-                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                bitmapInfo: CGBitmapInfo(
+                    rawValue: (opaque ? CGImageAlphaInfo.noneSkipLast : CGImageAlphaInfo.premultipliedLast).rawValue
+                ),
                 provider: provider,
                 decode: nil,
                 shouldInterpolate: false,
@@ -40,8 +44,8 @@ enum PNGFile {
         return cgImage
     }
 
-    static func write(_ image: PixelImage, to url: URL) throws {
-        let cgImage = try cgImage(image)
+    static func write(_ image: PixelImage, to url: URL, opaque: Bool = false) throws {
+        let cgImage = try cgImage(image, opaque: opaque)
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) else {
             throw ToolError.imageEncoding(url.path)
         }

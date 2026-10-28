@@ -6,11 +6,13 @@ import Foundation
 //
 //     eggscape-art preview <dir> [sheet ...]   preview sheets (frame-white, egg-studio, skins, broken, effects)
 //     eggscape-art assets <Assets.xcassets>    Spoon, SpoonShadow and SpoonHighlight image sets (@3x)
+//     eggscape-art icon <AppIcon.appiconset>   the 1024 × 1024 app icon
 //     eggscape-art timings                     render times of the expensive textures
 
 let usage = """
 usage: eggscape-art preview <dir> [sheet ...]
        eggscape-art assets <Assets.xcassets>
+       eggscape-art icon <AppIcon.appiconset>
        eggscape-art timings
 sheets: \(Previews.sheets.joined(separator: ", "))
 """
@@ -56,6 +58,11 @@ do {
         let catalog = URL(fileURLWithPath: arguments[1], isDirectory: true)
         try AssetCatalog.write(to: catalog)
         print("wrote Spoon, SpoonShadow and SpoonHighlight to \(catalog.path)")
+    case "icon":
+        guard arguments.count == 2 else { fail(usage) }
+        let iconSet = URL(fileURLWithPath: arguments[1], isDirectory: true)
+        try AppIcon.write(to: iconSet)
+        print("wrote \(iconSet.appendingPathComponent("AppIcon.png").path)")
     case "timings":
         let egg = median(runs: 9) { _ = EggArt.egg(Samples.farmBrown, width: 320) }
         let broken = median(runs: 5) { _ = EggArt.broken(Samples.farmBrown, width: 400) }

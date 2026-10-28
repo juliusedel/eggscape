@@ -57,8 +57,8 @@ strings: build ## Check that every UI string has an English translation
 art: ## Re-render the spoon images into the asset catalog (procedural, see EggscapeArt)
 	swift run -c release --package-path $(CORE) eggscape-art assets App/Resources/Assets.xcassets
 
-icon: ## Regenerate the app icon
-	swift scripts/make_icon.swift App/Resources/Assets.xcassets/AppIcon.appiconset
+icon: ## Re-render the app icon from the game's spoon and egg (procedural, see EggscapeArt)
+	swift run -c release --package-path $(CORE) eggscape-art icon App/Resources/Assets.xcassets/AppIcon.appiconset
 
 sounds: ## Re-synthesize the sound effects
 	swift scripts/make_sounds.swift App/Resources/Sounds

@@ -190,9 +190,11 @@ final class NearbySession: Identifiable {
         joinFailure = reason
     }
 
-    /// Nearby joiner: looks for rooms again, with a fresh list.
+    /// Nearby joiner: looks for rooms again, with a fresh list. The clock round trips go too, because the next host's
+    /// clock has a zero point of its own.
     private func returnToRoomList() {
         pinger?.cancel()
+        clock.reset()
         hostPeer = nil
         joiningRoomID = nil
         stage = .browsing

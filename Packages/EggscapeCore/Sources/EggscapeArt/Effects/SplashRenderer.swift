@@ -29,7 +29,7 @@ enum SplashRenderer {
         var random = SplitMix64(seed: Hash.seed(seed, 0x5A01))
         let crown = Crown(
             radius: random.uniform(0.12 ... 0.15),
-            width: random.uniform(0.024 ... 0.032),
+            width: random.uniform(0.017 ... 0.023),
             noise: Noise(seed: Hash.seed(seed, 0x5A02))
         )
         var drops: [Droplet] = []
@@ -70,7 +70,7 @@ enum SplashRenderer {
             let length = p.length
             if length < crown.radius {
                 let ripple = sin(length / crown.radius * 2.6 * .pi)
-                color.over(Water.refractionTint, alpha: 0.05 + 0.05 * max(ripple, 0))
+                color.over(Water.refractionTint, alpha: 0.03 + 0.04 * max(ripple, 0))
                 color.over(Water.causticTint, alpha: 0.12 * max(-ripple, 0) * (1 - length / crown.radius))
             }
             let (distance, across) = crown.band(p)
@@ -91,7 +91,7 @@ enum SplashRenderer {
                     line: 0.22,
                     crescent: 0.6,
                     caustic: 0.6,
-                    outline: 0.5
+                    outline: 0.2
                 )
                 color.over(ring * coverage)
             }

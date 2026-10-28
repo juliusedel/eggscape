@@ -36,6 +36,22 @@ struct RunOutcome: Equatable {
     var meters: Double
     var eggsLost: Int
     var isPersonalBest: Bool
+    /// Coins earned, `nil` where runs earn nothing (hot-seat turns).
+    var reward: CoinReward?
+}
+
+/// What a run counts towards.
+struct RunRules {
+    /// Personal bests and Game Center leaderboards.
+    var countsAsRecord: Bool
+    /// Coins for the shop.
+    var earnsCoins: Bool
+
+    static let singlePlayer = RunRules(countsAsRecord: true, earnsCoins: true)
+    /// Several people share the phone, so nobody's records or coins change.
+    static let hotSeat = RunRules(countsAsRecord: false, earnsCoins: false)
+    /// Coins are credited once the race results (with the place) are known.
+    static let race = RunRules(countsAsRecord: false, earnsCoins: false)
 }
 
 /// How a multiplayer race plugs into a run: a shared start time and callbacks that report this player's race.
@@ -81,6 +97,7 @@ final class RunSession: Identifiable {
 
     let setup: RunSetup
     let scene: GameScene
+    /// What the player chose; the view falls back to white when the camera is unavailable.
     let background: BackgroundMode
     /// No motion sensors (Simulator): the player drags the egg with a finger instead.
     let usesTouchSteering: Bool
@@ -98,40 +115,32 @@ final class RunSession: Identifiable {
     /// A short message about the other racers, e.g. "Mia hat ein Ei verloren".
     private(set) var toast: String?
 
-    @ObservationIgnored private let motion: MotionInput
-    @ObservationIgnored private let settings: SettingsStore
-    @ObservationIgnored private let haptics: Haptics
-    @ObservationIgnored private let sounds: SoundPlayer
-    /// `nil` for runs that must not count as personal bests (hot-seat turns).
-    @ObservationIgnored private let records: RecordsStore?
+    @ObservationIgnored private let services: AppServices
+    @ObservationIgnored private let rules: RunRules
     @ObservationIgnored private var calibration: TiltCalibration
     @ObservationIgnored private var countdownTask: Task<Void, Never>?
     @ObservationIgnored private var endTask: Task<Void, Never>?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
 
-    init(
-        setup: RunSetup,
-        motion: MotionInput,
-        settings: SettingsStore,
-        records: RecordsStore?,
-        haptics: Haptics,
-        sounds: SoundPlayer,
-        race: RaceHooks? = nil
-    ) {
+    init(setup: RunSetup, services: AppServices, rules: RunRules, race: RaceHooks? = nil) {
         self.setup = setup
+        self.services = services
+        self.rules = rules
         self.race = race
         // Racers calibrate in the lobby and go straight to the shared countdown.
         phase = race == nil ? .calibrating : .countdown(3)
-        self.motion = motion
-        self.settings = settings
-        self.records = records
-        self.haptics = haptics
-        self.sounds = sounds
-        background = settings.background
-        calibration = TiltCalibration(zero: settings.calibrationZero ?? .zero, sensitivity: settings.sensitivity)
-        usesTouchSteering = !motion.isAvailable
+        background = services.settings.background
+        calibration = TiltCalibration(
+            zero: services.settings.calibrationZero ?? .zero,
+            sensitivity: services.settings.sensitivity
+        )
+        usesTouchSteering = !services.motion.isAvailable
         let engine = RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed)
-        scene = GameScene(engine: engine)
+        scene = GameScene(
+            engine: engine,
+            appearance: services.wallet.equippedSkin.appearance,
+            reduceMotion: UIAccessibility.isReduceMotionEnabled
+        )
         hud = scene.hudSnapshot
         scene.usesTouchSteering = usesTouchSteering
         scene.input = { [weak self] in self?.currentInput ?? .level }
@@ -140,17 +149,25 @@ final class RunSession: Identifiable {
             self?.hud = snapshot
             self?.race?.onProgress(snapshot.meters, snapshot.eggsLeft)
         }
-        scene.onFrame = { [weak self] engine in self?.haptics.updateDanger(rimDistance: engine.egg.rimDistance) }
+        scene.onFrame = { [weak self] engine in
+            self?.services.haptics.updateDanger(rimDistance: engine.egg.rimDistance)
+            self?.updateWeatherSounds(engine.weather)
+        }
     }
 
     /// Raw device tilt for the calibration screen's spirit level, `nil` without motion sensors.
     var rawTilt: SIMD2<Double>? {
-        motion.tilt
+        services.motion.tilt
     }
 
     /// The tilt the egg currently feels.
     var calibratedTilt: SIMD2<Double> {
-        motion.tilt.map(calibration.apply) ?? .zero
+        services.motion.tilt.map(calibration.apply) ?? .zero
+    }
+
+    /// Pausing would stop only this phone's race, so multiplayer runs cannot be paused.
+    var allowsPause: Bool {
+        race == nil
     }
 
     private var currentInput: RunEngine.Input {
@@ -160,9 +177,9 @@ final class RunSession: Identifiable {
     // MARK: Lifecycle
 
     func start() {
-        motion.start()
-        haptics.prepare()
-        sounds.prepare()
+        services.motion.start()
+        services.haptics.prepare()
+        services.sounds.prepare()
         UIApplication.shared.isIdleTimerDisabled = phase.keepsScreenAwake
         // Multiplayer racers calibrated in the lobby; everybody counts down to the same moment.
         if let race {
@@ -170,9 +187,55 @@ final class RunSession: Identifiable {
         }
     }
 
-    /// Pausing would stop only this phone's race, so multiplayer runs cannot be paused.
-    var allowsPause: Bool {
-        race == nil
+    func stop() {
+        countdownTask?.cancel()
+        endTask?.cancel()
+        toastTask?.cancel()
+        services.motion.stop()
+        services.haptics.shutDown()
+        services.sounds.stopLoops()
+        scene.mode = .ended
+        UIApplication.shared.isIdleTimerDisabled = false
+    }
+
+    /// Stores the current pose as level and starts (or resumes) with a countdown.
+    func calibrate() {
+        calibrateInPlace()
+        startCountdown(until: .now + .seconds(3))
+    }
+
+    /// The current pose becomes level immediately (also mid-race in multiplayer, where there is no countdown).
+    func calibrateInPlace() {
+        if let raw = services.motion.tilt {
+            calibration.calibrate(at: raw)
+            services.settings.calibrationZero = raw
+        }
+    }
+
+    func pause() {
+        guard allowsPause else { return }
+        switch phase {
+        case .running, .countdown:
+            countdownTask?.cancel()
+            isSprinting = false
+            phase = .paused
+            scene.mode = .paused
+            services.haptics.stopDanger()
+            services.sounds.stopLoops()
+        case .calibrating, .paused, .finished:
+            break
+        }
+    }
+
+    func resume() {
+        guard phase == .paused else { return }
+        startCountdown(until: .now + .seconds(3))
+    }
+
+    func recalibrate() {
+        guard phase == .paused else { return }
+        phase = .calibrating
+        scene.mode = .preview
     }
 
     /// Shows a short note about another racer.
@@ -186,63 +249,6 @@ final class RunSession: Identifiable {
             }
             self?.toast = nil
         }
-    }
-
-    /// Mid-race recalibration without a countdown (multiplayer): the current pose becomes level immediately.
-    func calibrateInPlace() {
-        if let raw = motion.tilt {
-            calibration.calibrate(at: raw)
-            settings.calibrationZero = raw
-        }
-    }
-
-    func stop() {
-        countdownTask?.cancel()
-        endTask?.cancel()
-        motion.stop()
-        haptics.shutDown()
-        sounds.stopLoops()
-        scene.mode = .ended
-        UIApplication.shared.isIdleTimerDisabled = false
-    }
-
-    /// Stores the current pose as level and starts (or resumes) with a countdown.
-    func calibrate() {
-        if let raw = motion.tilt {
-            calibration.calibrate(at: raw)
-            settings.calibrationZero = raw
-        }
-        startCountdown()
-    }
-
-    func pause() {
-        guard allowsPause else { return }
-        switch phase {
-        case .running, .countdown:
-            countdownTask?.cancel()
-            isSprinting = false
-            phase = .paused
-            scene.mode = .paused
-            haptics.stopDanger()
-            sounds.stopLoops()
-        case .calibrating, .paused, .finished:
-            break
-        }
-    }
-
-    func resume() {
-        guard phase == .paused else { return }
-        startCountdown()
-    }
-
-    func recalibrate() {
-        guard phase == .paused else { return }
-        phase = .calibrating
-        scene.mode = .preview
-    }
-
-    private func startCountdown() {
-        startCountdown(until: .now + .seconds(3))
     }
 
     /// Counts "3, 2, 1" down to `start`, then runs. Waiting for the clock instead of sleeping one second three times
@@ -261,14 +267,14 @@ final class RunSession: Identifiable {
                 if count < announced, count <= 3 {
                     announced = count
                     self?.phase = .countdown(count)
-                    self?.sounds.play(.beep)
+                    self?.services.sounds.play(.beep)
                 }
                 try? await Task.sleep(for: .milliseconds(20))
                 if Task.isCancelled {
                     return
                 }
             }
-            self?.sounds.play(.go)
+            self?.services.sounds.play(.go)
             self?.phase = .running
             self?.scene.mode = .running
         }
@@ -277,6 +283,8 @@ final class RunSession: Identifiable {
     // MARK: Events
 
     private func handle(_ events: [RunEvent]) {
+        let haptics = services.haptics
+        let sounds = services.sounds
         for event in events {
             switch event {
             case let .footstep(sprinting):
@@ -294,7 +302,7 @@ final class RunSession: Identifiable {
                 sounds.play(.crack)
                 Task { [weak self] in
                     try? await Task.sleep(for: .seconds(0.3))
-                    self?.sounds.play(.splat)
+                    self?.services.sounds.play(.splat)
                 }
             case .newEgg:
                 sounds.play(.plop)
@@ -310,33 +318,67 @@ final class RunSession: Identifiable {
         }
     }
 
+    /// Rain and wind loops follow the weather where the runner is.
+    private func updateWeatherSounds(_ weather: WeatherSystem) {
+        services.sounds.setLoop(.rain, volume: Float(0.5 * weather.mix.rain))
+        services.sounds.setLoop(
+            .wind,
+            volume: Float(0.15 + 0.5 * weather.gustStrength) * (weather.mix.wind > 0 ? 1 : 0)
+        )
+    }
+
     private func end() {
         scene.mode = .ended
         isSprinting = false
-        haptics.stopDanger()
-        sounds.stopLoops()
+        services.haptics.stopDanger()
+        services.sounds.stopLoops()
         let engine = scene.engine
         let finished = engine.phase == .finished
+        // In a race the clock keeps running for everybody, even while this phone was in the background.
+        let time = race.map { (ContinuousClock.now - $0.startAt).seconds } ?? engine.elapsed
+
         var isPersonalBest = false
-        if let records {
+        if rules.countsAsRecord {
             switch setup.mode {
             case let .timeTrial(distance, weather) where finished:
-                isPersonalBest = records.recordTime(engine.elapsed, distance: distance, weather: weather)
+                isPersonalBest = services.records.recordTime(time, distance: distance, weather: weather)
             case .endless:
-                isPersonalBest = records.recordEndless(meters: engine.meters)
+                isPersonalBest = services.records.recordEndless(meters: engine.meters)
             case .timeTrial:
                 break
             }
+            if let score = LeaderboardScore(
+                course: setup.course,
+                finished: finished,
+                time: time,
+                meters: engine.meters
+            ) {
+                services.gameCenter.submit(score)
+            }
         }
-        // In a race the clock keeps running for everybody, even while this phone was in the background.
-        let raceTime = race.map { (ContinuousClock.now - $0.startAt).seconds }
+
+        var reward: CoinReward?
+        if rules.earnsCoins {
+            let earned = CoinRewards.reward(for: RewardInput(
+                course: setup.course,
+                weather: setup.mode.weather,
+                finished: finished,
+                meters: engine.meters,
+                eggsLost: engine.eggsLost,
+                isPersonalBest: isPersonalBest
+            ))
+            services.wallet.earn(earned)
+            reward = earned
+        }
+
         let outcome = RunOutcome(
             mode: setup.mode,
             finished: finished,
-            time: raceTime ?? engine.elapsed,
+            time: time,
             meters: engine.meters,
             eggsLost: engine.eggsLost,
-            isPersonalBest: isPersonalBest
+            isPersonalBest: isPersonalBest,
+            reward: reward
         )
         hud = scene.hudSnapshot
         race?.onFinished(outcome)

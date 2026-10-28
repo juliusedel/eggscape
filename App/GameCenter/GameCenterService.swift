@@ -1,3 +1,4 @@
+import EggscapeCore
 import GameKit
 import Observation
 import os
@@ -40,9 +41,9 @@ final class GameCenterService {
     }
 
     private(set) var status = Status.signedOut
+    /// Called after every successful sign-in, e.g. to submit bests reached while signed out.
+    @ObservationIgnored var onSignIn: () -> Void = {}
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "gamecenter")
-    /// Best scores reached before signing in, submitted once signed in.
-    @ObservationIgnored private var pendingScores: [String: Int] = [:]
 
     var isSignedIn: Bool {
         if case .signedIn = status {
@@ -77,32 +78,30 @@ final class GameCenterService {
         }
         let player = GKLocalPlayer.local
         if player.isAuthenticated {
+            let wasSignedIn = isSignedIn
             status = .signedIn(name: player.displayName)
-            submitPendingScores()
+            if !wasSignedIn {
+                onSignIn()
+            }
         } else {
             status = .unavailable(errorMessage ?? String(localized: "Game Center ist nicht verfügbar."))
         }
     }
 
-    /// Submits a score; remembers the best one per leaderboard if the player is not signed in yet.
-    func submit(score: Int, to leaderboardID: String, lowerIsBetter: Bool) {
-        guard isSignedIn else {
-            let previous = pendingScores[leaderboardID]
-            if previous.map({ lowerIsBetter ? score < $0 : score > $0 }) ?? true {
-                pendingScores[leaderboardID] = score
-            }
-            return
-        }
+    /// Submits a score if the player is signed in; Game Center keeps the best one. Bests reached while signed out are
+    /// submitted from the personal records after signing in.
+    func submit(_ score: LeaderboardScore) {
+        guard isSignedIn else { return }
         Task {
             do {
                 try await GKLeaderboard.submitScore(
-                    score,
+                    score.value,
                     context: 0,
                     player: GKLocalPlayer.local,
-                    leaderboardIDs: [leaderboardID]
+                    leaderboardIDs: [score.leaderboard.rawValue]
                 )
             } catch {
-                logger.error("Submitting to \(leaderboardID) failed: \(error.localizedDescription)")
+                logger.error("Submitting to \(score.leaderboard.rawValue) failed: \(error.localizedDescription)")
             }
         }
     }
@@ -127,14 +126,6 @@ final class GameCenterService {
     /// Opens Apple's Game Center leaderboards.
     func showGameCenter() {
         GKAccessPoint.shared.trigger(state: .leaderboards) {}
-    }
-
-    private func submitPendingScores() {
-        let pending = pendingScores
-        pendingScores = [:]
-        for (leaderboardID, score) in pending {
-            submit(score: score, to: leaderboardID, lowerIsBetter: false)
-        }
     }
 
     private static func entry(_ entry: GKLeaderboard.Entry) -> Entry {

@@ -46,6 +46,31 @@ final class RecordsStore {
         return true
     }
 
+    /// The best score per Game Center leaderboard: the fastest time per distance in any weather, and the longest
+    /// endless run.
+    var leaderboardScores: [LeaderboardScore] {
+        var scores: [LeaderboardScore] = []
+        for distance in RaceDistance.allCases {
+            let times = WeatherOption.choices.compactMap { bestTime(distance: distance, weather: $0) }
+            if let best = times.min(),
+               let score = LeaderboardScore(
+                   course: .timeTrial(distance),
+                   finished: true,
+                   time: best,
+                   meters: distance.meters
+               )
+            {
+                scores.append(score)
+            }
+        }
+        if let bestEndless,
+           let score = LeaderboardScore(course: .endless, finished: false, time: 0, meters: bestEndless)
+        {
+            scores.append(score)
+        }
+        return scores
+    }
+
     func reset() {
         defaults.removeObject(forKey: Key.times)
         defaults.removeObject(forKey: Key.endless)

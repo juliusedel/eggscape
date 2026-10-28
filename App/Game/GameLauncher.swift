@@ -58,19 +58,19 @@ final class GameLauncher {
     }
 
     func start(_ mode: RunMode) {
-        flow = .single(SingleRunFlow(session: makeSession(Self.newSetup(mode), countsAsRecord: true)))
+        flow = .single(SingleRunFlow(session: makeSession(Self.newSetup(mode), rules: .singlePlayer)))
     }
 
     /// "Nochmal": same mode, new weather and footsteps.
     func restart() {
         guard case let .single(single) = flow else { return }
-        single.session = makeSession(Self.newSetup(single.session.setup.mode), countsAsRecord: true)
+        single.session = makeSession(Self.newSetup(single.session.setup.mode), rules: .singlePlayer)
     }
 
     func startHotSeat(players: [String], distance: RaceDistance, weather: WeatherOption) {
         let setup = Self.newSetup(.timeTrial(distance, weather))
         flow = .hotSeat(HotSeatSession(players: players, setup: setup) { [unowned self] setup in
-            makeSession(setup, countsAsRecord: false)
+            makeSession(setup, rules: .hotSeat)
         })
     }
 
@@ -78,15 +78,8 @@ final class GameLauncher {
         flow = nil
     }
 
-    private func makeSession(_ setup: RunSetup, countsAsRecord: Bool) -> RunSession {
-        RunSession(
-            setup: setup,
-            motion: services.motion,
-            settings: services.settings,
-            records: countsAsRecord ? services.records : nil,
-            haptics: services.haptics,
-            sounds: services.sounds
-        )
+    private func makeSession(_ setup: RunSetup, rules: RunRules) -> RunSession {
+        RunSession(setup: setup, services: services, rules: rules)
     }
 
     private static func newSetup(_ mode: RunMode) -> RunSetup {

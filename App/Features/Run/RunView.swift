@@ -14,7 +14,7 @@ struct RunView<Results: View>: View {
 
     var body: some View {
         ZStack {
-            if session.background == .camera {
+            if wantsCamera {
                 CameraBackgroundView(feed: services.camera)
                     .ignoresSafeArea()
             }
@@ -32,8 +32,20 @@ struct RunView<Results: View>: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
-        .onAppear { session.start() }
-        .onDisappear { session.stop() }
+        .onAppear {
+            session.start()
+            if wantsCamera {
+                services.camera.start()
+            }
+            session.scene.showsCamera = showsCamera
+        }
+        .onDisappear {
+            session.stop()
+            services.camera.stop()
+        }
+        .onChange(of: services.camera.status) {
+            session.scene.showsCamera = showsCamera
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active {
                 session.pause()
@@ -44,6 +56,16 @@ struct RunView<Results: View>: View {
                 showsGo = true
             }
         }
+    }
+
+    /// The player chose the camera and it is not known to be unavailable.
+    private var wantsCamera: Bool {
+        session.background == .camera && services.camera.isUsable
+    }
+
+    /// The scene turns transparent only once the camera really delivers pictures; until then it stays white.
+    private var showsCamera: Bool {
+        session.background == .camera && services.camera.status == .running
     }
 
     @ViewBuilder

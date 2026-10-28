@@ -36,6 +36,19 @@ struct RunResultsView: View {
                 }
             }
             .font(.title3)
+            if let reward = outcome.reward, reward.total > 0 {
+                HStack(spacing: 8) {
+                    CoinIcon(size: 26)
+                    Text("+\(reward.total) Münzen")
+                        .font(.title3.bold())
+                        .monospacedDigit()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.orange.opacity(0.14), in: .capsule)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("results.coins")
+            }
             HStack(spacing: 12) {
                 Button(action: onDone) {
                     Text("Fertig").frame(maxWidth: .infinity, minHeight: 32)

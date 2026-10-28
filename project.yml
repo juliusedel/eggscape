@@ -39,6 +39,9 @@ targets:
       - path: App
     dependencies:
       - package: EggscapeCore
+        product: EggscapeCore
+      - package: EggscapeCore
+        product: EggscapeArt
     settings:
       base:
         PRODUCT_NAME: Eggscape

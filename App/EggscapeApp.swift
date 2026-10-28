@@ -8,6 +8,7 @@ struct EggscapeApp: App {
         WindowGroup {
             RootView()
                 .environment(services)
+                .task { services.store.start() }
         }
     }
 
@@ -17,7 +18,8 @@ struct EggscapeApp: App {
         let defaults = LaunchOptions.ephemeralDefaults()
         let services = AppServices(
             settings: SettingsStore(defaults: defaults),
-            records: RecordsStore(defaults: defaults)
+            records: RecordsStore(defaults: defaults),
+            wallet: WalletStore(defaults: defaults)
         )
         services.settings.hasSeenTutorial = true
         return services

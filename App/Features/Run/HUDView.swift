@@ -84,7 +84,12 @@ struct HUDView: View {
                 .accessibilityLabel(Text("Zeit \(RaceFormat.time(hud.elapsed))"))
             }
             .font(.headline.monospacedDigit())
-            EggCounter(left: hud.eggsLeft, total: hud.eggsTotal)
+            HStack(spacing: 14) {
+                EggCounter(left: hud.eggsLeft, total: hud.eggsTotal)
+                if hud.weather.kind != .clear {
+                    WeatherBadge(hud: hud)
+                }
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -238,5 +243,40 @@ private struct RaceMenu: View {
         .floatingPanel()
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// The current weather: icon, strength in three steps and, with wind, an arrow that shows the gust.
+struct WeatherBadge: View {
+    let hud: HUDSnapshot
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: hud.weather.kind.symbolName)
+                .symbolRenderingMode(.multicolor)
+            HStack(spacing: 2) {
+                ForEach(0 ..< 3, id: \.self) { step in
+                    Capsule()
+                        .fill(Double(step) < level ? Color.primary : Color.primary.opacity(0.2))
+                        .frame(width: 4, height: 8 + CGFloat(step) * 3)
+                }
+            }
+            if hud.weather.kind == .wind || hud.weather.kind == .storm {
+                Image(systemName: hud.wind >= 0 ? "arrow.right" : "arrow.left")
+                    .font(.subheadline.weight(.bold))
+                    .opacity(0.35 + 0.65 * hud.gust)
+                    .scaleEffect(0.8 + 0.4 * hud.gust)
+                    .animation(.easeOut(duration: 0.3), value: hud.gust)
+            }
+        }
+        .font(.subheadline)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(hud.weather.kind.title))
+        .accessibilityValue(Text("Stärke \(Int(level)) von 3"))
+        .accessibilityIdentifier("hud.weather")
+    }
+
+    private var level: Double {
+        max(1, (hud.weather.intensity * 3).rounded(.up))
     }
 }

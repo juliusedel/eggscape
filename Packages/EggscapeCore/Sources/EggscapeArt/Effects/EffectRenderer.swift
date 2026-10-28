@@ -12,7 +12,7 @@ enum EffectRenderer {
     /// A water drop lying on a surface; units: the image is 1 wide, centered.
     static func raindrop(diameter: Int, seed: UInt64) -> PixelImage {
         let size = max(diameter, 1)
-        var random = SplitMix64(seed: Hash.seed(seed, 0xD0_01))
+        var random = SplitMix64(seed: Hash.seed(seed, 0xD001))
         let axis = random.uniform(0 ... .pi)
         // Shifted towards the light so the shadow on the far side fits into the image.
         let drop = Droplet(

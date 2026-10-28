@@ -50,7 +50,7 @@ enum LeafRenderer {
         let normalization: Double
 
         init(seed: UInt64) {
-            var random = SplitMix64(seed: Hash.seed(seed, 0x1E_AF))
+            var random = SplitMix64(seed: Hash.seed(seed, 0x1EAF))
             species = LeafRenderer.species[random.index(below: LeafRenderer.species.count)]
             base = 0.17
             tip = 0.985
@@ -67,7 +67,7 @@ enum LeafRenderer {
             edgeColor = main.mixed(with: LeafRenderer.palette[later], random.uniform(0.3 ... 0.8))
             blotchColor = main.mixed(with: LeafRenderer.palette[max(index - 1, 0)], random.uniform(0.2 ... 0.6))
             dryness = Num.smoothstep(1.5, 4.5, season)
-            noise = Noise(seed: Hash.seed(seed, 0x1E_B0))
+            noise = Noise(seed: Hash.seed(seed, 0x1EB0))
             let peak = species.a / (species.a + species.b)
             normalization = 1 / (pow(peak, species.a) * pow(1 - peak, species.b))
         }

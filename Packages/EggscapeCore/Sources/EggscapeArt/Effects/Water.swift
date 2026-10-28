@@ -127,7 +127,11 @@ struct Droplet: Sendable {
     /// Opacity of the drop's soft shadow on the surface at `p` (outside the drop only).
     func shadow(_ p: Vec2) -> Double {
         let shifted = distance(p + Studio.keySide * (0.3 * radius))
-        return 0.16 * Shape2D.blurred(shifted, sigma: 0.2 * radius) * Num.smoothstep(-0.05 * radius, 0.1 * radius, distance(p))
+        return 0.16 * Shape2D.blurred(shifted, sigma: 0.2 * radius) * Num.smoothstep(
+            -0.05 * radius,
+            0.1 * radius,
+            distance(p)
+        )
     }
 
     /// The drop as a premultiplied layer at `p`, and the signed distance to its outline. `filter` is the width of

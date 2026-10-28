@@ -119,10 +119,10 @@ struct BrokenEgg: Sendable {
         self.appearance = appearance
         shape = EggShape(aspect: EggArt.aspect)
         material = ShellMaterial(appearance: appearance, shape: shape)
-        warp = Noise(seed: Hash.seed(appearance.seed, 0xB0_01))
-        ripple = Noise(seed: Hash.seed(appearance.seed, 0xB0_02))
-        fibers = Noise(seed: Hash.seed(appearance.seed, 0xB0_03))
-        var random = SplitMix64(seed: Hash.seed(appearance.seed, 0xB0_04))
+        warp = Noise(seed: Hash.seed(appearance.seed, 0xB001))
+        ripple = Noise(seed: Hash.seed(appearance.seed, 0xB002))
+        fibers = Noise(seed: Hash.seed(appearance.seed, 0xB003))
+        var random = SplitMix64(seed: Hash.seed(appearance.seed, 0xB004))
 
         let yolkCenter = Vec2(random.uniform(-0.06 ... 0.0), random.uniform(-0.015 ... 0.03))
         let yolkRadius = random.uniform(0.112 ... 0.122)
@@ -131,7 +131,12 @@ struct BrokenEgg: Sendable {
             radii: Vec2(yolkRadius, yolkRadius * random.uniform(0.9 ... 0.96)),
             angle: random.uniform(0 ... .pi),
             height: yolkRadius * 0.62,
-            wobble: (random.uniform(0.0 ... 0.02), random.uniform(0 ... 6.3), random.uniform(0.0 ... 0.012), random.uniform(0 ... 6.3))
+            wobble: (
+                random.uniform(0.0 ... 0.02),
+                random.uniform(0 ... 6.3),
+                random.uniform(0.0 ... 0.012),
+                random.uniform(0 ... 6.3)
+            )
         )
 
         // The puddle: a large central blob and lobes where the white ran out further, inside the image bounds.

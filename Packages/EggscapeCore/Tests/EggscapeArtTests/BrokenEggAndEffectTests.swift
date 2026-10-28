@@ -45,7 +45,8 @@ struct BrokenEggTests {
 
     @Test func eggWhiteIsTranslucentAroundTheYolk() {
         let image = EggArt.broken(SkinCatalog.classicWhite.appearance, width: 160)
-        let translucent = stride(from: 3, to: image.rgba.count, by: 4).count { image.rgba[$0] > 4 && image.rgba[$0] < 200 }
+        let translucent = stride(from: 3, to: image.rgba.count, by: 4)
+            .count { image.rgba[$0] > 4 && image.rgba[$0] < 200 }
         #expect(translucent > image.width * image.height / 20)
         #expect(coveredPixels(image, alpha: 250) > image.width * image.height / 30)
     }
@@ -125,7 +126,7 @@ struct EffectArtTests {
     }
 
     @Test func leafColorsRangeFromGreenToAutumn() {
-        // Average straight color of the opaque pixels, per seed.
+        /// Average straight color of the opaque pixels, per seed.
         func averageHue(_ image: PixelImage) -> (red: Double, green: Double) {
             var red = 0.0, green = 0.0, count = 0.0
             for index in stride(from: 0, to: image.rgba.count, by: 4) where image.rgba[index + 3] == 255 {

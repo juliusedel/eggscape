@@ -26,11 +26,11 @@ enum SplashRenderer {
 
     static func render(diameter: Int, seed: UInt64) -> PixelImage {
         let size = max(diameter, 1)
-        var random = SplitMix64(seed: Hash.seed(seed, 0x5A_01))
+        var random = SplitMix64(seed: Hash.seed(seed, 0x5A01))
         let crown = Crown(
             radius: random.uniform(0.12 ... 0.15),
             width: random.uniform(0.024 ... 0.032),
-            noise: Noise(seed: Hash.seed(seed, 0x5A_02))
+            noise: Noise(seed: Hash.seed(seed, 0x5A02))
         )
         var drops: [Droplet] = []
         let count = 16 + random.index(below: 9)

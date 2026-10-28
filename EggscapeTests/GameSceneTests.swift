@@ -40,4 +40,11 @@ struct GameSceneTests {
         #expect(framesWhileRunning > 0)
         #expect(framesAfterTheEnd == 0)
     }
+
+    @Test func vignetteIsRenderedOncePerSizeAtASixteenthOfIt() {
+        let size = CGSize(width: 402, height: 874)
+        let texture = GameScene.vignette(size: size)
+        #expect(texture.size() == CGSize(width: 26, height: 55))
+        #expect(GameScene.vignette(size: size) === texture)
+    }
 }

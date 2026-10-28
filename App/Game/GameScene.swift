@@ -135,6 +135,13 @@ final class GameScene: SKScene {
         backdrop.isHidden = showsCamera
         spoonShadow.isHidden = showsCamera
         weather?.isOverCamera = showsCamera
+        updateVignette()
+    }
+
+    /// The camera image hides the vignette, so it is only rendered for the white surface of a presented scene.
+    private func updateVignette() {
+        guard !showsCamera, view != nil, size.width > 0, size.height > 0 else { return }
+        backdrop.texture = Self.vignette(size: size)
     }
 
     // MARK: Layout
@@ -145,7 +152,7 @@ final class GameScene: SKScene {
         weather?.layOut(size: size)
         guard let artwork, size.width > 0, size.height > 0 else { return }
 
-        backdrop.texture = Self.vignette(size: size)
+        updateVignette()
         backdrop.size = size
         backdrop.position = CGPoint(x: size.width / 2, y: size.height / 2)
 
@@ -439,9 +446,21 @@ final class GameScene: SKScene {
 
     // MARK: Helpers
 
-    /// A barely visible radial vignette that keeps the white surface from looking flat.
-    private static func vignette(size: CGSize) -> SKTexture {
-        let image = UIGraphicsImageRenderer(size: size).image { context in
+    /// The vignette of the last scene size; every scene has the screen's size.
+    private static var vignetteCache: (size: CGSize, texture: SKTexture)?
+
+    /// A barely visible radial vignette that keeps the white surface from looking flat. The gradient is so smooth that
+    /// one pixel per 16 points, stretched by the sprite with SpriteKit's linear filtering, looks like a full render.
+    static func vignette(size: CGSize) -> SKTexture {
+        if let cached = vignetteCache, cached.size == size {
+            return cached.texture
+        }
+        let pixels = CGSize(width: (size.width / 16).rounded(.up), height: (size.height / 16).rounded(.up))
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: pixels, format: format).image { context in
+            // Drawn in points, so the gradient is round again once the sprite stretches the image to `size`.
+            context.cgContext.scaleBy(x: pixels.width / size.width, y: pixels.height / size.height)
             UIColor(red: 0.969, green: 0.965, blue: 0.953, alpha: 1).setFill()
             context.fill(CGRect(origin: .zero, size: size))
             let colors = [UIColor(white: 1, alpha: 0.55).cgColor, UIColor(white: 0.5, alpha: 0.09).cgColor] as CFArray
@@ -460,7 +479,9 @@ final class GameScene: SKScene {
                 )
             }
         }
-        return SKTexture(image: image)
+        let texture = SKTexture(image: image)
+        vignetteCache = (size, texture)
+        return texture
     }
 }
 

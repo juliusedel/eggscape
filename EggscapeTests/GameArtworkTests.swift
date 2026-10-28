@@ -27,4 +27,36 @@ struct GameArtworkTests {
         _ = artwork.egg(other, widthPixels: 24)
         #expect(artwork.egg(speckled, widthPixels: 24) !== texture)
     }
+
+    @Test func cacheFileNameIsTheSameOnEveryCall() {
+        let names = (0 ..< 50).compactMap { _ in
+            GameArtwork.cacheFileName(name: "egg", appearance: speckled, width: 320)
+        }
+        #expect(names.count == 50)
+        #expect(Set(names).count == 1)
+    }
+
+    @Test func cacheFileNameChangesWithEverythingThatChangesThePixels() {
+        var reseeded = speckled
+        reseeded.seed = 43
+        let name = GameArtwork.cacheFileName(name: "egg", appearance: speckled, width: 320)
+        #expect(name != nil)
+        #expect(GameArtwork.cacheFileName(name: "broken", appearance: speckled, width: 320) != name)
+        #expect(GameArtwork.cacheFileName(name: "egg", appearance: speckled, width: 321) != name)
+        #expect(GameArtwork.cacheFileName(name: "egg", appearance: reseeded, width: 320) != name)
+    }
+
+    @Test func removesOnlyTheCachesOfOtherRendererVersions() throws {
+        let fileManager = FileManager.default
+        let caches = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? fileManager.removeItem(at: caches) }
+        for name in ["EggArt-v1", "EggArt-v2", GameArtwork.cacheDirectoryName, "Other"] {
+            try fileManager.createDirectory(at: caches.appendingPathComponent(name), withIntermediateDirectories: true)
+        }
+
+        GameArtwork.removeStaleCaches(in: caches)
+
+        let left = try fileManager.contentsOfDirectory(atPath: caches.path)
+        #expect(Set(left) == [GameArtwork.cacheDirectoryName, "Other"])
+    }
 }

@@ -43,6 +43,12 @@ final class GameArtwork {
         if let artwork = instances[screenScale] {
             return artwork
         }
+        // The first artwork of a launch: the PNGs of older renderer versions are never read again.
+        if instances.isEmpty, let caches = cachesDirectory {
+            Task.detached(priority: .utility) {
+                removeStaleCaches(in: caches)
+            }
+        }
         let artwork = GameArtwork(screenScale: screenScale)
         instances[screenScale] = artwork
         return artwork
@@ -133,6 +139,15 @@ final class GameArtwork {
 
     // MARK: Disk cache
 
+    /// Bump when a renderer changes so cached PNGs are rendered again; the next launch deletes the old directory.
+    private nonisolated static let cacheVersion = 3
+    /// The directory in Caches that holds the current version's PNGs.
+    nonisolated static let cacheDirectoryName = "EggArt-v\(cacheVersion)"
+
+    private nonisolated static var cachesDirectory: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    }
+
     /// Rendered eggs are kept in Caches, keyed by everything that affects their pixels.
     private static func cachedImage(name: String, key: EggKey, render: () -> PixelImage) -> PixelImage {
         let url = cacheURL(name: name, key: key)
@@ -147,21 +162,40 @@ final class GameArtwork {
     }
 
     private static func cacheURL(name: String, key: EggKey) -> URL? {
-        guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
-              let encoded = try? JSONEncoder().encode(key.appearance)
+        guard let caches = cachesDirectory,
+              let fileName = cacheFileName(name: name, appearance: key.appearance, width: key.width)
         else { return nil }
-        // FNV-1a over the appearance's JSON: stable across launches, unlike `hashValue`.
+        let directory = caches.appendingPathComponent(cacheDirectoryName, isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent(fileName)
+    }
+
+    /// `name-width-hash.png`, hashing the appearance's JSON with FNV-1a. Sorted keys make the bytes, and so the name,
+    /// the same on every call and launch; the encoder's default key order is not, and neither is `hashValue`.
+    nonisolated static func cacheFileName(name: String, appearance: EggAppearance, width: Int) -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let encoded = try? encoder.encode(appearance) else { return nil }
         var digest: UInt64 = 0xCBF2_9CE4_8422_2325
         for byte in encoded {
             digest = (digest ^ UInt64(byte)) &* 0x100_0000_01B3
         }
-        let directory = caches.appendingPathComponent("EggArt-v\(cacheVersion)", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory.appendingPathComponent("\(name)-\(key.width)-\(String(digest, radix: 16)).png")
+        return "\(name)-\(width)-\(String(digest, radix: 16)).png"
     }
 
-    /// Bump when a renderer changes so cached PNGs are rendered again.
-    private static let cacheVersion = 2
+    /// Deletes the cache directories of other renderer versions in `caches`.
+    nonisolated static func removeStaleCaches(in caches: URL) {
+        let fileManager = FileManager.default
+        guard let entries = try? fileManager.contentsOfDirectory(at: caches, includingPropertiesForKeys: nil) else {
+            return
+        }
+        for entry in entries {
+            let name = entry.lastPathComponent
+            if name.hasPrefix("EggArt-v"), name != cacheDirectoryName {
+                try? fileManager.removeItem(at: entry)
+            }
+        }
+    }
 
     private static func writePNG(_ image: CGImage, to url: URL) {
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)

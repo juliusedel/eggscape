@@ -81,9 +81,10 @@ enum Previews {
         return canvas.image
     }
 
-    /// Broken eggs of a few skins on white (top) and on a mid-gray, camera-like ground (bottom).
+    /// Broken eggs of a few skins (farm brown, classic white, gold metallic, polka dots) on white (top) and on a
+    /// mid-gray, camera-like ground (bottom).
     static func broken() -> PixelImage {
-        let appearances = [Samples.farmBrown, Samples.skins[1], Samples.skins[4], Samples.skins[7]]
+        let appearances = [Samples.farmBrown, Samples.skins[1], Samples.skins[6], Samples.skins[7]]
         let size = 400
         let cellWidth = 440, cellHeight = 360
         var canvas = Canvas(width: appearances.count * cellWidth, height: 2 * cellHeight, hex: 0xF7F6F3)
@@ -100,15 +101,14 @@ enum Previews {
         return canvas.image
     }
 
-    /// Raindrops, a streak, leaves and a splash on white (left) and mid-gray (right).
+    /// Raindrops of several sizes, streaks, six leaves and splashes on white (left) and mid-gray (right).
     static func effects() -> PixelImage {
         let half = 700, height = 760
         var canvas = Canvas(width: 2 * half, height: height, hex: 0xF7F6F3)
         canvas.fill(x: half, y: 0, width: half, height: height, gray: 0.45)
         for side in 0 ..< 2 {
             let originX = Double(side * half)
-            for index in 0 ..< 5 {
-                let diameter = [34, 48, 62, 80, 110][index]
+            for (index, diameter) in [34, 48, 62, 80, 110].enumerated() {
                 canvas.draw(
                     EffectArt.raindrop(diameter: diameter, seed: UInt64(index + 1)),
                     centerX: originX + 70 + Double(index) * 125,
@@ -116,21 +116,25 @@ enum Previews {
                 )
             }
             for index in 0 ..< 3 {
-                canvas.draw(EffectArt.streak(length: 160 + 60 * index), centerX: originX + 80 + Double(index) * 60, centerY: 330)
-            }
-            for index in 0 ..< 4 {
                 canvas.draw(
-                    EffectArt.leaf(length: 120, seed: UInt64(index * 7 + 3)),
-                    centerX: originX + 290 + Double(index % 2) * 110,
-                    centerY: 280 + Double(index / 2) * 150
+                    EffectArt.streak(length: 160 + 60 * index),
+                    centerX: originX + 50 + Double(index) * 45,
+                    centerY: 370
                 )
             }
-            canvas.draw(EffectArt.splash(diameter: 220, seed: 9), centerX: originX + 590, centerY: 330)
+            for index in 0 ..< 6 {
+                canvas.draw(
+                    EffectArt.leaf(length: 110, seed: UInt64(index * 7 + 3)),
+                    centerX: originX + 240 + Double(index % 3) * 95,
+                    centerY: 290 + Double(index / 3) * 140
+                )
+            }
+            canvas.draw(EffectArt.splash(diameter: 220, seed: 9), centerX: originX + 590, centerY: 340)
             for index in 0 ..< 3 {
                 canvas.draw(
                     EffectArt.splash(diameter: 110, seed: UInt64(20 + index)),
                     centerX: originX + 120 + Double(index) * 220,
-                    centerY: 640
+                    centerY: 650
                 )
             }
         }

@@ -30,6 +30,7 @@ final class GameArtwork {
 
     private var eggs: [EggKey: SKTexture] = [:]
     private var brokenEggs: [EggKey: SKTexture] = [:]
+    private var brokenEggRenders: [EggKey: Task<PixelImage, Never>] = [:]
     private static var instances: [CGFloat: GameArtwork] = [:]
     private static let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "artwork")
 
@@ -78,14 +79,24 @@ final class GameArtwork {
         return texture
     }
 
-    func brokenEgg(_ appearance: EggAppearance, widthPixels: Int) -> SKTexture {
+    /// The egg smashed on the ground. Reading or rendering it takes long enough to stall a frame, so it happens off the
+    /// main actor; ask for it well before the drop.
+    func brokenEgg(_ appearance: EggAppearance, widthPixels: Int) async -> SKTexture {
         let key = EggKey(appearance: appearance, width: widthPixels)
         if let cached = brokenEggs[key] {
             return cached
         }
-        let texture = Self.texture(Self.cachedImage(name: "broken", key: key) {
-            EggArt.broken(appearance, width: widthPixels)
-        })
+        let render = brokenEggRenders[key] ?? Task.detached(priority: .userInitiated) {
+            Self.cachedImage(name: "broken", key: key) { EggArt.broken(appearance, width: widthPixels) }
+        }
+        brokenEggRenders[key] = render
+        let image = await render.value
+        brokenEggRenders[key] = nil
+        // Of several callers waiting for the same render, the first to resume makes the texture.
+        if let cached = brokenEggs[key] {
+            return cached
+        }
+        let texture = Self.texture(image)
         Self.keep(texture, for: key, in: &brokenEggs)
         return texture
     }
@@ -148,8 +159,8 @@ final class GameArtwork {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
     }
 
-    /// Rendered eggs are kept in Caches, keyed by everything that affects their pixels.
-    private static func cachedImage(name: String, key: EggKey, render: () -> PixelImage) -> PixelImage {
+    /// Rendered eggs are kept in Caches, keyed by everything that affects their pixels; usable from any thread.
+    private nonisolated static func cachedImage(name: String, key: EggKey, render: () -> PixelImage) -> PixelImage {
         let url = cacheURL(name: name, key: key)
         if let url, let data = try? Data(contentsOf: url), let image = decodePNG(data) {
             return image
@@ -161,7 +172,7 @@ final class GameArtwork {
         return image
     }
 
-    private static func cacheURL(name: String, key: EggKey) -> URL? {
+    private nonisolated static func cacheURL(name: String, key: EggKey) -> URL? {
         guard let caches = cachesDirectory,
               let fileName = cacheFileName(name: name, appearance: key.appearance, width: key.width)
         else { return nil }
@@ -197,14 +208,14 @@ final class GameArtwork {
         }
     }
 
-    private static func writePNG(_ image: CGImage, to url: URL) {
+    private nonisolated static func writePNG(_ image: CGImage, to url: URL) {
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
         else { return }
         CGImageDestinationAddImage(destination, image, nil)
         CGImageDestinationFinalize(destination)
     }
 
-    private static func decodePNG(_ data: Data) -> PixelImage? {
+    private nonisolated static func decodePNG(_ data: Data) -> PixelImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
               let space = CGColorSpace(name: CGColorSpace.sRGB)

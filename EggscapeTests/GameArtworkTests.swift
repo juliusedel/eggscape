@@ -59,4 +59,10 @@ struct GameArtworkTests {
         let left = try fileManager.contentsOfDirectory(atPath: caches.path)
         #expect(Set(left) == [GameArtwork.cacheDirectoryName, "Other"])
     }
+
+    @Test func preparedBrokenEggIsTheOneThatDrops() async {
+        let artwork = GameArtwork.shared(screenScale: 1)
+        let prepared = await artwork.brokenEgg(speckled, widthPixels: 48)
+        #expect(await artwork.brokenEgg(speckled, widthPixels: 48) === prepared)
+    }
 }

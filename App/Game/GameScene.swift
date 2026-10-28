@@ -172,7 +172,20 @@ final class GameScene: SKScene {
         // The shadow image is 1.5 times the egg (see `EggArt.shadow`).
         eggShadow.texture = artwork.eggShadow
         eggShadow.size = CGSize(width: eggWidth * 1.5, height: eggWidth * EggArt.aspect * 1.5)
+        // Rendering the splat would stall the fall, so it is prepared now, long before the first drop.
+        Task { [appearance, brokenEggPixels] in
+            _ = await artwork.brokenEgg(appearance, widthPixels: brokenEggPixels)
+        }
         render()
+    }
+
+    /// The splat is larger than the egg because the white runs out on the ground.
+    private var brokenEggWidth: CGFloat {
+        layout.unit * GameArtwork.eggWidthUnits * 1.7
+    }
+
+    private var brokenEggPixels: Int {
+        Int(brokenEggWidth * screenScale)
     }
 
     // MARK: Frame loop
@@ -348,9 +361,12 @@ final class GameScene: SKScene {
         eggShadow.run(.fadeOut(withDuration: 0.15), withKey: "fade")
 
         guard let artwork else { return }
-        let width = layout.unit * GameArtwork.eggWidthUnits * 1.7
-        let broken = SKSpriteNode(texture: artwork.brokenEgg(appearance, widthPixels: Int(width * screenScale)))
-        broken.size = CGSize(width: width, height: width * 0.8)
+        let width = brokenEggWidth
+        // Clear until the texture is set, which it normally is long before the splat fades in.
+        let broken = SKSpriteNode(color: .clear, size: CGSize(width: width, height: width * 0.8))
+        Task { [weak broken, appearance, brokenEggPixels] in
+            broken?.texture = await artwork.brokenEgg(appearance, widthPixels: brokenEggPixels)
+        }
         broken.position = landing
         broken.zRotation = CGFloat(rng.uniform(-Double.pi ... Double.pi))
         broken.setScale(0.7)

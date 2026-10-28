@@ -1,0 +1,10 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the app and upload it to TestFlight"
+  lane :beta do
+    sh("make", "-C", "..", "gen")
+    build_app(project: "Eggscape.xcodeproj", scheme: "Eggscape", export_method: "app-store")
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+end

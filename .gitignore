@@ -1,0 +1,28 @@
+# The Xcode project is generated from project.yml (`make gen`); never commit it.
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Tools built by scripts/bootstrap.sh
+.tools/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/README.md
+fastlane/test_output/
+fastlane/screenshots/
+fastlane/*.ipa
+*.ipa
+*.dSYM.zip
+.bundle/
+vendor/bundle/
+
+# macOS
+.DS_Store

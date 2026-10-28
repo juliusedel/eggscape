@@ -1,0 +1,11 @@
+# SwiftFormat configuration, applied by `make format` (checked by `make lint`).
+--swift-version 6.0
+--exclude .build,.tools,Packages/EggscapeCore/.build,fastlane,Eggscape.xcodeproj
+--indent 4
+--max-width 120
+--wrap-arguments before-first
+--wrap-parameters before-first
+--wrap-collections before-first
+--self remove
+--strip-unused-args closure-only
+--header ignore

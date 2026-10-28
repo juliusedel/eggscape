@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "de",
+  "strings" : {
+    "Eierlauf für die Hosentasche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egg-and-spoon race in your pocket"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -40,7 +40,7 @@ final class WeatherOverlayNode: SKNode {
         rain.zPosition = 2
         addChild(rain)
 
-        leaves.particleTexture = artwork.leaves.first
+        leaves.particleTexture = artwork.leaf
         leaves.particleBirthRate = 0
         leaves.particleLifetime = 2.2
         leaves.particleLifetimeRange = 0.8

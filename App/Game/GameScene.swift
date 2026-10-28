@@ -115,7 +115,7 @@ final class GameScene: SKScene {
     override func didMove(to view: SKView) {
         screenScale = view.contentScaleFactor
         if artwork == nil {
-            let artwork = GameArtwork(screenScale: screenScale)
+            let artwork = GameArtwork.shared(screenScale: screenScale)
             self.artwork = artwork
             let overlay = WeatherOverlayNode(artwork: artwork)
             overlay.zPosition = 100

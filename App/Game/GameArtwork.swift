@@ -8,7 +8,8 @@ import UniformTypeIdentifiers
 
 /// Turns `EggscapeArt` pixel images into SpriteKit textures. The spoon comes pre-rendered from the asset catalog
 /// (`make art`); eggs and effects are rendered on demand, and eggs are also cached on disk because every skin costs a
-/// noticeable fraction of a second.
+/// noticeable fraction of a second. One instance per screen scale lives as long as the app (`shared(screenScale:)`),
+/// so runs, "Nochmal", hot-seat turns and races reuse its textures instead of rendering them again.
 @MainActor
 final class GameArtwork {
     /// Pixels per bowl unit of the spoon images in the asset catalog (`eggscape-art assets`).
@@ -24,11 +25,12 @@ final class GameArtwork {
     let eggShadow: SKTexture
     let raindrops: [SKTexture]
     let streak: SKTexture
-    let leaves: [SKTexture]
-    let splash: SKTexture
+    /// The blowing leaves' particle; an emitter takes a single texture.
+    let leaf: SKTexture
 
     private var eggs: [EggKey: SKTexture] = [:]
     private var brokenEggs: [EggKey: SKTexture] = [:]
+    private static var instances: [CGFloat: GameArtwork] = [:]
     private static let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "artwork")
 
     private struct EggKey: Hashable {
@@ -36,7 +38,17 @@ final class GameArtwork {
         let width: Int
     }
 
-    init(screenScale: CGFloat) {
+    /// The artwork for a screen scale, created on first use.
+    static func shared(screenScale: CGFloat) -> GameArtwork {
+        if let artwork = instances[screenScale] {
+            return artwork
+        }
+        let artwork = GameArtwork(screenScale: screenScale)
+        instances[screenScale] = artwork
+        return artwork
+    }
+
+    private init(screenScale: CGFloat) {
         spoonLayout = SpoonArt.layout(unit: Self.spoonAssetUnit)
         spoon = Self.assetTexture("Spoon") { SpoonArt.spoon(unit: Self.spoonAssetUnit) }
         spoonShadow = Self.assetTexture("SpoonShadow") { SpoonArt.shadow(unit: Self.spoonAssetUnit) }
@@ -45,8 +57,7 @@ final class GameArtwork {
         raindrops = (1 ... 4)
             .map { Self.texture(EffectArt.raindrop(diameter: Int(20 * screenScale), seed: UInt64($0))) }
         streak = Self.texture(EffectArt.streak(length: Int(46 * screenScale)))
-        leaves = (11 ... 14).map { Self.texture(EffectArt.leaf(length: Int(26 * screenScale), seed: UInt64($0))) }
-        splash = Self.texture(EffectArt.splash(diameter: Int(90 * screenScale), seed: 7))
+        leaf = Self.texture(EffectArt.leaf(length: Int(26 * screenScale), seed: 11))
     }
 
     func egg(_ appearance: EggAppearance, widthPixels: Int) -> SKTexture {
@@ -57,7 +68,7 @@ final class GameArtwork {
         let texture = Self.texture(Self.cachedImage(name: "egg", key: key) {
             EggArt.egg(appearance, width: widthPixels)
         })
-        eggs[key] = texture
+        Self.keep(texture, for: key, in: &eggs)
         return texture
     }
 
@@ -69,8 +80,15 @@ final class GameArtwork {
         let texture = Self.texture(Self.cachedImage(name: "broken", key: key) {
             EggArt.broken(appearance, width: widthPixels)
         })
-        brokenEggs[key] = texture
+        Self.keep(texture, for: key, in: &brokenEggs)
         return texture
+    }
+
+    /// Stores a skin's texture and drops those of other skins: only the equipped skin is played, and this object lives
+    /// as long as the app.
+    private static func keep(_ texture: SKTexture, for key: EggKey, in cache: inout [EggKey: SKTexture]) {
+        cache = cache.filter { $0.key.appearance == key.appearance }
+        cache[key] = texture
     }
 
     // MARK: Conversion

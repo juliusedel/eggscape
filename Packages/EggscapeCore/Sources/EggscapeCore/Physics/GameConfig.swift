@@ -61,6 +61,9 @@ public struct GameConfig: Sendable, Equatable {
     public var gustGap: ClosedRange<Double> = 0.5 ... 2.5
     /// Probability that the next gust blows from the other side.
     public var windFlipChance = 0.35
+    /// Seconds in which the wind a runner feels follows a change of weather along the track, so running into or out
+    /// of a windy stretch mid-gust never yanks the egg (gusts have their own ramp and decay).
+    public var windFade = 1.0
 
     // MARK: Rain
 
@@ -83,6 +86,38 @@ public struct GameConfig: Sendable, Equatable {
     public var lightningWarning = 0.6
     /// Velocity kick of a strike.
     public var lightningKick = 0.8
+
+    // MARK: Weather along the track
+
+    // Changing any weather number changes the weather every seed produces, so phones with different numbers must not
+    // race together.
+
+    /// Zufall: the first meters of a time trial are calm.
+    public var randomCalmStart: ClosedRange<Double> = 20 ... 40
+    /// Zufall: typical length of one stretch of weather in meters. The rest of the course is cut into about
+    /// `length / randomStretchLength` stretches, at least two.
+    public var randomStretchLength = 75.0
+    /// Zufall: the boundaries between stretches move by up to this share of a stretch, so the stretches differ in
+    /// length. Capped at 0.45 to keep the boundaries in order.
+    public var randomStretchJitter = 0.3
+    /// Zufall: intensity of the first stretch of weather. Later stretches get evenly stronger, up to full strength on
+    /// the last one, so the hardest part is always the finish.
+    public var randomStartIntensity: ClosedRange<Double> = 0.3 ... 0.5
+    /// Zufall: probability that the last third of the stretches is a thunderstorm instead of wind or rain.
+    public var randomStormChance = 0.6
+    /// Endlos: the weather intensifies every this many meters (one stage). Stage 0 is always clear.
+    public var endlessStageLength = 100.0
+    /// Endlos: intensity of stage 1. Each further stage adds an equal share, so stage `1 + endlessStagesToFull` is the
+    /// first at full strength: 0.3, 0.4, ... 1.0 from 800 m on with the defaults.
+    public var endlessStartIntensity = 0.3
+    public var endlessStagesToFull = 7
+    /// Endlos: the first stage that can be a thunderstorm; earlier stages are wind or rain.
+    public var endlessStormStage = 3
+    /// Endlos: once the weather is at full strength, every further stage makes footsteps this much stronger ...
+    public var endlessFootstepGain = 0.05
+    /// ... up to this multiplier (from 1300 m on with the defaults). The cap keeps long runs hard but fair: even a
+    /// sprinting footstep at the cap cannot tip the egg out of a level bowl on its own.
+    public var endlessFootstepScaleMax = 1.25
 
     public init() {}
 

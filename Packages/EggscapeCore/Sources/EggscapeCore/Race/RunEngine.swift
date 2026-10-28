@@ -28,6 +28,7 @@ public struct RunEngine: Sendable {
     public let config: GameConfig
     public let course: Course
     public private(set) var egg: EggPhysics
+    /// The weather this runner experiences; the HUD reads its conditions, wind and lightning warning.
     public private(set) var weather: WeatherSystem
     public private(set) var phase = Phase.running
     public private(set) var meters = 0.0
@@ -85,6 +86,9 @@ public struct RunEngine: Sendable {
             return
         case let .recovering(remaining):
             elapsed += dt
+            // The sky does not wait while the next egg is placed: gusts and lightning stay on the race's shared
+            // timeline and the HUD keeps showing them, but there is no egg for their pushes to act on.
+            _ = weather.step(time: elapsed, from: meters, to: meters, dt: dt, rng: &rng, events: &events)
             if remaining > dt {
                 phase = .recovering(remaining: remaining - dt)
             } else {
@@ -128,6 +132,10 @@ public struct RunEngine: Sendable {
         for kick in impact.kicks {
             egg.kick(kick.velocity)
             events.append(.kick(kick))
+        }
+        // Raindrops: too many and too small for an event each.
+        if impact.impulse != .zero {
+            egg.kick(impact.impulse)
         }
 
         egg.step(dt: dt, tilt: input.tilt, force: impact.force, dampingScale: impact.dampingScale)

@@ -92,7 +92,7 @@ enum SpoonRenderer {
         if distance > -2 * pixel {
             return edgeSamples
         }
-        let rim = SpoonGeometry.rim(x, y).distance
+        let rim = SpoonGeometry.rimDistance(x, y)
         if rim > -0.03, rim < SpoonGeometry.lip + 0.03 {
             return detailSamples
         }
@@ -140,9 +140,9 @@ enum SpoonRenderer {
             // The bowl, slice by slice.
             for slice in 1 ... slices {
                 let z = SpoonGeometry.depth * Double(slice) / Double(slices)
-                let radius = (1 - pow(1 - z / SpoonGeometry.depth, 4.0 / 3)).squareRoot()
+                let radius = max(SpoonGeometry.bowlRadius(atHeight: z), 0.05)
                 let qx = x + shift.x * z, qy = y + shift.y * z
-                let scaled = SpoonGeometry.rim(qx / radius, qy / radius).distance * radius
+                let scaled = SpoonGeometry.rimDistance(qx / radius, qy / radius) * radius
                 let edge = slice == slices ? SpoonGeometry.lip : 0
                 cast = max(cast, coverage(scaled - edge, sigma: penumbra(z)))
             }

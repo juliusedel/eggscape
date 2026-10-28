@@ -1,10 +1,61 @@
 default_platform(:ios)
 
+# App Store Connect API key, see docs/RELEASE.md:
+#   ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (path to the .p8 file)
+def api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: ENV.fetch("ASC_KEY_PATH")
+  )
+end
+
+# Regenerates the Xcode project and sets the next build number with agvtool.
+def prepare_build(key)
+  sh("make", "-C", "..", "gen")
+  latest = latest_testflight_build_number(api_key: key, initial_build_number: 0)
+  increment_build_number(xcodeproj: "Eggscape.xcodeproj", build_number: latest + 1)
+end
+
+def build(key)
+  build_app(
+    project: "Eggscape.xcodeproj",
+    scheme: "Eggscape",
+    configuration: "Release",
+    export_method: "app-store",
+    output_directory: "build",
+    xcargs: "-allowProvisioningUpdates"
+  )
+end
+
 platform :ios do
-  desc "Build the app and upload it to TestFlight"
+  desc "Build a release and upload it to TestFlight"
   lane :beta do
+    key = api_key
+    prepare_build(key)
+    build(key)
+    upload_to_testflight(api_key: key, skip_waiting_for_build_processing: true)
+  end
+
+  desc "Build a release and upload it together with the App Store metadata (does not submit for review)"
+  lane :release do
+    key = api_key
+    prepare_build(key)
+    build(key)
+    upload_to_app_store(
+      api_key: key,
+      force: true,
+      submit_for_review: false,
+      automatic_release: false,
+      skip_screenshots: !Dir.exist?("screenshots/de-DE"),
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false
+    )
+  end
+
+  desc "Capture App Store screenshots from staged scenes (--screenshot-mode)"
+  lane :screenshots do
     sh("make", "-C", "..", "gen")
-    build_app(project: "Eggscape.xcodeproj", scheme: "Eggscape", export_method: "app-store")
-    upload_to_testflight(skip_waiting_for_build_processing: true)
+    capture_screenshots
   end
 end

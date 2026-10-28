@@ -1,0 +1,14 @@
+# fastlane snapshot: renders the staged screenshot scenes of EggscapeUITests/ScreenshotTests.
+devices(["iPhone 18 Pro Max"])
+languages(["de-DE", "en-US"])
+
+project("./Eggscape.xcodeproj")
+scheme("Eggscape")
+only_testing(["EggscapeUITests/ScreenshotTests"])
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)
+override_status_bar(true)
+concurrent_simulators(false)
+
+# EggscapeUITests/SnapshotHelper.swift is our own minimal helper speaking snapshot's file protocol.
+skip_helper_version_check(true)

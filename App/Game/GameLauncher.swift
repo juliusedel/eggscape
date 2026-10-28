@@ -90,6 +90,6 @@ final class GameLauncher {
     }
 
     private static func newSetup(_ mode: RunMode) -> RunSetup {
-        RunSetup(mode: mode, raceSeed: .random(in: .min ... .max))
+        RunSetup(mode: mode, raceSeed: LaunchOptions.current.raceSeed())
     }
 }

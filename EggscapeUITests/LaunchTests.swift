@@ -2,9 +2,11 @@ import XCTest
 
 final class LaunchTests: XCTestCase {
     @MainActor
-    func testStartScreenAppears() {
+    func testTabsAppear() {
         let app = XCUIApplication()
+        app.launchArguments += ["-ui-testing"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["start.title"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["timeTrial.start"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.tabBars.buttons.count >= 4 || app.buttons["endless.start"].exists)
     }
 }

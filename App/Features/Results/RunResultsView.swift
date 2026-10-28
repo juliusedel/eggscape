@@ -20,7 +20,10 @@ struct RunResultsView: View {
                 if outcome.finished {
                     GridRow {
                         Text("Zeit")
-                        Text(verbatim: RaceFormat.time(outcome.time)).monospacedDigit().bold()
+                        Text(verbatim: RaceFormat.time(outcome.time))
+                            .monospacedDigit()
+                            .bold()
+                            .accessibilityIdentifier("results.time")
                     }
                 }
                 GridRow {

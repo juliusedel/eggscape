@@ -6,6 +6,10 @@ struct NearbyView: View {
     @Environment(AppServices.self) private var services
     @State private var session: NearbySession?
 
+    init(initialSession: NearbySession? = nil) {
+        _session = State(initialValue: initialSession)
+    }
+
     var body: some View {
         Group {
             if let session {

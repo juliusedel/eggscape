@@ -10,8 +10,9 @@ struct TouchSteering: Sendable {
     /// Finger position in bowl units, `nil` while no finger is down.
     var target: SIMD2<Double>?
 
-    init(config: GameConfig = .standard) {
+    init(config: GameConfig = .standard, target: SIMD2<Double>? = nil) {
         self.config = config
+        self.target = target
     }
 
     /// The equivalent tilt in radians.

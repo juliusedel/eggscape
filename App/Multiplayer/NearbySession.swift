@@ -58,7 +58,8 @@ final class NearbySession: Identifiable {
     @ObservationIgnored private var pinger: Task<Void, Never>?
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "nearby")
 
-    init(role: Role, services: AppServices) {
+    /// - Parameter networking: `false` only for the staged App Store screenshot (no prompt, no radio).
+    init(role: Role, services: AppServices, networking: Bool = true) {
         self.role = role
         self.services = services
         me = PlayerInfo(
@@ -77,6 +78,7 @@ final class NearbySession: Identifiable {
             return stage == .lobby && !lobby.isFull
         }
         transport.onRoomsChanged = { [weak self] rooms in self?.rooms = rooms }
+        guard networking else { return }
         listen()
         switch role {
         case .host:
@@ -84,6 +86,24 @@ final class NearbySession: Identifiable {
         case .joiner:
             transport.startBrowsing()
         }
+    }
+
+    /// A staged lobby for App Store screenshots: three friends, no networking.
+    static func screenshotLobby(services: AppServices) -> NearbySession {
+        let session = NearbySession(role: .host, services: services, networking: false)
+        let friends = [("Mia", "sky-blue", true), ("Jonas", "polka-dots", true), ("Lea", "gold-metallic", false)]
+        for (name, skin, ready) in friends {
+            _ = session.lobby.join(PlayerInfo(
+                id: PlayerID(name),
+                nickname: name,
+                eggSkinID: skin,
+                isHost: false,
+                isReady: ready,
+                isConnected: true
+            ))
+        }
+        session.lobby.settings = RaceSettings(distance: .medium, weather: .random)
+        return session
     }
 
     var isHost: Bool {

@@ -33,8 +33,15 @@ struct RootView: View {
         .fullScreenCover(item: $launcher.flow) { flow in
             GameFlowView(flow: flow)
         }
+        .fullScreenCover(isPresented: $navigation.showsScreenshotLobby) {
+            NavigationStack {
+                NearbyView(initialSession: .screenshotLobby(services: services))
+            }
+        }
         .onAppear {
-            if !services.settings.hasSeenTutorial {
+            if let scene = LaunchOptions.current.screenshotScene.flatMap(ScreenshotScene.init(rawValue:)) {
+                ScreenshotStage.prepare(scene, services: services)
+            } else if !services.settings.hasSeenTutorial {
                 navigation.showsTutorial = true
             }
         }

@@ -211,6 +211,32 @@ final class GameScene: SKScene {
         render()
     }
 
+    /// Screenshots and tests: simulates `seconds` of the run at once. Only the events that end the run are reported,
+    /// so no burst of footstep sounds follows.
+    func fastForward(seconds: Double, input: RunEngine.Input) {
+        var skipped: [RunEvent] = []
+        for _ in 0 ..< Int(seconds * engine.config.simulationRate) where !engine.isOver {
+            engine.step(input, events: &skipped)
+        }
+        let endings = skipped.filter { event in
+            switch event {
+            case .finished, .runOver: true
+            default: false
+            }
+        }
+        if !endings.isEmpty {
+            handle(endings)
+            onEvents(endings)
+        }
+        onHUD(hudSnapshot)
+        render()
+    }
+
+    /// Points the finger fallback at a position in the bowl (screenshots: a slightly off-center egg).
+    func steer(toBowl position: SIMD2<Double>?) {
+        touchSteering.target = position
+    }
+
     private var currentInput: RunEngine.Input {
         var value = input()
         if usesTouchSteering {

@@ -62,4 +62,6 @@ final class AppNavigation {
     var tab = Tab.singleplayer
     var showsSettings = false
     var showsTutorial = false
+    /// Only for the staged App Store screenshot of a nearby lobby.
+    var showsScreenshotLobby = false
 }

@@ -101,6 +101,11 @@ final class RunSession: Identifiable {
     let background: BackgroundMode
     /// No motion sensors (Simulator): the player drags the egg with a finger instead.
     let usesTouchSteering: Bool
+    /// The calibration screen explains finger steering, except in staged screenshots, which show the real thing.
+    var showsFingerHint: Bool {
+        usesTouchSteering && LaunchOptions.current.screenshotScene == nil
+    }
+
     private(set) var phase = Phase.calibrating {
         didSet { UIApplication.shared.isIdleTimerDisabled = phase.keepsScreenAwake }
     }
@@ -236,6 +241,16 @@ final class RunSession: Identifiable {
         guard phase == .paused else { return }
         phase = .calibrating
         scene.mode = .preview
+    }
+
+    /// App Store screenshots: skips calibration and countdown, jumps `seconds` into the run and keeps running with
+    /// the egg held at `egg` (bowl units). Running until the end shows the results.
+    func stageForScreenshot(skipping seconds: Double, egg: SIMD2<Double>) {
+        countdownTask?.cancel()
+        scene.steer(toBowl: egg)
+        phase = .running
+        scene.mode = .running
+        scene.fastForward(seconds: seconds, input: RunEngine.Input(tilt: TouchSteering(target: egg).tilt))
     }
 
     /// Shows a short note about another racer.

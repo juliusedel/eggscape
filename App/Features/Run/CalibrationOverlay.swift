@@ -11,7 +11,7 @@ struct CalibrationOverlay: View {
                 Text("Halte dein Handy wie einen Löffel")
                     .font(.title2.bold())
                     .multilineTextAlignment(.center)
-                if session.usesTouchSteering {
+                if session.showsFingerHint {
                     Text("Kein Bewegungssensor gefunden: Ziehe das Ei mit dem Finger, um es im Löffel zu halten.")
                         .multilineTextAlignment(.center)
                 } else {
@@ -24,7 +24,7 @@ struct CalibrationOverlay: View {
                 Button {
                     session.calibrate()
                 } label: {
-                    Text(session.usesTouchSteering ? "Los geht’s" : "Kalibrieren")
+                    Text(session.showsFingerHint ? "Los geht’s" : "Kalibrieren")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 32)
                 }

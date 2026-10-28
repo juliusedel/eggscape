@@ -243,6 +243,12 @@ public struct LobbyState: Codable, Hashable, Sendable {
         players.removeAll { $0.id == id }
     }
 
+    /// Before the next race: players who left mid-race are dropped, so the lobby and the race only show who is still
+    /// there, and a player who comes back (with a new id) is not listed twice.
+    public mutating func removeDisconnected() {
+        players.removeAll { !$0.isConnected }
+    }
+
     /// Back in the lobby after a race, everyone confirms again before the next one.
     public mutating func resetReadiness() {
         for index in players.indices {

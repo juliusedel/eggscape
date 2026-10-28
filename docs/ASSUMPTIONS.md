@@ -52,3 +52,27 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Camera mode** needs `NSCameraUsageDescription`. The camera image is only shown on screen, never recorded, stored
   or sent, so the privacy label stays "Data Not Collected". The prompt appears only when the player turns on camera
   mode.
+
+## Later decisions
+
+- **Art tournament.** Three agents built competing procedural renderers. All three eggs matched the reference photo
+  closely; candidate A (physically based: exact surface of revolution, analytic studio lighting) won because its skin
+  system was complete. The spoon, the broken egg and the weather effects were finished afterwards on top of it.
+- **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
+  phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
+- **Game Center.** Sign-in starts when the Bestenliste tab opens or a run ends with a score; scores reached while
+  signed out are submitted from the personal bests right after signing in. Time-trial leaderboards take the best time
+  of any weather, because one board per weather option would split the few players.
+- **MultipeerConnectivity warnings.** The deprecation warnings are silenced only inside `MultipeerTransport.swift` with
+  `@diagnose(DeprecatedDeclaration, as: ignored)`, guarded by `#if hasAttribute(diagnose)` so older compilers (CI)
+  still build it, just with warnings.
+- **Nearby join data.** A joiner sends its player id, nickname and egg skin as the MultipeerConnectivity invitation
+  context, so the message set of the spec needs no extra "hello" message.
+- **Race time in multiplayer** is measured on the wall clock from the shared start, so a phone that was briefly in
+  the background does not report a shorter time. The finish order is the arrival order at the host, as specified.
+- **Screenshots** are staged scenes (`--screenshot-mode start|calibration|run-sunny|run-rain|run-storm|lobby|results|
+  shop`) with ephemeral data and fixed seeds; the nearby lobby is a demo without networking. Camera mode cannot be
+  captured in the Simulator, so the screenshots use the white background.
+- **Localization.** German keys are the German text; where one German word needs two English translations, the key is
+  semantic with a German default value (e.g. `pause.resume` = "Weiter" → "Resume", while "Weiter" → "Next").
+  `make strings` fails if any UI string lacks an English translation.

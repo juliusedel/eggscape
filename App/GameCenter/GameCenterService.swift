@@ -41,6 +41,12 @@ final class GameCenterService {
     }
 
     private(set) var status = Status.signedOut
+    /// A friend's invitation the player accepted from a notification; the app opens the online room for it.
+    var acceptedInvite: AcceptedInvite?
+    @ObservationIgnored private lazy var inviteListener = InviteListener { [weak self] invite in
+        self?.acceptedInvite = AcceptedInvite(invite: invite)
+    }
+
     /// Called after every successful sign-in, e.g. to submit bests reached while signed out.
     @ObservationIgnored var onSignIn: () -> Void = {}
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "gamecenter")
@@ -81,6 +87,7 @@ final class GameCenterService {
             let wasSignedIn = isSignedIn
             status = .signedIn(name: player.displayName)
             if !wasSignedIn {
+                player.register(inviteListener)
                 onSignIn()
             }
         } else {
@@ -155,4 +162,29 @@ private struct SendableViewController: @unchecked Sendable {
     init(_ value: UIViewController?) {
         self.value = value
     }
+}
+
+/// An accepted Game Center invitation, identifiable for presentation.
+struct AcceptedInvite: Identifiable {
+    let id = UUID()
+    let invite: GKInvite
+}
+
+/// Receives accepted invitations from GameKit and hands them to the main actor.
+private final class InviteListener: NSObject, GKLocalPlayerListener, @unchecked Sendable {
+    private let onInvite: @MainActor (GKInvite) -> Void
+
+    init(onInvite: @escaping @MainActor (GKInvite) -> Void) {
+        self.onInvite = onInvite
+    }
+
+    func player(_: GKPlayer, didAccept invite: GKInvite) {
+        let box = InviteBox(invite: invite)
+        Task { @MainActor in onInvite(box.invite) }
+    }
+}
+
+/// GKInvite is immutable once delivered; it is only used again on the main actor.
+private struct InviteBox: @unchecked Sendable {
+    let invite: GKInvite
 }

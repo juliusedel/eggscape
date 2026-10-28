@@ -31,6 +31,10 @@ final class GameKitTransport: PeerTransport {
         GKLocalPlayer.local.gamePlayerID
     }
 
+    var localDisplayName: String {
+        GKLocalPlayer.local.displayName
+    }
+
     /// The referee: the lowest player id among everybody in the match.
     var refereeID: String {
         ([localPlayerID] + connectedPeers.map(\.id)).min() ?? localPlayerID
@@ -112,8 +116,10 @@ private final class GameKitMatchDelegate: NSObject, GKMatchDelegate, @unchecked 
     }
 }
 
-/// Apple's matchmaking screen for 2-4 players, including invitations to friends.
+/// Apple's matchmaking screen for 2-4 players, including invitations to friends; with an `invite`, it joins the match
+/// a friend invited us to.
 struct MatchmakerView: UIViewControllerRepresentable {
+    var invite: GKInvite?
     var onMatch: (GKMatch) -> Void
     var onCancel: () -> Void
 
@@ -126,7 +132,9 @@ struct MatchmakerView: UIViewControllerRepresentable {
         request.minPlayers = 2
         request.maxPlayers = 4
         request.defaultNumberOfPlayers = 2
-        guard let controller = GKMatchmakerViewController(matchRequest: request) else {
+        let made = invite.flatMap(GKMatchmakerViewController.init(invite:))
+            ?? GKMatchmakerViewController(matchRequest: request)
+        guard let controller = made else {
             return UIViewController()
         }
         controller.matchmakerDelegate = context.coordinator

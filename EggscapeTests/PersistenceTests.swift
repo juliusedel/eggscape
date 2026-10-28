@@ -154,3 +154,78 @@ struct HotSeatRankingTests {
         }
     }
 }
+
+@MainActor
+struct WalletStoreTests {
+    @Test func startsWithTheFreeEggs() {
+        let wallet = WalletStore(defaults: makeDefaults())
+        #expect(wallet.coins == 0)
+        #expect(wallet.equippedSkin.id == SkinCatalog.defaultSkinID)
+        for id in SkinCatalog.freeSkinIDs {
+            #expect(wallet.wallet.owns(skinID: id))
+        }
+    }
+
+    @Test func purchasesAndEquipsSurviveARelaunch() throws {
+        let defaults = makeDefaults()
+        let wallet = WalletStore(defaults: defaults)
+        wallet.earn(CoinReward(lines: [CoinReward.Line(kind: .distance, coins: 400)]))
+        let skin = try #require(SkinCatalog.skin(id: "sky-blue"))
+        try wallet.purchase(skin)
+        try wallet.equip(skin)
+
+        let relaunched = WalletStore(defaults: defaults)
+        #expect(relaunched.coins == 400 - skin.price)
+        #expect(relaunched.owns(skin))
+        #expect(relaunched.equippedSkin.id == "sky-blue")
+    }
+
+    @Test func refusesSkinsThePlayerCannotAfford() throws {
+        let wallet = WalletStore(defaults: makeDefaults())
+        let skin = try #require(SkinCatalog.skin(id: "gold-metallic"))
+        #expect(throws: WalletError.self) { try wallet.purchase(skin) }
+        #expect(!wallet.owns(skin))
+    }
+
+    @Test func creditsEachCoinPackTransactionOnce() {
+        let defaults = makeDefaults()
+        let wallet = WalletStore(defaults: defaults)
+        wallet.creditPurchase(transactionID: 42, productID: CoinPack.small.productID)
+        wallet.creditPurchase(transactionID: 42, productID: CoinPack.small.productID)
+        #expect(wallet.coins == CoinPack.small.coins)
+        // After a relaunch the same transaction (e.g. redelivered by StoreKit) still counts only once.
+        let relaunched = WalletStore(defaults: defaults)
+        relaunched.creditPurchase(transactionID: 42, productID: CoinPack.small.productID)
+        #expect(relaunched.coins == CoinPack.small.coins)
+    }
+
+    @Test func ignoresUnknownProducts() {
+        let wallet = WalletStore(defaults: makeDefaults())
+        wallet.creditPurchase(transactionID: 7, productID: "de.juliusedel.eggscape.unknown")
+        #expect(wallet.coins == 0)
+    }
+
+    @Test func resetForgetsEverything() throws {
+        let defaults = makeDefaults()
+        let wallet = WalletStore(defaults: defaults)
+        wallet.earn(CoinReward(lines: [CoinReward.Line(kind: .distance, coins: 900)]))
+        try wallet.purchase(#require(SkinCatalog.skin(id: "mint")))
+        wallet.reset()
+        #expect(wallet.coins == 0)
+        #expect(WalletStore(defaults: defaults).coins == 0)
+    }
+}
+
+@MainActor
+struct LeaderboardScoreSubmissionTests {
+    @Test func recordsBecomeOneScorePerBoard() {
+        let records = RecordsStore(defaults: makeDefaults())
+        records.recordTime(55, distance: .short, weather: .off)
+        records.recordTime(51, distance: .short, weather: .fixed(.wind))
+        records.recordEndless(meters: 333)
+        let scores = records.leaderboardScores
+        #expect(scores.count == 2)
+        #expect(scores.contains(LeaderboardScore(leaderboard: .shortTimeTrial, value: 5100)))
+        #expect(scores.contains(LeaderboardScore(leaderboard: .endless, value: 333)))
+    }
+}

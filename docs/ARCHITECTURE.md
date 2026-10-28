@@ -129,8 +129,9 @@ public enum EffectArt {
 }
 ```
 
-`eggscape-art assets <Assets.xcassets>` writes the static textures (spoon layers) into image sets.
-`eggscape-art preview <dir>` writes preview sheets. Egg skins are rendered at runtime and cached.
+`eggscape-art assets <Assets.xcassets>` (`make art`) writes the static textures (spoon layers) into image sets.
+`eggscape-art preview <dir>` writes preview sheets. Egg skins are rendered at runtime, on a background task for the
+shop, and cached on disk (`GameArtwork`); bump its `cacheVersion` when a renderer changes.
 
 ## Weather contract
 
@@ -139,6 +140,16 @@ Endlos intensifies every 100 m), a gust timeline and a lightning timeline in rac
 identical for all players of a race. `WeatherSystem` applies it per player inside `RunEngine.step` and reports
 `WeatherImpact` (force, damping scale, kicks) plus events (`weatherChanged`, `puddle`, `lightningWarning`,
 `lightningStrike`). The HUD reads `RunEngine.weather.conditions` and the current wind.
+
+## App flow
+
+`AppServices` owns the long-lived objects (motion, settings, records, wallet, StoreKit, Game Center, camera, haptics,
+sounds) and `GameLauncher`, which presents runs full screen above the tabs. A `RunSession` drives one run (calibration,
+countdown, pause, results, rewards) around a `GameScene`, which steps the `RunEngine` at 120 Hz from
+`SKScene.update(_:)`. `RunRules` say what a run counts towards (records, leaderboards, coins). Multiplayer races plug
+into a run through `RaceHooks` (shared start instant, progress, drops, finish). `NearbySession` coordinates a nearby
+room on top of `MultipeerTransport`; `GameKitTransport` carries the same messages over a Game Center match.
+`--screenshot-mode <scene>` stages deterministic scenes for the App Store (`ScreenshotStage`).
 
 ## Multiplayer contract
 

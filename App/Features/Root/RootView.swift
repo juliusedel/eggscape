@@ -7,6 +7,7 @@ struct RootView: View {
     var body: some View {
         @Bindable var navigation = services.navigation
         @Bindable var launcher = services.launcher
+        @Bindable var gameCenter = services.gameCenter
         TabView(selection: $navigation.tab) {
             SingleplayerView()
                 .tabItem { Label("Einzelspieler", systemImage: "figure.run") }
@@ -32,6 +33,16 @@ struct RootView: View {
         }
         .fullScreenCover(item: $launcher.flow) { flow in
             GameFlowView(flow: flow)
+        }
+        .fullScreenCover(item: $gameCenter.acceptedInvite) { accepted in
+            NavigationStack {
+                OnlineView(invite: accepted.invite)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Schließen") { gameCenter.acceptedInvite = nil }
+                        }
+                    }
+            }
         }
         .fullScreenCover(isPresented: $navigation.showsScreenshotLobby) {
             NavigationStack {

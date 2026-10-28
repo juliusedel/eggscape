@@ -26,6 +26,16 @@ struct MultiplayerView: View {
                         )
                     }
                     .accessibilityIdentifier("multiplayer.nearby")
+                    NavigationLink {
+                        OnlineView()
+                    } label: {
+                        ModeRow(
+                            title: "Online",
+                            detail: "2 bis 4 Spieler über Game Center, auch mit Einladungen an Freunde.",
+                            systemImage: "globe.europe.africa.fill"
+                        )
+                    }
+                    .accessibilityIdentifier("multiplayer.online")
                 }
             }
             .navigationTitle("Mehrspieler")

@@ -36,7 +36,7 @@ struct HotSeatSetupView: View {
                     }
                 }
             } header: {
-                Text("Spieler")
+                Text("Mitspieler")
             } footer: {
                 Text("Alle laufen dieselbe Strecke mit demselben Wetter. Wer am schnellsten ist, gewinnt.")
             }

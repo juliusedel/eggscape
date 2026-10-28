@@ -13,7 +13,7 @@ struct NearbyView: View {
     var body: some View {
         Group {
             if let session {
-                NearbyRoomView(session: session) {
+                RaceRoomView(session: session) {
                     session.leave()
                     self.session = nil
                 }
@@ -35,7 +35,7 @@ struct NearbyView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(.tint)
                 .accessibilityHidden(true)
-            Text("Lauft mit bis zu 4 Handys im selben Raum gegeneinander, ganz ohne Internet.")
+            Text("Lauf mit bis zu drei Freunden im selben Raum um die Wette, ganz ohne Internet.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
             VStack(spacing: 12) {
@@ -69,8 +69,8 @@ struct NearbyView: View {
     }
 }
 
-/// Everything after the choice: room list, lobby, race and results.
-private struct NearbyRoomView: View {
+/// Everything after the choice: room list, lobby, race and results (also used for online matches).
+struct RaceRoomView: View {
     let session: NearbySession
     var onLeave: () -> Void
     @Environment(AppServices.self) private var services
@@ -154,7 +154,7 @@ private struct RoomList: View {
             } header: {
                 Text("Räume")
             } footer: {
-                Text("Bitte den Host, auf „Raum erstellen“ zu tippen. Ihr müsst nah beieinander sein.")
+                Text("Bitte den Host, auf „Raum erstellen“ zu tippen, und bleib in seiner Nähe.")
             }
         }
     }

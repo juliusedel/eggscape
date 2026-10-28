@@ -13,8 +13,11 @@ struct PauseMenu: View {
             Button {
                 session.resume()
             } label: {
-                Label("Weiter", systemImage: "play.fill")
-                    .frame(maxWidth: .infinity, minHeight: 32)
+                Label(
+                    String(localized: "pause.resume", defaultValue: "Weiter", comment: "Pause menu: continue the run"),
+                    systemImage: "play.fill"
+                )
+                .frame(maxWidth: .infinity, minHeight: 32)
             }
             .primaryActionStyle()
             .accessibilityIdentifier("pause.resume")

@@ -10,8 +10,9 @@ struct JoinRequest: Codable, Sendable {
     var eggSkinID: String
 }
 
-/// "In der Nähe": one phone hosts a room, up to three others join. The host is the referee: it keeps the lobby,
-/// answers clock pings, picks the start time and decides the finish order. Every phone simulates its own run.
+/// A race room for 2-4 phones. "In der Nähe": one phone hosts, the others join over MultipeerConnectivity. "Online":
+/// everybody in a Game Center match, and the player with the lowest id hosts. The host is the referee: it keeps the
+/// lobby, answers clock pings, picks the start time and decides the finish order. Every phone simulates its own run.
 @MainActor
 @Observable
 final class NearbySession: Identifiable {
@@ -44,7 +45,9 @@ final class NearbySession: Identifiable {
     private(set) var reward: CoinReward?
 
     @ObservationIgnored private let services: AppServices
-    @ObservationIgnored private let transport: MultipeerTransport
+    @ObservationIgnored private let transport: any PeerTransport
+    /// The nearby transport, for discovery and join requests; `nil` online.
+    @ObservationIgnored private let nearby: MultipeerTransport?
     @ObservationIgnored private let codec = NetCodec()
     @ObservationIgnored private var referee = RaceReferee()
     @ObservationIgnored private var clock = ClockSync()
@@ -71,20 +74,46 @@ final class NearbySession: Identifiable {
             isConnected: true
         )
         lobby = LobbyState(host: me)
-        transport = MultipeerTransport(displayName: services.settings.displayName)
+        let multipeer = MultipeerTransport(displayName: services.settings.displayName)
+        transport = multipeer
+        nearby = multipeer
         stage = role == .host ? .lobby : .browsing
-        transport.acceptsPlayers = { [weak self] in
+        multipeer.acceptsPlayers = { [weak self] in
             guard let self else { return false }
             return stage == .lobby && !lobby.isFull
         }
-        transport.onRoomsChanged = { [weak self] rooms in self?.rooms = rooms }
+        multipeer.onRoomsChanged = { [weak self] rooms in self?.rooms = rooms }
         guard networking else { return }
         listen()
         switch role {
         case .host:
-            transport.startHosting()
+            multipeer.startHosting()
         case .joiner:
-            transport.startBrowsing()
+            multipeer.startBrowsing()
+        }
+    }
+
+    /// Online: everybody in the Game Center match races; the player with the lowest id is the referee.
+    init(match: GameKitTransport, services: AppServices) {
+        self.services = services
+        role = match.refereeID == match.localPlayerID ? .host : .joiner
+        me = PlayerInfo(
+            id: PlayerID(match.localPlayerID),
+            nickname: match.localDisplayName,
+            eggSkinID: services.wallet.equippedSkin.id,
+            isHost: role == .host,
+            isReady: false,
+            isConnected: true
+        )
+        lobby = LobbyState(host: me)
+        transport = match
+        nearby = nil
+        let referee = match.connectedPeers.first { $0.id == match.refereeID }
+        stage = role == .host ? .lobby : .connecting(host: referee?.displayName ?? "")
+        hostPeer = role == .host ? nil : referee
+        listen()
+        if role == .joiner {
+            startPinging()
         }
     }
 
@@ -122,7 +151,7 @@ final class NearbySession: Identifiable {
         guard let context = try? JSONEncoder().encode(request) else { return }
         stage = .connecting(host: room.hostName)
         joiningRoomID = room.id
-        transport.join(room, context: context)
+        nearby?.join(room, context: context)
     }
 
     /// Host only: distance and weather for the next race.
@@ -302,9 +331,21 @@ final class NearbySession: Identifiable {
     private func peerConnected(_ peer: RemotePeer) {
         switch role {
         case .host:
-            guard let data = transport.joinContext(for: peer),
-                  let request = try? JSONDecoder().decode(JoinRequest.self, from: data)
-            else { return }
+            let request: JoinRequest
+            if let nearby {
+                // Nearby joiners announce themselves with their invitation.
+                guard let data = nearby.joinContext(for: peer),
+                      let decoded = try? JSONDecoder().decode(JoinRequest.self, from: data)
+                else { return }
+                request = decoded
+            } else {
+                // Online players are known by their Game Center id and name.
+                request = JoinRequest(
+                    playerID: peer.id,
+                    nickname: peer.displayName,
+                    eggSkinID: SkinCatalog.defaultSkinID
+                )
+            }
             let id = PlayerID(request.playerID)
             playersByPeer[peer.id] = id
             let player = PlayerInfo(
@@ -321,7 +362,7 @@ final class NearbySession: Identifiable {
             // Other joiners connect too (the session is a mesh); only the room's phone is the host.
             if hostPeer == nil, peer.id == joiningRoomID {
                 hostPeer = peer
-                transport.stopBrowsing()
+                nearby?.stopBrowsing()
                 startPinging()
             }
         }

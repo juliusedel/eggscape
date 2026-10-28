@@ -54,6 +54,9 @@ lint: ## Check formatting without changing files
 strings: build ## Check that every UI string has an English translation
 	swift scripts/check_strings.swift $(DERIVED) App/Resources/Localizable.xcstrings
 
+art: ## Re-render the spoon images into the asset catalog (procedural, see EggscapeArt)
+	swift run -c release --package-path $(CORE) eggscape-art assets App/Resources/Assets.xcassets
+
 icon: ## Regenerate the app icon
 	swift scripts/make_icon.swift App/Resources/Assets.xcassets/AppIcon.appiconset
 

@@ -2,11 +2,11 @@ import EggscapeArt
 import EggscapeCore
 import Foundation
 
-/// `eggscape-art`: renders the procedural artwork to PNG.
-///
-///     eggscape-art preview <dir> [sheet ...]   preview sheets (frame-white, egg-studio, skins, broken, effects)
-///     eggscape-art assets <Assets.xcassets>    Spoon, SpoonShadow and SpoonHighlight image sets (@3x)
-///     eggscape-art timings                     render times of the expensive textures
+// `eggscape-art`: renders the procedural artwork to PNG.
+//
+//     eggscape-art preview <dir> [sheet ...]   preview sheets (frame-white, egg-studio, skins, broken, effects)
+//     eggscape-art assets <Assets.xcassets>    Spoon, SpoonShadow and SpoonHighlight image sets (@3x)
+//     eggscape-art timings                     render times of the expensive textures
 
 let usage = """
 usage: eggscape-art preview <dir> [sheet ...]

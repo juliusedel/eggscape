@@ -168,7 +168,7 @@ enum Previews {
         return Canvas(width: width, height: height) { x, y in
             let dx = (Double(x) + 0.5) / Double(width) * 2 - 1
             let dy = (Double(y) + 0.5) / Double(height) * 2 - 1
-            let falloff = 1 - 0.035 * min((dx * dx * 0.6 + dy * dy * 0.4), 1)
+            let falloff = 1 - 0.035 * min(dx * dx * 0.6 + dy * dy * 0.4, 1)
             return (base.0 * falloff, base.1 * falloff, base.2 * falloff)
         }
     }

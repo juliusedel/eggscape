@@ -27,7 +27,12 @@ enum Samples {
         EggAppearance(base: color(0xB8232B), pattern: .plain, finish: .glossy, seed: 5),
         EggAppearance(base: color(0xF3EDEE), pattern: .plain, finish: .pearl, seed: 6),
         EggAppearance(base: color(0xE0AE48), pattern: .plain, finish: .metallic, seed: 7),
-        EggAppearance(base: color(0xF4D04A), pattern: .dots(color: color(0xFFFFFF), size: 0.5), finish: .satin, seed: 8),
+        EggAppearance(
+            base: color(0xF4D04A),
+            pattern: .dots(color: color(0xFFFFFF), size: 0.5),
+            finish: .satin,
+            seed: 8
+        ),
         EggAppearance(
             base: color(0xF7F3EC),
             pattern: .stripes(colors: [color(0xE65A73), color(0xF2B33D), color(0x45AFC4)]),
@@ -51,7 +56,12 @@ enum Samples {
             seed: 15
         ),
         EggAppearance(base: color(0xC7CCD3), pattern: .stripes(colors: [color(0x8E949C)]), finish: .metallic, seed: 16),
-        EggAppearance(base: color(0x6A3FA0), pattern: .dots(color: color(0xF2C94C), size: 0.25), finish: .pearl, seed: 17),
+        EggAppearance(
+            base: color(0x6A3FA0),
+            pattern: .dots(color: color(0xF2C94C), size: 0.25),
+            finish: .pearl,
+            seed: 17
+        ),
         EggAppearance(base: color(0x2F8F5B), pattern: .marble(color: color(0xE9F2EA)), finish: .satin, seed: 18),
         EggAppearance(base: color(0xE88A3C), pattern: .zigzag(color: color(0x5B2A86)), finish: .glossy, seed: 19),
         EggAppearance(base: color(0xFFF7E6), pattern: .dipDye(color: color(0x2C7FB8)), finish: .pearl, seed: 20),

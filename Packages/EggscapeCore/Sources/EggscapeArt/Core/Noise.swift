@@ -49,10 +49,6 @@ enum Hash {
 struct Noise: Sendable {
     let seed: UInt64
 
-    init(seed: UInt64) {
-        self.seed = seed
-    }
-
     private static func fade(_ t: Double) -> Double {
         t * t * t * (t * (t * 6 - 15) + 10)
     }

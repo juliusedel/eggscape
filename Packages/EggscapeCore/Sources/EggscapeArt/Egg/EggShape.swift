@@ -3,7 +3,8 @@ import Foundation
 /// The exact shape of the egg: a surface of revolution around its long axis, lying on its side.
 ///
 /// Seen from directly above, the outline is the side profile `r(t) = R · (1 − t²)^e · (1 − k·t)` with `t` running
-/// from −1 at the round end (bottom of the screen) to +1 at the pointy end (top). The exponent and asymmetry were fitted
+/// from −1 at the round end (bottom of the screen) to +1 at the pointy end (top). The exponent and asymmetry were
+/// fitted
 /// to the outline of the owner's reference photo (residual ≈ 1 px at 320 px width): `e` slightly below ½ makes the
 /// ends a little blunter than an ellipse, `k` narrows the top half.
 ///

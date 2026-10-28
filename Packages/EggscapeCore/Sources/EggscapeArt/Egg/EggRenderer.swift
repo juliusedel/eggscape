@@ -89,7 +89,10 @@ enum EggRenderer {
         let halfWidth = 0.5 * (1 - EggShape.asymmetry * Num.clamp(y / shape.halfHeight, -1, 1))
         let q = Vec2(x / halfWidth, y / shape.halfHeight)
         let length = q.length
-        let gradient = Vec2(x / (halfWidth * halfWidth), y / (shape.halfHeight * shape.halfHeight)).length / max(length, 1e-9)
+        let gradient = Vec2(x / (halfWidth * halfWidth), y / (shape.halfHeight * shape.halfHeight)).length / max(
+            length,
+            1e-9
+        )
         return (length - 1) / max(gradient, 1e-9)
     }
 }

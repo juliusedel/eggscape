@@ -28,7 +28,8 @@ public enum EggArt {
     }
 
     /// An egg smashed on the ground, seen from above: a puddle of egg white, a domed yolk and a few shell pieces that
-    /// show the skin outside and the white membrane inside. `width` pixels wide and `round(width · 0.8)` tall, centered.
+    /// show the skin outside and the white membrane inside. `width` pixels wide and `round(width · 0.8)` tall,
+    /// centered.
     public static func broken(_ appearance: EggAppearance, width: Int) -> PixelImage {
         BrokenEggRenderer.render(appearance, width: width)
     }

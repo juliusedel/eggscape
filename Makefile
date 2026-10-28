@@ -17,7 +17,7 @@ FASTLANE := $(shell command -v fastlane 2>/dev/null || echo bundle exec fastlane
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED) -quiet
 SIM_FLAGS := CODE_SIGNING_ALLOWED=NO
 
-.PHONY: help bootstrap gen build test test-core test-app test-ui run format lint icon sounds beta release screenshots clean
+.PHONY: help bootstrap gen build test test-core test-app test-ui run format lint strings icon sounds art beta release screenshots clean
 
 help: ## List the available targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -50,6 +50,9 @@ format: ## Format all Swift sources
 
 lint: ## Check formatting without changing files
 	$(SWIFTFORMAT) --lint .
+
+strings: build ## Check that every UI string has an English translation
+	swift scripts/check_strings.swift $(DERIVED) App/Resources/Localizable.xcstrings
 
 icon: ## Regenerate the app icon
 	swift scripts/make_icon.swift App/Resources/Assets.xcassets/AppIcon.appiconset

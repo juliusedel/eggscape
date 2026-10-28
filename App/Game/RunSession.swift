@@ -37,6 +37,26 @@ struct RunOutcome: Equatable {
     var isPersonalBest: Bool
 }
 
+/// How a multiplayer race plugs into a run: a shared start time and callbacks that report this player's race.
+struct RaceHooks {
+    /// "Los!" on this phone's clock, already converted from the host's clock.
+    var startAt: ContinuousClock.Instant
+    /// About ten times per second.
+    var onProgress: (_ meters: Double, _ eggsLeft: Int) -> Void
+    var onEggDropped: (_ eggsLeft: Int) -> Void
+    var onFinished: (RunOutcome) -> Void
+}
+
+/// Another player's position during a race, for the HUD's progress bar.
+struct OpponentProgress: Identifiable, Equatable {
+    let id: String
+    var name: String
+    var meters: Double
+    var eggsLeft: Int
+    var isConnected: Bool
+    var isDone: Bool
+}
+
 /// Drives one run from calibration to results and connects the game scene with the SwiftUI overlays.
 @MainActor
 @Observable
@@ -70,6 +90,12 @@ final class RunSession: Identifiable {
     private(set) var hud: HUDSnapshot
     /// Held down via the sprint button.
     var isSprinting = false
+    /// Set for multiplayer races; such runs cannot be paused.
+    let race: RaceHooks?
+    /// The other racers, updated by the multiplayer coordinator.
+    var opponents: [OpponentProgress] = []
+    /// A short message about the other racers, e.g. "Mia hat ein Ei verloren".
+    private(set) var toast: String?
 
     @ObservationIgnored private let motion: MotionInput
     @ObservationIgnored private let settings: SettingsStore
@@ -80,6 +106,7 @@ final class RunSession: Identifiable {
     @ObservationIgnored private var calibration: TiltCalibration
     @ObservationIgnored private var countdownTask: Task<Void, Never>?
     @ObservationIgnored private var endTask: Task<Void, Never>?
+    @ObservationIgnored private var toastTask: Task<Void, Never>?
 
     init(
         setup: RunSetup,
@@ -87,9 +114,13 @@ final class RunSession: Identifiable {
         settings: SettingsStore,
         records: RecordsStore?,
         haptics: Haptics,
-        sounds: SoundPlayer
+        sounds: SoundPlayer,
+        race: RaceHooks? = nil
     ) {
         self.setup = setup
+        self.race = race
+        // Racers calibrate in the lobby and go straight to the shared countdown.
+        phase = race == nil ? .calibrating : .countdown(3)
         self.motion = motion
         self.settings = settings
         self.records = records
@@ -104,7 +135,10 @@ final class RunSession: Identifiable {
         scene.usesTouchSteering = usesTouchSteering
         scene.input = { [weak self] in self?.currentInput ?? .level }
         scene.onEvents = { [weak self] events in self?.handle(events) }
-        scene.onHUD = { [weak self] snapshot in self?.hud = snapshot }
+        scene.onHUD = { [weak self] snapshot in
+            self?.hud = snapshot
+            self?.race?.onProgress(snapshot.meters, snapshot.eggsLeft)
+        }
         scene.onFrame = { [weak self] engine in self?.haptics.updateDanger(rimDistance: engine.egg.rimDistance) }
     }
 
@@ -129,6 +163,36 @@ final class RunSession: Identifiable {
         haptics.prepare()
         sounds.prepare()
         UIApplication.shared.isIdleTimerDisabled = phase.keepsScreenAwake
+        // Multiplayer racers calibrated in the lobby; everybody counts down to the same moment.
+        if let race {
+            startCountdown(until: race.startAt)
+        }
+    }
+
+    /// Pausing would stop only this phone's race, so multiplayer runs cannot be paused.
+    var allowsPause: Bool {
+        race == nil
+    }
+
+    /// Shows a short note about another racer.
+    func showToast(_ text: String) {
+        toast = text
+        toastTask?.cancel()
+        toastTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            if Task.isCancelled {
+                return
+            }
+            self?.toast = nil
+        }
+    }
+
+    /// Mid-race recalibration without a countdown (multiplayer): the current pose becomes level immediately.
+    func calibrateInPlace() {
+        if let raw = motion.tilt {
+            calibration.calibrate(at: raw)
+            settings.calibrationZero = raw
+        }
     }
 
     func stop() {
@@ -151,6 +215,7 @@ final class RunSession: Identifiable {
     }
 
     func pause() {
+        guard allowsPause else { return }
         switch phase {
         case .running, .countdown:
             countdownTask?.cancel()
@@ -176,13 +241,28 @@ final class RunSession: Identifiable {
     }
 
     private func startCountdown() {
+        startCountdown(until: .now + .seconds(3))
+    }
+
+    /// Counts "3, 2, 1" down to `start`, then runs. Waiting for the clock instead of sleeping one second three times
+    /// keeps all phones of a race in step.
+    private func startCountdown(until start: ContinuousClock.Instant) {
         countdownTask?.cancel()
         scene.mode = .warmUp
         countdownTask = Task { [weak self] in
-            for count in stride(from: 3, through: 1, by: -1) {
-                self?.phase = .countdown(count)
-                self?.sounds.play(.beep)
-                try? await Task.sleep(for: .seconds(1))
+            var announced = Int.max
+            while true {
+                let remaining = (start - .now).seconds
+                if remaining <= 0 {
+                    break
+                }
+                let count = Int(remaining.rounded(.up))
+                if count < announced, count <= 3 {
+                    announced = count
+                    self?.phase = .countdown(count)
+                    self?.sounds.play(.beep)
+                }
+                try? await Task.sleep(for: .milliseconds(20))
                 if Task.isCancelled {
                     return
                 }
@@ -207,7 +287,8 @@ final class RunSession: Identifiable {
             case .lightningStrike:
                 haptics.thunder()
                 sounds.play(.thunder)
-            case .eggDropped:
+            case let .eggDropped(_, eggsLeft):
+                race?.onEggDropped(eggsLeft)
                 haptics.crack()
                 sounds.play(.crack)
                 Task { [weak self] in
@@ -246,15 +327,18 @@ final class RunSession: Identifiable {
                 break
             }
         }
+        // In a race the clock keeps running for everybody, even while this phone was in the background.
+        let raceTime = race.map { (ContinuousClock.now - $0.startAt).seconds }
         let outcome = RunOutcome(
             mode: setup.mode,
             finished: finished,
-            time: engine.elapsed,
+            time: raceTime ?? engine.elapsed,
             meters: engine.meters,
             eggsLost: engine.eggsLost,
             isPersonalBest: isPersonalBest
         )
         hud = scene.hudSnapshot
+        race?.onFinished(outcome)
         // Give the finish or the broken egg a moment on screen before the results appear.
         endTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1.2))

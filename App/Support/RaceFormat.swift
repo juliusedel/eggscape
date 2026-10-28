@@ -15,3 +15,10 @@ enum RaceFormat {
         Int(max(value, 0).rounded(.down))
     }
 }
+
+extension Duration {
+    /// The duration in seconds as a floating-point number.
+    var seconds: Double {
+        Double(components.seconds) + Double(components.attoseconds) * 1e-18
+    }
+}

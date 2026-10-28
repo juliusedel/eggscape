@@ -3,14 +3,24 @@ import SwiftUI
 /// In-race heads-up display: distance, time, eggs left, pause and sprint.
 struct HUDView: View {
     @Bindable var session: RunSession
+    @State private var showsRaceMenu = false
 
     var body: some View {
         VStack(spacing: 0) {
+            if !session.opponents.isEmpty {
+                RaceProgressBar(session: session)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+            }
             HStack(alignment: .top, spacing: 12) {
                 stats
                 Spacer(minLength: 0)
                 Button {
-                    session.pause()
+                    if session.allowsPause {
+                        session.pause()
+                    } else {
+                        showsRaceMenu = true
+                    }
                 } label: {
                     Image(systemName: "pause.fill")
                         .font(.title2.weight(.semibold))
@@ -24,6 +34,17 @@ struct HUDView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
+            if let toast = session.toast {
+                Text(toast)
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .floatingPanel(cornerRadius: 18)
+                    .padding(.top, 10)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
+
             Spacer(minLength: 0)
 
             HStack {
@@ -32,6 +53,12 @@ struct HUDView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
+        }
+        .animation(.snappy, value: session.toast)
+        .overlay {
+            if showsRaceMenu {
+                RaceMenu(session: session) { showsRaceMenu = false }
+            }
         }
     }
 
@@ -116,5 +143,100 @@ struct SprintButton: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { isSprinting.toggle() }
         .accessibilityIdentifier("hud.sprint")
+    }
+}
+
+/// Every racer's position along the course, shown during multiplayer races.
+struct RaceProgressBar: View {
+    let session: RunSession
+
+    var body: some View {
+        let length = session.hud.courseLength ?? 1
+        VStack(alignment: .leading, spacing: 4) {
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.quaternary)
+                    ForEach(session.opponents) { opponent in
+                        marker(name: opponent.name, isSelf: false, isConnected: opponent.isConnected)
+                            .offset(x: offset(opponent.meters, length: length, width: proxy.size.width))
+                    }
+                    marker(name: String(localized: "Du"), isSelf: true, isConnected: true)
+                        .offset(x: offset(session.hud.meters, length: length, width: proxy.size.width))
+                }
+            }
+            .frame(height: 30)
+        }
+        .padding(10)
+        .floatingPanel(cornerRadius: 18)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Rennstand"))
+        .accessibilityValue(Text(accessibilitySummary))
+    }
+
+    private func offset(_ meters: Double, length: Double, width: CGFloat) -> CGFloat {
+        CGFloat(min(max(meters / length, 0), 1)) * (width - 28)
+    }
+
+    private func marker(name: String, isSelf: Bool, isConnected: Bool) -> some View {
+        VStack(spacing: 0) {
+            Circle()
+                .fill(isSelf ? Color.accentColor : (isConnected ? Color.blue : Color.gray))
+                .frame(width: 14, height: 14)
+                .overlay(Circle().stroke(.white, lineWidth: 2))
+            Text(name)
+                .font(.system(size: 9, weight: .semibold))
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .frame(width: 28)
+    }
+
+    private var accessibilitySummary: String {
+        let others = session.opponents.map { "\($0.name) \(RaceFormat.meters($0.meters)) m" }
+        return ([String(localized: "Du \(RaceFormat.meters(session.hud.meters)) m")] + others).joined(separator: ", ")
+    }
+}
+
+/// The menu behind the pause button during a multiplayer race: the race keeps running.
+private struct RaceMenu: View {
+    let session: RunSession
+    var onClose: () -> Void
+    @Environment(AppServices.self) private var services
+
+    var body: some View {
+        @Bindable var settings = services.settings
+        VStack(spacing: 14) {
+            Text("Das Rennen läuft weiter")
+                .font(.headline)
+            Button {
+                session.calibrateInPlace()
+                onClose()
+            } label: {
+                Label("Neu kalibrieren", systemImage: "scope")
+                    .frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .secondaryActionStyle()
+            Toggle(isOn: $settings.isSoundOn) {
+                Label("Ton", systemImage: settings.isSoundOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
+            }
+            .padding(.horizontal, 6)
+            Button(role: .destructive) {
+                onClose()
+                services.launcher.close()
+            } label: {
+                Label("Rennen verlassen", systemImage: "xmark")
+                    .frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .secondaryActionStyle()
+            Button("Zurück zum Rennen", action: onClose)
+                .primaryActionStyle()
+        }
+        .font(.headline)
+        .controlSize(.large)
+        .padding(24)
+        .frame(maxWidth: 360)
+        .floatingPanel()
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

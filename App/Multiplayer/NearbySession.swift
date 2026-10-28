@@ -419,9 +419,6 @@ final class NearbySession: Identifiable {
                 hostPeer = peer
                 nearby?.stopBrowsing()
                 startPinging()
-            } else if hostPeer == nil, joiningRoomID == nil {
-                // A host that let us in after we gave up on its room.
-                nearby?.cancelJoin()
             }
         }
     }

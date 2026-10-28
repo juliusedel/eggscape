@@ -30,7 +30,8 @@ final class MultipeerTransport: PeerTransport {
     var acceptsPlayers: () -> Bool = { true }
 
     private let localPeer: MCPeerID
-    private let session: MCSession
+    /// A joiner gets a new one for every room it tries (see `cancelJoin()`).
+    private var session: MCSession
     private let delegate: MultipeerDelegate
     private let continuation: AsyncStream<TransportEvent>.Continuation
     private var advertiser: MCNearbyServiceAdvertiser?
@@ -51,10 +52,9 @@ final class MultipeerTransport: PeerTransport {
 
     init(displayName: String) {
         localPeer = Self.peerID(for: displayName)
-        session = MCSession(peer: localPeer, securityIdentity: nil, encryptionPreference: .required)
         (events, continuation) = AsyncStream.makeStream(of: TransportEvent.self)
         delegate = MultipeerDelegate()
-        session.delegate = delegate
+        session = Self.makeSession(for: localPeer, delegate: delegate)
         delegate.transport = self
     }
 
@@ -126,10 +126,15 @@ final class MultipeerTransport: PeerTransport {
         }
     }
 
-    /// Gives up on the room, whether the host has answered yet or not: forgets the invitation and disconnects.
+    /// Gives up on the room, whether the host has answered yet or not: forgets the invitation and leaves the session.
+    /// An invitation cannot be taken back, so the next room gets a new session: a host that lets us in after all only
+    /// reaches the old one, and we leave that again right away (see `peer(_:changed:in:)`).
     func cancelJoin() {
         forgetInvitation()
         session.disconnect()
+        session = Self.makeSession(for: localPeer, delegate: delegate)
+        connectedPeers = []
+        peersByID = [:]
     }
 
     // MARK: PeerTransport
@@ -156,7 +161,14 @@ final class MultipeerTransport: PeerTransport {
 
     // MARK: Delegate callbacks (main actor)
 
-    fileprivate func peer(_ peer: MCPeerID, changed state: MCSessionState) {
+    fileprivate func peer(_ peer: MCPeerID, changed state: MCSessionState, in session: MCSession) {
+        guard session === self.session else {
+            // A room we gave up on let us in after all: its host would hold a seat for us and wait for us to be ready.
+            if state == .connected {
+                session.disconnect()
+            }
+            return
+        }
         let remote = Self.remote(peer)
         switch state {
         case .connected:
@@ -186,7 +198,8 @@ final class MultipeerTransport: PeerTransport {
         }
     }
 
-    fileprivate func received(_ data: Data, from peer: MCPeerID) {
+    fileprivate func received(_ data: Data, from peer: MCPeerID, in session: MCSession) {
+        guard session === self.session else { return }
         continuation.yield(.received(data, from: Self.remote(peer)))
     }
 
@@ -243,6 +256,12 @@ final class MultipeerTransport: PeerTransport {
         RemotePeer(id: "\(peer.hash)-\(peer.displayName)", displayName: peer.displayName)
     }
 
+    private static func makeSession(for peer: MCPeerID, delegate: MultipeerDelegate) -> MCSession {
+        let session = MCSession(peer: peer, securityIdentity: nil, encryptionPreference: .required)
+        session.delegate = delegate
+        return session
+    }
+
     /// `MCPeerID` takes at most 63 bytes of UTF-8 and raises an uncatchable exception for longer or empty names. Whole
     /// characters are dropped from the end, so an emoji is never cut in half; the lobby shows the full nickname from
     /// the join request anyway.
@@ -276,6 +295,11 @@ private struct PeerBox: @unchecked Sendable {
     let peer: MCPeerID
 }
 
+/// The session a callback came from; the main actor only checks whether it is the current one, or disconnects it.
+private struct SessionBox: @unchecked Sendable {
+    let session: MCSession
+}
+
 /// MultipeerConnectivity's reply block for an invitation; called once, on the main actor.
 struct InvitationReply: @unchecked Sendable {
     let callback: (Bool, MCSession?) -> Void
@@ -291,14 +315,16 @@ private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServ
     /// Set once right after creation, read on the main actor only.
     @MainActor weak var transport: MultipeerTransport?
 
-    func session(_: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
+    func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         let box = PeerBox(peer: peerID)
-        Task { @MainActor in transport?.peer(box.peer, changed: state) }
+        let source = SessionBox(session: session)
+        Task { @MainActor in transport?.peer(box.peer, changed: state, in: source.session) }
     }
 
-    func session(_: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
+    func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         let box = PeerBox(peer: peerID)
-        Task { @MainActor in transport?.received(data, from: box.peer) }
+        let source = SessionBox(session: session)
+        Task { @MainActor in transport?.received(data, from: box.peer, in: source.session) }
     }
 
     func session(_: MCSession, didReceive _: InputStream, withName _: String, fromPeer _: MCPeerID) {}

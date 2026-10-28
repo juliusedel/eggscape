@@ -6,9 +6,11 @@ import os
 // lives in this file behind `PeerTransport`, so a Network framework transport can replace it without touching the
 // lobby or the race. See docs/ASSUMPTIONS.md.
 
-/// Hosts or joins a nearby room ("Raum") with MultipeerConnectivity: the host advertises, joiners browse and invite
-/// themselves, the host accepts automatically while there is room.
-@available(iOS, deprecated: 27.0, message: "MultipeerConnectivity is deprecated; replace with Network framework")
+// Hosts or joins a nearby room ("Raum") with MultipeerConnectivity: the host advertises, joiners browse and invite
+// themselves, the host accepts automatically while there is room.
+#if hasAttribute(diagnose)
+    @diagnose(DeprecatedDeclaration, as: ignored)
+#endif
 @MainActor
 final class MultipeerTransport: PeerTransport {
     static let serviceType = "eggscape"
@@ -32,6 +34,8 @@ final class MultipeerTransport: PeerTransport {
     private var advertiser: MCNearbyServiceAdvertiser?
     private var browser: MCNearbyServiceBrowser?
     private var peersByID: [String: MCPeerID] = [:]
+    /// What each joiner sent with its invitation (host side), by peer id.
+    private var joinContexts: [String: Data] = [:]
     private var foundPeers: [String: (peer: MCPeerID, room: DiscoveredRoom)] = [:]
     private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "nearby")
 
@@ -136,9 +140,17 @@ final class MultipeerTransport: PeerTransport {
         continuation.yield(.received(data, from: Self.remote(peer)))
     }
 
-    fileprivate func invitation(from peer: MCPeerID, reply: InvitationReply) {
+    fileprivate func invitation(from peer: MCPeerID, context: Data?, reply: InvitationReply) {
         let accept = connectedPeers.count + 1 < Self.maxPlayers && acceptsPlayers()
+        if accept, let context {
+            joinContexts[Self.remote(peer).id] = context
+        }
         reply.callback(accept, accept ? session : nil)
+    }
+
+    /// The data a joiner sent with its invitation (host side).
+    func joinContext(for peer: RemotePeer) -> Data? {
+        joinContexts[peer.id]
     }
 
     fileprivate func found(_ peer: MCPeerID, info: [String: String]?) {
@@ -191,8 +203,10 @@ struct InvitationReply: @unchecked Sendable {
     let callback: (Bool, MCSession?) -> Void
 }
 
-/// Receives MultipeerConnectivity callbacks on its private queues and forwards them to the main actor.
-@available(iOS, deprecated: 27.0, message: "MultipeerConnectivity is deprecated; replace with Network framework")
+// Receives MultipeerConnectivity callbacks on its private queues and forwards them to the main actor.
+#if hasAttribute(diagnose)
+    @diagnose(DeprecatedDeclaration, as: ignored)
+#endif
 private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServiceAdvertiserDelegate,
     MCNearbyServiceBrowserDelegate, @unchecked Sendable
 {
@@ -229,14 +243,14 @@ private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServ
     func advertiser(
         _: MCNearbyServiceAdvertiser,
         didReceiveInvitationFromPeer peerID: MCPeerID,
-        withContext _: Data?,
+        withContext context: Data?,
         invitationHandler: @escaping (Bool, MCSession?) -> Void
     ) {
         let reply = InvitationReply(callback: invitationHandler)
         let box = PeerBox(peer: peerID)
         Task { @MainActor in
             if let transport {
-                transport.invitation(from: box.peer, reply: reply)
+                transport.invitation(from: box.peer, context: context, reply: reply)
             } else {
                 reply.callback(false, nil)
             }

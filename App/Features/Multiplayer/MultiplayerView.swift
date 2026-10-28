@@ -17,7 +17,7 @@ struct MultiplayerView: View {
                     }
                     .accessibilityIdentifier("multiplayer.hotSeat")
                     NavigationLink {
-                        NearbyPlaceholderView()
+                        NearbyView()
                     } label: {
                         ModeRow(
                             title: "In der Nähe",
@@ -51,16 +51,5 @@ struct ModeRow: View {
                 .foregroundStyle(.tint)
         }
         .padding(.vertical, 6)
-    }
-}
-
-/// Stand-in until nearby play is wired up.
-private struct NearbyPlaceholderView: View {
-    var body: some View {
-        ContentUnavailableView(
-            "In der Nähe",
-            systemImage: "dot.radiowaves.left.and.right",
-            description: Text("Spiele mit Handys in deiner Nähe.")
-        )
     }
 }

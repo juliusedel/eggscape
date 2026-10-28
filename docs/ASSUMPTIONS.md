@@ -10,9 +10,9 @@ revisited deliberately.
 - **No Homebrew on the build Mac.** `brew install xcodegen` was not possible, so `scripts/bootstrap.sh` builds pinned
   versions of XcodeGen (2.46.0) and SwiftFormat (0.64.4) from source into `.tools/` (git-ignored). The Makefile
   prefers tools on `PATH`, so `brew install xcodegen swiftformat fastlane` remains the normal setup.
-- **No GitHub credentials on the build Mac.** The repository could not be cloned or pushed. Work happens in a local
-  repository whose first commit mirrors the GitHub "Initial commit" (tagged `local-initial`); `docs/RELEASE.md`
-  explains how to replay the work onto `origin/main` and push.
+- **No GitHub credentials on the build Mac.** The repository could not be cloned or pushed at first, so the work
+  started in a local repository whose first commit mirrored the GitHub "Initial commit". That history was later
+  replayed onto GitHub's initial commit and merged into `main`.
 - **fastlane is not installed on the build Mac** (system Ruby 2.6 is too old for current fastlane). The lanes are
   written and syntax-checked but could not be executed; they need `brew install fastlane` (or `bundle install`).
 - **Swift 6 language mode** everywhere, with strict concurrency checking.

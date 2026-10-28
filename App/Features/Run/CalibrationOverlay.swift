@@ -6,7 +6,8 @@ struct CalibrationOverlay: View {
     var onCancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
+        // Scrolls only when large text does not fit.
+        ScrollView {
             VStack(spacing: 16) {
                 Text("Halte dein Handy wie einen Löffel")
                     .font(.title2.bold())
@@ -31,15 +32,18 @@ struct CalibrationOverlay: View {
                 .primaryActionStyle()
                 .controlSize(.large)
                 .accessibilityIdentifier("calibration.calibrate")
-                Button("Abbrechen", role: .cancel, action: onCancel)
-                    .accessibilityIdentifier("calibration.cancel")
+                // Says where it leads: back to the pause menu, or out of a run that has not begun yet.
+                Button(role: .cancel, action: onCancel) {
+                    Text(session.isRecalibrating ? "Zurück" : "Abbrechen")
+                }
+                .accessibilityIdentifier("calibration.cancel")
             }
             .padding(24)
             .floatingPanel()
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            Spacer()
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
 }
 

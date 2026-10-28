@@ -85,8 +85,8 @@ struct RaceRoomView: View {
                     .id(ObjectIdentifier(run))
                 }
             }
-            .onAppear { services.motion.start() }
-            .onDisappear { services.motion.stop() }
+            .onAppear { services.motion.start(for: session) }
+            .onDisappear { services.motion.stop(for: session) }
     }
 
     @ViewBuilder

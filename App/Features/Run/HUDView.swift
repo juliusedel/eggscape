@@ -3,6 +3,8 @@ import SwiftUI
 /// In-race heads-up display: distance, time, eggs left, pause and sprint.
 struct HUDView: View {
     @Bindable var session: RunSession
+    /// Leaves a multiplayer race from its menu; single runs are quit from the pause menu.
+    var onQuit: () -> Void
     @State private var showsRaceMenu = false
 
     var body: some View {
@@ -28,7 +30,10 @@ struct HUDView: View {
                 }
                 .buttonStyle(.plain)
                 .floatingPanel(cornerRadius: 26)
+                // The run is over; only its results are still to come.
+                .disabled(session.hasEnded)
                 .accessibilityLabel(Text("Pause"))
+                .accessibilityShowsLargeContentViewer()
                 .accessibilityIdentifier("hud.pause")
             }
             .padding(.horizontal, 16)
@@ -57,9 +62,11 @@ struct HUDView: View {
         .animation(.snappy, value: session.toast)
         .overlay {
             if showsRaceMenu {
-                RaceMenu(session: session) { showsRaceMenu = false }
+                RaceMenu(session: session, onLeave: onQuit) { showsRaceMenu = false }
             }
         }
+        // The spoon needs most of the screen, so the HUD grows only so far; the stats shrink to fit beside the button.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private var stats: some View {
@@ -84,6 +91,8 @@ struct HUDView: View {
                 .accessibilityLabel(Text("Zeit \(RaceFormat.time(hud.elapsed))"))
             }
             .font(.headline.monospacedDigit())
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             HStack(spacing: 14) {
                 EggCounter(left: hud.eggsLeft, total: hud.eggsTotal)
                 if hud.weather.kind != .clear {
@@ -121,6 +130,8 @@ struct EggCounter: View {
 /// Hold to sprint: faster, but the egg wobbles more.
 struct SprintButton: View {
     @Binding var isSprinting: Bool
+    /// Unlike an `onEnded` callback this also resets when the system cancels the touch (a call, Control Center).
+    @GestureState private var isPressed = false
 
     var body: some View {
         VStack(spacing: 2) {
@@ -138,9 +149,11 @@ struct SprintButton: View {
         .contentShape(Circle())
         .gesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isSprinting = true }
-                .onEnded { _ in isSprinting = false }
+                .updating($isPressed) { _, pressed, _ in pressed = true }
         )
+        .onChange(of: isPressed) { _, pressed in
+            isSprinting = pressed
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Sprinten"))
         .accessibilityHint(Text("Gedrückt halten, um schneller zu laufen. Das Ei wackelt dann stärker."))
@@ -205,8 +218,10 @@ struct RaceProgressBar: View {
 /// The menu behind the pause button during a multiplayer race: the race keeps running.
 private struct RaceMenu: View {
     let session: RunSession
+    var onLeave: () -> Void
     var onClose: () -> Void
     @Environment(AppServices.self) private var services
+    @State private var confirmsLeave = false
 
     var body: some View {
         @Bindable var settings = services.settings
@@ -226,13 +241,17 @@ private struct RaceMenu: View {
             }
             .padding(.horizontal, 6)
             Button(role: .destructive) {
-                onClose()
-                services.launcher.close()
+                confirmsLeave = true
             } label: {
                 Label("Rennen verlassen", systemImage: "xmark")
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
             .secondaryActionStyle()
+            .confirmationDialog("Rennen verlassen?", isPresented: $confirmsLeave, titleVisibility: .visible) {
+                Button("Verlassen", role: .destructive, action: onLeave)
+            } message: {
+                Text("Die anderen laufen ohne dich weiter.")
+            }
             Button("Zurück zum Rennen", action: onClose)
                 .primaryActionStyle()
         }

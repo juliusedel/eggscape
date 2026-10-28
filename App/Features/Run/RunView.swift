@@ -35,25 +35,33 @@ struct RunView<Results: View>: View {
         .onAppear {
             session.start()
             if wantsCamera {
-                services.camera.start()
+                services.camera.start(for: session)
             }
             session.scene.showsCamera = showsCamera
         }
         .onDisappear {
             session.stop()
-            services.camera.stop()
+            services.camera.stop(for: session)
         }
         .onChange(of: services.camera.status) {
             session.scene.showsCamera = showsCamera
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase != .active {
+            if newPhase == .active {
+                services.haptics.resume()
+            } else {
                 session.pause()
             }
         }
         .onChange(of: session.phase) { oldPhase, newPhase in
             if case .countdown = oldPhase, newPhase == .running {
                 showsGo = true
+            }
+            // A paused run may wait for a long time, maybe in the background; it does not need the camera meanwhile.
+            if newPhase == .paused {
+                services.camera.stop(for: session)
+            } else if oldPhase == .paused, wantsCamera {
+                services.camera.start(for: session)
             }
         }
     }
@@ -72,11 +80,15 @@ struct RunView<Results: View>: View {
     private var overlay: some View {
         switch session.phase {
         case .calibrating:
-            CalibrationOverlay(session: session, onCancel: onQuit)
+            // A recalibration from the pause menu goes back there instead of ending the run.
+            CalibrationOverlay(
+                session: session,
+                onCancel: session.isRecalibrating ? session.cancelRecalibration : onQuit
+            )
         case let .countdown(count):
             CountdownOverlay(count: count)
         case .running:
-            HUDView(session: session)
+            HUDView(session: session, onQuit: onQuit)
                 .overlay {
                     if showsGo {
                         GoBanner { showsGo = false }
@@ -84,7 +96,7 @@ struct RunView<Results: View>: View {
                 }
         case .paused:
             ZStack {
-                HUDView(session: session)
+                HUDView(session: session, onQuit: onQuit)
                     .allowsHitTesting(false)
                 PauseMenu(session: session, onQuit: onQuit)
             }

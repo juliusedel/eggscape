@@ -10,8 +10,13 @@ final class Haptics {
     private let settings: SettingsStore
     private let supportsEngine = CHHapticEngine.capabilitiesForHardware().supportsHaptics
     private var engine: CHHapticEngine?
+    /// `false` until the engine started and again once it stopped, e.g. because the app went to the background.
+    /// Nothing is played meanwhile: `start()` blocks, so it is never tried per frame or footstep.
+    private var isEngineRunning = false
     private var dangerPlayer: CHHapticAdvancedPatternPlayer?
     private var dangerLevel = 0.0
+    /// The runs that use the engine; on "Nochmal" the new one prepares before the old one shuts down.
+    private var owners = Leases()
     private lazy var lightImpact = UIImpactFeedbackGenerator(style: .light)
     private lazy var heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
     private lazy var notification = UINotificationFeedbackGenerator()
@@ -26,27 +31,25 @@ final class Haptics {
         settings.isHapticsOn
     }
 
-    /// Starts the haptic engine ahead of a run so the first footstep is not delayed.
-    func prepare() {
-        guard isEnabled else { return }
-        guard supportsEngine else {
-            lightImpact.prepare()
-            heavyImpact.prepare()
-            return
-        }
-        if engine == nil {
-            makeEngine()
-        }
-        do {
-            try engine?.start()
-        } catch {
-            logger.error("Haptic engine did not start: \(error.localizedDescription)")
-        }
+    /// Starts the haptic engine ahead of a run so the first footstep is not delayed. It keeps running until the last
+    /// owner has called `shutDown(for:)`.
+    func prepare(for owner: AnyObject) {
+        owners.acquire(owner)
+        startEngine()
     }
 
-    func shutDown() {
+    /// The app is active again. The system stops the engine in the background and nothing would start it again
+    /// during the run (races never even pause), so it is restarted here for the runs that still need it.
+    func resume() {
+        guard owners.isHeld else { return }
+        startEngine()
+    }
+
+    func shutDown(for owner: AnyObject) {
+        guard owners.release(owner) else { return }
         stopDanger()
         engine?.stop()
+        isEngineRunning = false
     }
 
     // MARK: Events
@@ -132,7 +135,7 @@ final class Haptics {
             stopDanger()
             return
         }
-        guard supportsEngine, let engine else { return }
+        guard supportsEngine, isEngineRunning, let engine else { return }
         let level = smoothstep(0.5, 1, rimDistance)
         guard level > 0.02 else {
             stopDanger()
@@ -173,8 +176,10 @@ final class Haptics {
                 atTime: CHHapticTimeImmediate
             )
         } catch {
+            // The engine is not really running; wait for it to be started again instead of rebuilding every frame.
             logger.error("Danger haptic failed: \(error.localizedDescription)")
             dangerPlayer = nil
+            isEngineRunning = false
         }
     }
 
@@ -186,6 +191,26 @@ final class Haptics {
 
     // MARK: Plumbing
 
+    private func startEngine() {
+        guard isEnabled else { return }
+        guard supportsEngine else {
+            lightImpact.prepare()
+            heavyImpact.prepare()
+            return
+        }
+        if engine == nil {
+            makeEngine()
+        }
+        guard let engine else { return }
+        do {
+            try engine.start()
+            isEngineRunning = true
+        } catch {
+            isEngineRunning = false
+            logger.error("Haptic engine did not start: \(error.localizedDescription)")
+        }
+    }
+
     private func makeEngine() {
         do {
             let engine = try CHHapticEngine()
@@ -196,7 +221,7 @@ final class Haptics {
                 Task { @MainActor in self?.restartAfterReset() }
             }
             engine.stoppedHandler = { @Sendable [weak self] _ in
-                Task { @MainActor in self?.dangerPlayer = nil }
+                Task { @MainActor in self?.engineStopped() }
             }
             self.engine = engine
         } catch {
@@ -207,7 +232,20 @@ final class Haptics {
     private func restartAfterReset() {
         dangerPlayer = nil
         dangerLevel = 0
-        try? engine?.start()
+        isEngineRunning = false
+        resume()
+    }
+
+    /// The system stopped the engine. That usually happens on the way into the background, and `resume()` follows
+    /// once the app is active again; a stop while the app stays active, or a notice that arrives late, is answered
+    /// right away.
+    private func engineStopped() {
+        dangerPlayer = nil
+        dangerLevel = 0
+        isEngineRunning = false
+        if UIApplication.shared.applicationState == .active {
+            resume()
+        }
     }
 
     private func transient(intensity: Float, sharpness: Float, fallback: () -> Void) {
@@ -232,6 +270,7 @@ final class Haptics {
             fallback()
             return
         }
+        guard isEngineRunning else { return }
         do {
             let pattern = try CHHapticPattern(events: events, parameterCurves: curves)
             try engine.makePlayer(with: pattern).start(atTime: CHHapticTimeImmediate)

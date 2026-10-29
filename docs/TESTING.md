@@ -58,10 +58,39 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Zeitrennen Kurz/Mittel/Lang with each weather, personal bests appear in Einzelspieler and Bestenliste.
 - [ ] Endlos: the weather gets rougher every 100 m; the record is kept.
 - [ ] Gemeinsam an einem Handy: 2–4 players, pass-the-phone screens, final standings, "Nochmal".
-- [ ] Coins are credited after runs; buying, equipping and seeing a new egg skin in the next run works.
+- [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works.
 - [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins.
 
-### In-app purchases (Sandbox account)
+### Shop
+- [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
+      in front of it and its price, cheapest first. "1 von 20 Eiern freigeschaltet" sits above the grid.
+- [ ] After one clean 150 m run in calm weather (55 coins) the padlock and price of Hofei Braun turn orange; the
+      eggs that still cost more keep a frosted padlock and a grey price.
+- [ ] Tapping an orange (affordable) egg asks "Ei freischalten?" with its name and price. Confirming takes exactly
+      that many coins, the padlock disappears, the egg is put on (orange border, "Ausgewählt"), the coin sound
+      plays and, with Vibration on, a short success vibration follows. "Abbrechen" changes nothing.
+- [ ] Tapping a grey (too expensive) egg says how many coins are missing. "Münzen kaufen" opens the Münzen page at
+      its top, also when the egg was at the bottom of the grid; "Abbrechen" stays on the Eier page.
+- [ ] Tapping an unlocked egg puts it on without asking; the next run shows it in the spoon.
+- [ ] Tapping the coin balance (with the plus) on the Eier page opens the Münzen page; the picker switches back.
+- [ ] VoiceOver on an egg: name, then "Gesperrt" and its price, then "Schaltet das Ei frei." or how many coins are
+      missing; unlocked eggs say "Freigeschaltet", the egg in use is announced as selected. The balance says what it
+      opens; every coin pack reads its name, price, coins and, on one of them, "bestes Angebot".
+- [ ] Largest Dynamic Type size: names, prices and the coin cards stay readable, the padlocks stay on the eggs.
+
+### In-app purchases
+Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed.
+- [ ] Shop → Münzen lists the three packs as cards with 0,99 € / 2,99 € / 5,99 € (German storefront of the
+      configuration); the 5.000 pack carries "Bestes Angebot".
+- [ ] Buying a pack credits its coins exactly once (the balance counts up); Debug → StoreKit → Manage Transactions
+      lists the transaction as finished.
+- [ ] With Ask to Buy enabled in the StoreKit configuration (open `StoreKit/Eggscape.storekit`, Editor menu), buying
+      says once "Kauf ausstehend"; approving it in Manage Transactions credits the coins. With failing transactions
+      enabled there, buying shows "Kauf nicht möglich" and credits nothing.
+- [ ] Without a StoreKit configuration (Run scheme → Options → StoreKit Configuration: None) the Münzen page says
+      that coin packs are not available right now and offers "Erneut versuchen"; the Eier page keeps working.
+
+On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] The three coin packs load with localized prices.
 - [ ] Buying a pack credits the coins exactly once, also after force-quitting the app during the purchase.
 - [ ] "Ask to Buy" (Family Sharing child account) says once that the purchase waits for approval, and credits the

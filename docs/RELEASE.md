@@ -45,8 +45,13 @@ Xcode 26 or later is required (the app uses the iOS 26 Liquid Glass styles when 
    | `de.juliusedel.eggscape.coins.medium`   | Coins medium      | 2000  | 2,99 €          |
    | `de.juliusedel.eggscape.coins.large`    | Coins large       | 5000  | 5,99 €          |
 
+   The amounts are sized against the egg prices (see `docs/ASSUMPTIONS.md`): the small pack buys any common egg, the
+   medium one any rare egg, the large one any egg but the last. The shop's "Bestes Angebot" badge follows the prices:
+   it marks whichever pack gives the most coins for the money in the player's storefront (at the suggested prices,
+   the large one).
+
    Add German and English display names/descriptions (see `StoreKit/Eggscape.storekit`) and a review screenshot of
-   the shop for each product. Submit them together with the first app version.
+   the coin shop (Shop → Münzen) for each product. Submit them together with the first app version.
 3. For local testing Xcode uses `StoreKit/Eggscape.storekit` automatically (Run scheme). On a device, sign in to a
    **Sandbox Apple Account** under Settings → Developer.
 
@@ -103,5 +108,5 @@ make release
 
 Uploads a new build plus metadata and screenshots; it does **not** submit. In App Store Connect (Owner): pick the
 build, attach the three in-app purchases and the four leaderboards to the version, add review notes ("Tilt the phone
-to keep the egg on the spoon; in the Simulator you can drag the egg with a finger. Coin packs are consumables. No
-login required."), then **Submit for Review**.
+to keep the egg on the spoon; in the Simulator you can drag the egg with a finger. Eggs are unlocked with coins
+earned by playing; coin packs (Shop → Münzen) are consumables. No login required."), then **Submit for Review**.

@@ -13,10 +13,11 @@ private func decode(_ json: String) throws -> Wallet {
 }
 
 struct WalletTests {
-    @Test func aNewWalletHasTheFreeSkinsAndNoCoins() {
+    @Test func aNewWalletHasOnlyTheClassicEggAndNoCoins() {
         let wallet = Wallet()
         #expect(wallet.coins == 0)
-        #expect(wallet.ownedSkinIDs == ["classic-white", "farm-brown"])
+        #expect(wallet.ownedSkinIDs == ["classic-white"])
+        #expect(!wallet.owns(skinID: "farm-brown"))
         #expect(wallet.equippedSkinID == "classic-white")
         #expect(wallet.equippedSkin == SkinCatalog.classicWhite)
         #expect(wallet.processedTransactionIDs.isEmpty)
@@ -38,14 +39,14 @@ struct WalletTests {
     @Test func purchaseSpendsCoinsAndAddsTheSkin() throws {
         var wallet = wallet(coins: 500)
         try wallet.purchase(skin: SkinCatalog.polkaDots)
-        #expect(wallet.coins == 100)
+        #expect(wallet.coins == 50)
         #expect(wallet.owns(skinID: "polka-dots"))
         // Buying does not put the skin on.
         #expect(wallet.equippedSkinID == "classic-white")
     }
 
     @Test func theExactPriceIsEnough() throws {
-        var wallet = wallet(coins: 2500)
+        var wallet = wallet(coins: 4800)
         try wallet.purchase(skin: SkinCatalog.goldMetallic)
         #expect(wallet.coins == 0)
         #expect(wallet.owns(skinID: "gold-metallic"))
@@ -53,11 +54,31 @@ struct WalletTests {
 
     @Test func purchaseNeedsEnoughCoins() {
         var wallet = wallet(coins: 100)
-        #expect(throws: WalletError.insufficientCoins(missing: 50)) {
-            try wallet.purchase(skin: SkinCatalog.skyBlue)
+        #expect(throws: WalletError.insufficientCoins(missing: 20)) {
+            try wallet.purchase(skin: SkinCatalog.lemonYellow)
         }
         #expect(wallet.coins == 100)
-        #expect(!wallet.owns(skinID: "sky-blue"))
+        #expect(!wallet.owns(skinID: "lemon-yellow"))
+    }
+
+    @Test func coinsMissingCountDownToZero() throws {
+        var wallet = wallet(coins: 100)
+        #expect(wallet.coinsMissing(for: SkinCatalog.lemonYellow) == 20)
+        #expect(wallet.coinsMissing(for: SkinCatalog.skyBlue) == 0)
+        #expect(wallet.coinsMissing(for: SkinCatalog.classicWhite) == 0)
+        // The catalog's price counts, not the one a stale or hand-made skin claims.
+        let bargain = EggSkin(
+            id: "gold-metallic",
+            appearance: SkinCatalog.goldMetallic.appearance,
+            price: 1,
+            tier: .common
+        )
+        #expect(wallet.coinsMissing(for: bargain) == 4700)
+
+        try wallet.purchase(skin: SkinCatalog.skyBlue)
+        #expect(wallet.coinsMissing(for: SkinCatalog.farmBrown) == 45)
+        wallet.credit(coins: 45)
+        #expect(wallet.coinsMissing(for: SkinCatalog.farmBrown) == 0)
     }
 
     @Test func ownedSkinsCannotBeBoughtAgain() throws {
@@ -69,7 +90,7 @@ struct WalletTests {
         #expect(wallet.coins == 800)
         // Free skins are always owned.
         #expect(throws: WalletError.alreadyOwned) {
-            try wallet.purchase(skin: SkinCatalog.farmBrown)
+            try wallet.purchase(skin: SkinCatalog.classicWhite)
         }
         #expect(wallet.coins == 800)
     }
@@ -85,7 +106,7 @@ struct WalletTests {
     }
 
     @Test func theCatalogSetsThePrice() throws {
-        var wallet = wallet(coins: 3000)
+        var wallet = wallet(coins: 5000)
         let bargain = EggSkin(
             id: "gold-metallic",
             appearance: SkinCatalog.goldMetallic.appearance,
@@ -93,7 +114,7 @@ struct WalletTests {
             tier: .common
         )
         try wallet.purchase(skin: bargain)
-        #expect(wallet.coins == 500)
+        #expect(wallet.coins == 200)
     }
 
     @Test func onlyOwnedSkinsCanBeEquipped() throws {
@@ -101,16 +122,22 @@ struct WalletTests {
         #expect(throws: WalletError.notOwned) {
             try wallet.equip(skinID: "gold-metallic")
         }
+        // The brown egg has to be unlocked like any other.
+        #expect(throws: WalletError.notOwned) {
+            try wallet.equip(skinID: "farm-brown")
+        }
         #expect(throws: WalletError.unknownSkin) {
             try wallet.equip(skinID: "unicorn")
         }
         #expect(wallet.equippedSkinID == "classic-white")
 
+        try wallet.purchase(skin: SkinCatalog.farmBrown)
         try wallet.equip(skinID: "farm-brown")
         #expect(wallet.equippedSkin == SkinCatalog.farmBrown)
         try wallet.purchase(skin: SkinCatalog.goldMetallic)
         try wallet.equip(skinID: "gold-metallic")
         #expect(wallet.equippedSkin == SkinCatalog.goldMetallic)
+        #expect(wallet.coins == 145)
     }
 
     @Test func eachTransactionIsCreditedOnce() {
@@ -140,7 +167,7 @@ struct WalletTests {
         let data = try encoder.encode(wallet)
         let decoded = try JSONDecoder().decode(Wallet.self, from: data)
         #expect(decoded == wallet)
-        #expect(decoded.coins == 4245)
+        #expect(decoded.coins == 3245)
         #expect(decoded.equippedSkinID == "marble")
         // Sets are written sorted, so the same wallet always gives the same data.
         #expect(try encoder.encode(decoded) == data)
@@ -150,11 +177,21 @@ struct WalletTests {
         let wallet = try decode(#"{"coins": -40, "ownedSkinIDs": ["gold-metallic"], "equippedSkinID": "marble"}"#)
         #expect(wallet.coins == 0)
         // Free skins are always owned, and an equipped skin that is not owned falls back to the default.
-        #expect(wallet.ownedSkinIDs == ["gold-metallic", "classic-white", "farm-brown"])
+        #expect(wallet.ownedSkinIDs == ["gold-metallic", "classic-white"])
         #expect(wallet.equippedSkinID == "classic-white")
         #expect(wallet.processedTransactionIDs.isEmpty)
 
         #expect(try decode("{}") == Wallet())
+    }
+
+    @Test func aBrownEggFromWhenItWasFreeIsKept() throws {
+        // Earlier builds gave every player the brown egg and stored it with the owned skins.
+        let wallet = try decode(#"""
+        {"coins": 30, "ownedSkinIDs": ["classic-white", "farm-brown"], "equippedSkinID": "farm-brown"}
+        """#)
+        #expect(wallet.owns(skinID: "farm-brown"))
+        #expect(wallet.equippedSkin == SkinCatalog.farmBrown)
+        #expect(wallet.coins == 30)
     }
 
     @Test func aSkinFromANewerVersionKeepsTheEggVisible() throws {

@@ -39,6 +39,13 @@ public struct Wallet: Hashable, Sendable {
         ownedSkinIDs.contains(skinID)
     }
 
+    /// The coins still missing to buy `skin` at the catalog's price, 0 once the balance covers it, so the shop can
+    /// tell a locked skin the player can unlock right away from one that is still out of reach.
+    public func coinsMissing(for skin: EggSkin) -> Int {
+        let price = SkinCatalog.skin(id: skin.id)?.price ?? skin.price
+        return max(price - coins, 0)
+    }
+
     /// Adds coins earned by playing, e.g. `CoinReward.total`. `coins` must not be negative.
     public mutating func credit(coins amount: Int) {
         precondition(amount >= 0, "a credit cannot take coins away")

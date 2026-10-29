@@ -57,7 +57,7 @@ final class GameScene: SKScene {
     private var lastUpdate: TimeInterval?
     private var events: [RunEvent] = []
     private var hudCountdown = 0.0
-    private var layout = SceneLayout(size: CGSize(width: 402, height: 874))
+    private var layout: SceneLayout
     private var artwork: GameArtwork?
     private var screenScale: CGFloat = 3
     private var shake = 0.0
@@ -70,6 +70,10 @@ final class GameScene: SKScene {
     private let spoon = SKSpriteNode()
     private let spoonHighlight = SKSpriteNode()
     private let eggShadow = SKSpriteNode()
+    /// The egg nearly fills the bowl, so its shadow reaches past the spoon. On the white surface that is the table;
+    /// over the camera image, where the spoon casts no shadow either, the shadow is cut to the spoon (`spoonMask`).
+    private let eggShadowClip = SKCropNode()
+    private let spoonMask = SKSpriteNode()
     private let egg = SKSpriteNode()
     private let cameraNode = SKCameraNode()
     private var weather: WeatherOverlayNode?
@@ -79,6 +83,7 @@ final class GameScene: SKScene {
         self.appearance = appearance
         self.reduceMotion = reduceMotion
         timestep = FixedTimestep(rate: engine.config.simulationRate)
+        layout = SceneLayout(size: CGSize(width: 402, height: 874), config: engine.config)
         super.init(size: CGSize(width: 402, height: 874))
         scaleMode = .resizeFill
         anchorPoint = .zero
@@ -89,9 +94,10 @@ final class GameScene: SKScene {
         spoon.zPosition = 3
         spoonHighlight.zPosition = 4
         spoonHighlight.blendMode = .add
-        eggShadow.zPosition = 5
+        eggShadowClip.zPosition = 5
+        eggShadowClip.addChild(eggShadow)
         egg.zPosition = 6
-        [backdrop, ground, spoonShadow, spoon, spoonHighlight, eggShadow, egg, cameraNode].forEach(addChild)
+        [backdrop, ground, spoonShadow, spoon, spoonHighlight, eggShadowClip, egg, cameraNode].forEach(addChild)
         camera = cameraNode
         applyBackground()
     }
@@ -135,6 +141,7 @@ final class GameScene: SKScene {
         backgroundColor = showsCamera ? .clear : SKColor(red: 0.969, green: 0.965, blue: 0.953, alpha: 1)
         backdrop.isHidden = showsCamera
         spoonShadow.isHidden = showsCamera
+        eggShadowClip.maskNode = showsCamera ? spoonMask : nil
         weather?.isOverCamera = showsCamera
         updateVignette()
     }
@@ -148,7 +155,7 @@ final class GameScene: SKScene {
     // MARK: Layout
 
     private func layOutNodes() {
-        layout = SceneLayout(size: size)
+        layout = SceneLayout(size: size, config: engine.config)
         cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
         weather?.layOut(size: size)
         guard let artwork, size.width > 0, size.height > 0 else { return }
@@ -157,7 +164,8 @@ final class GameScene: SKScene {
         backdrop.size = size
         backdrop.position = CGPoint(x: size.width / 2, y: size.height / 2)
 
-        // The three spoon images share one registration on the bowl center, so they are placed by it.
+        // The three spoon images and the spoon-shaped mask share one registration on the bowl center, so they are
+        // placed by it.
         let spoonLayout = artwork.spoonLayout
         let scale = layout.unit / CGFloat(spoonLayout.unit)
         let anchor = CGPoint(
@@ -167,6 +175,7 @@ final class GameScene: SKScene {
         let pixelSize = CGSize(width: spoonLayout.width, height: spoonLayout.height)
         for (node, texture) in [
             (spoon, artwork.spoon), (spoonShadow, artwork.spoonShadow), (spoonHighlight, artwork.spoonHighlight),
+            (spoonMask, artwork.spoon),
         ] {
             node.texture = texture
             node.anchorPoint = anchor
@@ -174,7 +183,7 @@ final class GameScene: SKScene {
             node.position = layout.bowlCenter
         }
 
-        let eggWidth = layout.unit * GameArtwork.eggWidthUnits
+        let eggWidth = layout.unit * SceneLayout.eggWidth
         egg.texture = artwork.egg(appearance, widthPixels: Int((eggWidth * screenScale).rounded()))
         egg.size = CGSize(width: eggWidth, height: eggWidth * EggArt.aspect)
         // The shadow image is 1.5 times the egg (see `EggArt.shadow`).
@@ -189,7 +198,7 @@ final class GameScene: SKScene {
 
     /// The splat is larger than the egg because the white runs out on the ground.
     private var brokenEggWidth: CGFloat {
-        layout.unit * GameArtwork.eggWidthUnits * 1.7
+        layout.unit * SceneLayout.eggWidth * 1.4
     }
 
     private var brokenEggPixels: Int {
@@ -256,7 +265,7 @@ final class GameScene: SKScene {
         render()
     }
 
-    /// Points the finger fallback at a position in the bowl (screenshots: a slightly off-center egg).
+    /// Points the finger fallback at a physics position in the bowl (screenshots: a slightly off-center egg).
     func steer(toBowl position: SIMD2<Double>?) {
         touchSteering.target = position
     }
@@ -290,21 +299,18 @@ final class GameScene: SKScene {
         guard hasEgg else { return }
 
         let position = engine.egg.position
-        egg.position = layout.point(inBowl: position)
-        // Rolling sideways tips the egg a little; climbing the bowl's wall brings it slightly closer to the eye.
+        let offset = layout.eggOffset(for: position)
+        egg.position = layout.point(inBowl: offset)
+        // Rolling sideways tips the egg a little; riding up onto the rim brings it slightly closer to the eye.
         egg.zRotation = CGFloat(max(-0.12, min(0.12, -engine.egg.velocity.x * 0.08)))
         if egg.action(forKey: "squash") == nil, egg.action(forKey: "place") == nil {
             egg.setScale(1 + 0.05 * CGFloat(engine.egg.rimDistance * engine.egg.rimDistance))
         }
-        // The light is at the top right (`Studio.shadowDirection`), so the shadow falls to the bottom left, a little
-        // shorter than the egg's height would cast on a flat table because the bowl rises towards it. It stretches as
-        // the egg climbs away from the center.
-        let away = CGVector(dx: CGFloat(position.x) * layout.unit, dy: CGFloat(position.y) * layout.unit)
-        eggShadow.position = egg.position
-            + CGVector(dx: -layout.unit * 0.11, dy: -layout.unit * 0.07)
-            + away * 0.08
-        eggShadow.xScale = 1 + 0.3 * CGFloat(abs(position.x) / engine.config.bowlRadiusX)
-        eggShadow.yScale = 1 + 0.25 * CGFloat(abs(position.y) / engine.config.bowlRadiusY)
+        // The shadow stretches and moves out a little further as the egg climbs away from the center.
+        eggShadow.position = egg.position + layout.vector(inBowl: SceneLayout.eggShadowOffset + offset * 0.08)
+        let climb = position / layout.tippingPoint
+        eggShadow.xScale = 1 + 0.3 * CGFloat(abs(climb.x))
+        eggShadow.yScale = 1 + 0.25 * CGFloat(abs(climb.y))
         if eggShadow.action(forKey: "fade") == nil {
             eggShadow.alpha = 1 - 0.25 * CGFloat(engine.egg.rimDistance)
         }
@@ -351,8 +357,10 @@ final class GameScene: SKScene {
 
     /// The egg rolls over the rim, falls off the spoon and smashes on the ground below.
     private func dropEgg(from position: SIMD2<Double>) {
-        let length = max((position * position).sum().squareRoot(), 0.001)
-        let landing = layout.point(inBowl: position + position / length * 0.75)
+        // On from where the egg was drawn, over the edge and down beside the spoon.
+        let offset = layout.eggOffset(for: position)
+        let length = max((offset * offset).sum().squareRoot(), 0.001)
+        let landing = layout.point(inBowl: offset + offset / length * 0.8)
         egg.removeAction(forKey: "squash")
         egg.run(
             .sequence([
@@ -442,9 +450,10 @@ final class GameScene: SKScene {
         touchSteering.target = nil
     }
 
+    /// The egg comes to rest where it is drawn under the finger.
     private func steer(with touches: Set<UITouch>) {
         guard usesTouchSteering, let touch = touches.first else { return }
-        touchSteering.target = layout.bowlPosition(of: touch.location(in: self))
+        touchSteering.target = layout.eggPosition(forOffset: layout.bowlPosition(of: touch.location(in: self)))
     }
 
     // MARK: Helpers
@@ -490,12 +499,4 @@ final class GameScene: SKScene {
 
 private func + (lhs: CGPoint, rhs: CGVector) -> CGPoint {
     CGPoint(x: lhs.x + rhs.dx, y: lhs.y + rhs.dy)
-}
-
-private func + (lhs: CGVector, rhs: CGVector) -> CGVector {
-    CGVector(dx: lhs.dx + rhs.dx, dy: lhs.dy + rhs.dy)
-}
-
-private func * (lhs: CGVector, rhs: CGFloat) -> CGVector {
-    CGVector(dx: lhs.dx * rhs, dy: lhs.dy * rhs)
 }

@@ -52,9 +52,12 @@ App/                              iOS app target "Eggscape"
 
 ## Conventions
 
-- **Bowl units.** Physics positions are in normalized bowl units. The bowl's inner rim is the ellipse
-  `(x / 0.75)² + (y / 1.0)² = 1`. `x` points to the right of the screen, `y` to the top of the screen (along the
-  handle, away from the player). The egg falls when the elliptical distance exceeds 1.
+- **Bowl units.** Positions are in bowl units. The bowl's inner rim is the ellipse `(x / 0.75)² + (y / 1.0)² = 1`.
+  `x` points to the right of the screen, `y` to the top of the screen (along the handle, away from the player). The
+  physics position says how far the egg has rolled from the middle; it tips over the rim once it leaves the ellipse
+  `(x / 0.57)² + (y / 0.76)² = 1` (`GameConfig.bowlRadiusX`, `bowlRadiusY`), and `EggPhysics.rimDistance` is its
+  elliptical distance, 1 at the tipping point. The egg nearly fills the bowl, so the scene draws that position scaled
+  down (`SceneLayout.eggOffset(for:)`).
 - **Tilt.** Radians. `x > 0`: right edge down, the egg rolls right. `y > 0`: top edge down, the egg rolls up.
 - **Light.** One key light for all artwork: from the **top right**, slightly in front of the viewer, like the owner's
   reference photo (`docs/reference-egg.jpg` is *not* committed; it was provided in the conversation). Shadows fall to
@@ -74,15 +77,23 @@ Portrait, full screen, SpriteKit scene of the view's size (`resizeFill`, origin 
 - **Background.** *Weiß*: warm off-white (#F7F6F3) with a barely visible radial vignette. *Kamera*: the scene is
   transparent and the rear camera preview sits behind the `SpriteView`.
 - **Spoon.** Stainless-steel tablespoon from directly above, bowl centered horizontally with its center at 53 % of the
-  screen height; the handle runs down past the bottom edge. One bowl unit is `u = min(0.4133 · width, 0.2 · height)`
-  points, so the bowl's inner rim is `1.5 u` wide and `2 u` tall.
-- **Egg.** About `0.62 u` wide, pointy end up, resting in the bowl. Its soft shadow falls on the spoon towards the bottom
-  left and stretches as the egg moves away from the center.
+  screen height; the handle runs down past the bottom edge. One bowl unit is `u = min(0.3 · width, 0.145 · height)`
+  points, so the bowl's inner rim is `1.5 u` wide and `2 u` tall and the spoon takes about half the screen's width.
+  Bowl and egg stay clear of the HUD at the top and the sprint button at the bottom right, from an iPhone SE
+  (375 × 667 pt) to a Pro Max (440 × 956 pt); `SceneLayoutTests` checks it.
+- **Egg.** `1.44 u` wide and `1.9 u` tall, pointy end up: it nearly fills the bowl, so only the rolled lip and a few
+  hundredths of a unit of the bowl show around it. It is too big to roll as far as the physics lets it, so
+  `SceneLayout` scales its position per axis: at the tipping point it has ridden up onto the rim and hangs over the
+  bowl's edge by a third of its half-width, its center still well inside the bowl, and it has grown by 5 %, closer to
+  the eye. Its soft shadow falls towards the bottom left, `(−0.19, −0.09)` egg widths away (a bigger egg casts it
+  further), onto the spoon and the white table; over the camera image it is cut to the spoon. It stretches as the egg
+  climbs away from the center.
 - **Spoon shadow.** Soft, on the white background only.
 - **Tilt response.** The spoon stays fixed on screen (the phone is the spoon); its reflections shift slightly with the
   tilt and the egg rolls. No skewing of the spoon.
-- **Drop.** The egg rolls over the rim, falls off the spoon (shrinks and blurs as it falls away), and a broken egg
-  (shell pieces, egg white, yolk) appears below the spoon. A new egg is placed after two seconds.
+- **Drop.** The egg rolls over the rim from where it is drawn, falls off the spoon (shrinks and blurs as it falls away),
+  and a broken egg (shell pieces, egg white, yolk; its image 1.4 times as wide as the egg) appears below the spoon. A
+  new egg is placed after two seconds.
 - **Weather overlays.** Rain: drops landing on the spoon and screen, streaks, cooler and darker grading, wetter
   reflections. Wind: leaves and dust blowing across, wind arrow in the HUD. Gewitter: dark grading, warning flicker,
   bright flash. In camera mode the grading is a translucent overlay so it darkens the camera image.

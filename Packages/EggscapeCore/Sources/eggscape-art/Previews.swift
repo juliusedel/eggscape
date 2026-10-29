@@ -4,11 +4,12 @@ import Foundation
 
 /// The preview sheets: each composes artwork the way the game (or a product photo) shows it.
 enum Previews {
-    static let sheets = ["frame-white", "spoon", "egg-studio", "skins", "broken", "effects"]
+    static let sheets = ["frame-white", "frame-rim", "spoon", "egg-studio", "skins", "broken", "effects"]
 
     static func render(_ name: String) -> PixelImage? {
         switch name {
         case "frame-white": frameWhite()
+        case "frame-rim": frameRim()
         case "spoon": spoon()
         case "egg-studio": eggStudio()
         case "skins": skins()
@@ -21,10 +22,24 @@ enum Previews {
     /// Offset of the egg's shadow relative to the egg, as a fraction of the egg width (away from the key light).
     static let shadowOffset = (x: -0.12, y: 0.025)
 
-    /// The game screen on an iPhone (402 × 874 pt at 3x) with the white background.
+    /// The game screen on an iPhone (402 × 874 pt at 3x) with the white background, the egg just off the middle of the
+    /// bowl, as after a small tilt to the right.
     static func frameWhite() -> PixelImage {
+        frame(climb: (x: 0.17, y: 0.05))
+    }
+
+    /// The same screen with the egg at the sideways tipping point: it has ridden up onto the rim on the right and hangs
+    /// over the bowl's edge.
+    static func frameRim() -> PixelImage {
+        frame(climb: (x: 1, y: 0))
+    }
+
+    /// The game screen composed like `SceneLayout` and `GameScene`: one bowl unit is `min(0.3 · width, 0.145 · height)`
+    /// points, the bowl's center is at 53 % of the height, and the egg is 1.44 units wide. `climb` is the egg's
+    /// physics position as a share of the tipping point on each axis.
+    private static func frame(climb: (x: Double, y: Double)) -> PixelImage {
         let width = 1206, height = 2622
-        let unit = 498.0
+        let unit = min(402 * 0.3, 874 * 0.145) * 3
         let layout = SpoonArt.layout(unit: unit)
         var canvas = whiteBackground(width: width, height: height)
         let bowlX = Double(width) / 2
@@ -35,17 +50,55 @@ enum Previews {
         canvas.draw(SpoonArt.spoon(unit: unit), left: left, top: top)
         canvas.draw(SpoonArt.highlight(unit: unit), left: left, top: top, blend: .additive)
 
-        let eggWidth = Int((0.62 * unit).rounded())
-        let eggX = bowlX + 0.1 * unit
-        let eggY = bowlY + 0.02 * unit
-        let shadow = EggArt.shadow(width: Int((Double(eggWidth) * 1.5).rounded()))
-        canvas.draw(
+        // At the tipping point the egg hangs over the bowl's edge (0.805 × 1.055) by a third of its half-width.
+        let eggWidth = 1.44
+        let halfEgg = (x: eggWidth / 2, y: eggWidth * EggArt.aspect / 2)
+        let travel = (x: 0.805 + halfEgg.x / 3 - halfEgg.x, y: 1.055 + halfEgg.x / 3 - halfEgg.y)
+        let rimDistance = (climb.x * climb.x + climb.y * climb.y).squareRoot()
+        let offset = (x: climb.x * travel.x, y: climb.y * travel.y)
+        let eggX = bowlX + offset.x * unit
+        let eggY = bowlY - offset.y * unit
+        // The shadow image is 1.5 times the egg (see `EggArt.shadow`); `SceneLayout.eggShadowOffset` moves it to the
+        // bottom left, and it stretches, moves out and fades a little as the egg climbs.
+        let shadow = EggArt.shadow(width: Int((eggWidth * 1.5 * unit).rounded()))
+        let stretched = resized(
             shadow,
-            centerX: eggX + shadowOffset.x * Double(eggWidth) * 0.8,
-            centerY: eggY + shadowOffset.y * Double(eggWidth) * 0.8
+            width: Int((Double(shadow.width) * (1 + 0.3 * abs(climb.x))).rounded()),
+            height: Int((Double(shadow.height) * (1 + 0.25 * abs(climb.y))).rounded())
         )
-        canvas.draw(EggArt.egg(Samples.farmBrown, width: eggWidth), centerX: eggX, centerY: eggY)
+        canvas.draw(
+            stretched,
+            left: eggX + (-0.19 * eggWidth + 0.08 * offset.x) * unit - Double(stretched.width) / 2,
+            top: eggY - (-0.09 * eggWidth + 0.08 * offset.y) * unit - Double(stretched.height) / 2,
+            opacity: 1 - 0.25 * rimDistance
+        )
+        // Closer to the eye as it rides up the rim.
+        let grown = Int((eggWidth * (1 + 0.05 * rimDistance * rimDistance) * unit).rounded())
+        canvas.draw(EggArt.egg(Samples.farmBrown, width: grown), centerX: eggX, centerY: eggY)
         return canvas.image
+    }
+
+    /// `image` scaled to `width × height` with bilinear filtering, like a stretched sprite.
+    private static func resized(_ image: PixelImage, width: Int, height: Int) -> PixelImage {
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        let scaleX = Double(image.width) / Double(width), scaleY = Double(image.height) / Double(height)
+        for row in 0 ..< height {
+            let y = min(max((Double(row) + 0.5) * scaleY - 0.5, 0), Double(image.height - 1))
+            let y0 = Int(y), y1 = min(y0 + 1, image.height - 1), wy = y - Double(y0)
+            for column in 0 ..< width {
+                let x = min(max((Double(column) + 0.5) * scaleX - 0.5, 0), Double(image.width - 1))
+                let x0 = Int(x), x1 = min(x0 + 1, image.width - 1), wx = x - Double(x0)
+                for channel in 0 ..< 4 {
+                    func value(_ column: Int, _ row: Int) -> Double {
+                        Double(image.rgba[(row * image.width + column) * 4 + channel])
+                    }
+                    let top = value(x0, y0) * (1 - wx) + value(x1, y0) * wx
+                    let bottom = value(x0, y1) * (1 - wx) + value(x1, y1) * wx
+                    bytes[(row * width + column) * 4 + channel] = UInt8((top * (1 - wy) + bottom * wy).rounded())
+                }
+            }
+        }
+        return PixelImage(width: width, height: height, rgba: bytes)
     }
 
     /// The spoon alone at game size (`u = 498`): with its shadow on the white background (left) and on a mid-gray,

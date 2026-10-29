@@ -28,29 +28,29 @@ struct EggShopPage: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("shop.skin.\(skin.id)")
+                    // On the card, not the 2,000 pt grid: iOS 26 opens the dialog from the view it is attached to.
+                    .confirmationDialog(
+                        Text("Ei freischalten?"),
+                        isPresented: Binding(get: { pendingSkin?.id == skin.id }, set: {
+                            if !$0 {
+                                pendingSkin = nil
+                            }
+                        }),
+                        titleVisibility: .visible
+                    ) {
+                        Button {
+                            unlock(skin)
+                        } label: {
+                            Text("\(Text(SkinNames.name(for: skin))) für \(skin.price) Münzen freischalten")
+                        }
+                        .accessibilityIdentifier("shop.confirmUnlock")
+                        Button("Abbrechen", role: .cancel) {}
+                    }
                 }
             }
         }
         .sensoryFeedback(trigger: unlocks) { _, _ in
             haptics ? .success : nil
-        }
-        .confirmationDialog(
-            Text("Ei freischalten?"),
-            isPresented: Binding(get: { pendingSkin != nil }, set: {
-                if !$0 {
-                    pendingSkin = nil
-                }
-            }),
-            titleVisibility: .visible,
-            presenting: pendingSkin
-        ) { skin in
-            Button {
-                unlock(skin)
-            } label: {
-                Text("\(Text(SkinNames.name(for: skin))) für \(skin.price) Münzen freischalten")
-            }
-            .accessibilityIdentifier("shop.confirmUnlock")
-            Button("Abbrechen", role: .cancel) {}
         }
         .alert(
             Text("Nicht genug Münzen"),
@@ -127,12 +127,14 @@ private struct SkinCard: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            // A locked egg is faded behind its padlock, a little less once the balance covers its price.
             EggThumbnail(appearance: skin.appearance, width: 84)
+                .saturation(lockedEggSaturation)
+                .opacity(lockedEggOpacity)
                 .frame(height: 124)
-                .overlay(alignment: .bottomTrailing) {
+                .overlay {
                     if case let .locked(missing) = status {
                         LockBadge(canUnlock: missing == 0)
-                            .offset(x: 4, y: -6)
                             .transition(.scale(scale: 0.3).combined(with: .opacity))
                     }
                 }
@@ -171,6 +173,22 @@ private struct SkinCard: View {
         .accessibilityValue(accessibilityStatus)
         .accessibilityHint(accessibilityAction)
         .accessibilityAddTraits(status == .equipped ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private var lockedEggSaturation: Double {
+        switch status {
+        case .equipped, .owned: 1
+        case .locked(missing: 0): 0.6
+        case .locked: 0.2
+        }
+    }
+
+    private var lockedEggOpacity: Double {
+        switch status {
+        case .equipped, .owned: 1
+        case .locked(missing: 0): 0.85
+        case .locked: 0.6
+        }
     }
 
     @ViewBuilder
@@ -218,27 +236,21 @@ private struct SkinCard: View {
     }
 }
 
-/// The padlock in front of a locked egg: filled with the accent color once the balance covers the price, a quiet
-/// frosted disc while the egg is still out of reach.
+/// The padlock in front of a locked egg: white on the accent color once the balance covers the price, white on a dark
+/// disc while the egg is still out of reach.
 private struct LockBadge: View {
     let canUnlock: Bool
 
     var body: some View {
         Image(systemName: "lock.fill")
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(canUnlock ? Color.white : Color.secondary)
-            .frame(width: 34, height: 34)
-            .background {
-                if canUnlock {
-                    Circle().fill(Color(.accentFill))
-                } else {
-                    Circle().fill(.regularMaterial)
-                }
-            }
+            .font(.system(size: 20, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 46, height: 46)
+            .background(canUnlock ? Color(.accentFill) : Color.black.opacity(0.55), in: .circle)
             .overlay {
-                Circle().strokeBorder(.white.opacity(canUnlock ? 0.5 : 0.35), lineWidth: 1)
+                Circle().strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
             }
-            .shadow(color: .black.opacity(0.2), radius: 3, y: 1.5)
+            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
             .accessibilityHidden(true)
     }
 }

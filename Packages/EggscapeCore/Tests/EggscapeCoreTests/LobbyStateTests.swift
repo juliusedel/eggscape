@@ -123,6 +123,44 @@ struct LobbyStateTests {
         #expect(lobby.canStart)
     }
 
+    @Test func theNextRaceDropsPlayersWhoLeft() {
+        var lobby = makeLobby(player("ben", ready: true), player("cem", ready: true), player("dana"))
+        lobby.markDisconnected("cem")
+        lobby.removeDisconnected()
+        #expect(lobby.players.map(\.id) == ["host", "ben", "dana"])
+        #expect(lobby.connectedPlayers == lobby.players)
+        // Readiness is up to `resetReadiness()`.
+        #expect(lobby.player("ben")?.isReady == true)
+    }
+
+    @Test func aPlayerWhoComesBackIsListedOnce() {
+        var lobby = makeLobby(player("ben"), player("cem"))
+        lobby.markDisconnected("ben")
+        // A new session on Ben's phone brings a new id.
+        lobby.join(player("ben-2"))
+        #expect(lobby.players.map(\.id) == ["host", "ben", "cem", "ben-2"])
+        lobby.removeDisconnected()
+        #expect(lobby.players.map(\.id) == ["host", "cem", "ben-2"])
+    }
+
+    @Test func nobodyIsDroppedWhenEveryoneStayed() {
+        var lobby = makeLobby(player("ben"), player("cem"), player("dana"))
+        let before = lobby
+        lobby.removeDisconnected()
+        #expect(lobby == before)
+        #expect(lobby.isFull)
+    }
+
+    @Test func droppingPlayersWhoLeftFreesTheirSeats() {
+        var lobby = makeLobby(player("ben"), player("cem"), player("dana"))
+        lobby.markDisconnected("dana")
+        lobby.removeDisconnected()
+        #expect(!lobby.isFull)
+        let emilJoined = lobby.join(player("emil"))
+        #expect(emilJoined)
+        #expect(lobby.players.map(\.id) == ["host", "ben", "cem", "emil"])
+    }
+
     @Test func unknownPlayersAreIgnored() {
         var lobby = makeLobby(player("ben", ready: true))
         let before = lobby

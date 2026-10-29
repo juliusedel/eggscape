@@ -12,6 +12,10 @@ final class GameKitTransport: PeerTransport {
     private let match: GKMatch
     private let delegate: GameKitMatchDelegate
     private let continuation: AsyncStream<TransportEvent>.Continuation
+    /// Set while `waitForAllPlayers()` waits.
+    private var allPlayersWaiter: CheckedContinuation<Bool, Never>?
+    /// A player left, or the match failed or was closed: not everybody the matchmaker found will be there.
+    private var isBroken = false
     private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "online")
 
     init(match: GKMatch) {
@@ -37,7 +41,21 @@ final class GameKitTransport: PeerTransport {
 
     /// The referee: the lowest player id among everybody in the match.
     var refereeID: String {
-        ([localPlayerID] + connectedPeers.map(\.id)).min() ?? localPlayerID
+        ([localPlayerID] + match.players.map(\.gamePlayerID)).min() ?? localPlayerID
+    }
+
+    /// The referee's phone, unless that is this one.
+    var refereePeer: RemotePeer? {
+        match.players.first { $0.gamePlayerID == refereeID }.map(Self.remote)
+    }
+
+    /// Waits until every player the matchmaker found is connected: only then do all phones know the same players and
+    /// pick the same referee. `false` when a player left or the match failed first. Call it once; `events` keeps
+    /// everything that happens meanwhile for the race room.
+    func waitForAllPlayers() async -> Bool {
+        guard !isBroken else { return false }
+        guard match.expectedPlayerCount > 0 else { return true }
+        return await withCheckedContinuation { allPlayersWaiter = $0 }
     }
 
     func send(_ data: Data, to peers: [RemotePeer]?, reliable: Bool) {
@@ -53,6 +71,7 @@ final class GameKitTransport: PeerTransport {
     }
 
     func close() {
+        finishWaiting(allConnected: false)
         match.disconnect()
         match.delegate = nil
         connectedPeers = []
@@ -71,9 +90,13 @@ final class GameKitTransport: PeerTransport {
                 connectedPeers.append(remote)
             }
             continuation.yield(.connected(remote))
+            if match.expectedPlayerCount == 0 {
+                finishWaiting(allConnected: true)
+            }
         case .disconnected:
             connectedPeers.removeAll { $0 == remote }
             continuation.yield(.disconnected(remote))
+            finishWaiting(allConnected: false)
         case .unknown:
             break
         @unknown default:
@@ -83,6 +106,16 @@ final class GameKitTransport: PeerTransport {
 
     fileprivate func failed(_ message: String) {
         continuation.yield(.failed(message))
+        finishWaiting(allConnected: false)
+    }
+
+    /// Ends `waitForAllPlayers()`; once a player left or the match failed, later calls end right away.
+    private func finishWaiting(allConnected: Bool) {
+        if !allConnected {
+            isBroken = true
+        }
+        allPlayersWaiter?.resume(returning: allConnected)
+        allPlayersWaiter = nil
     }
 
     private static func remote(_ player: GKPlayer) -> RemotePeer {

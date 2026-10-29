@@ -23,6 +23,8 @@ struct NearbyView: View {
         }
         .navigationTitle("In der Nähe")
         .navigationBarTitleDisplayMode(.inline)
+        // A tab switch would leave the room (see onDisappear), which closes it for everybody when this phone hosts.
+        .toolbar(session == nil ? .automatic : .hidden, for: .tabBar)
         .onDisappear {
             session?.leave()
             session = nil
@@ -99,6 +101,14 @@ struct RaceRoomView: View {
                 ProgressView()
                 Text("Verbinde mit \(host) …")
                     .foregroundStyle(.secondary)
+                Button("Abbrechen", role: .cancel) {
+                    // Online there is no room list to go back to.
+                    if session.isNearby {
+                        session.cancelJoin()
+                    } else {
+                        onLeave()
+                    }
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .lobby, .racing, .results:
@@ -130,6 +140,11 @@ private struct RoomList: View {
 
     var body: some View {
         List {
+            if let failure = session.joinFailure {
+                Section {
+                    Label(failure, systemImage: "exclamationmark.triangle")
+                }
+            }
             Section {
                 if session.rooms.isEmpty {
                     HStack(spacing: 12) {
@@ -295,6 +310,7 @@ private struct PlayerRow: View {
 private struct NearbyResultsOverlay: View {
     let session: NearbySession
     var onLeave: () -> Void
+    @State private var confirmsLeaving = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -321,10 +337,7 @@ private struct NearbyResultsOverlay: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    Button(action: onLeave) {
-                        Text("Verlassen").frame(maxWidth: .infinity, minHeight: 32)
-                    }
-                    .secondaryActionStyle()
+                    leaveButton
                     if session.isHost {
                         Button(action: session.rematch) {
                             Text("Nochmal").frame(maxWidth: .infinity, minHeight: 32)
@@ -343,6 +356,9 @@ private struct NearbyResultsOverlay: View {
                 ProgressView()
                 Text("Warte auf die anderen …")
                     .font(.headline)
+                leaveButton
+                    .font(.headline)
+                    .controlSize(.large)
             }
         }
         .padding(24)
@@ -351,6 +367,25 @@ private struct NearbyResultsOverlay: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.black.opacity(0.2))
+        .confirmationDialog("Rennen verlassen?", isPresented: $confirmsLeaving, titleVisibility: .visible) {
+            Button("Verlassen", role: .destructive, action: onLeave)
+        } message: {
+            Text("Die anderen laufen noch. Wenn du als Host gehst, endet das Rennen auch für sie.")
+        }
+    }
+
+    private var leaveButton: some View {
+        Button {
+            // The host is the referee: while the others still run, leaving ends the race for them too.
+            if session.isHost, session.stage == .racing {
+                confirmsLeaving = true
+            } else {
+                onLeave()
+            }
+        } label: {
+            Text("Verlassen").frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .secondaryActionStyle()
     }
 
     @ViewBuilder

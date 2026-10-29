@@ -4,7 +4,7 @@
 
 ```bash
 make test       # EggscapeCore (swift test) + app unit tests on an iPhone simulator
-make test-ui    # UI tests: launch, and a complete 150 m time trial steered with a finger
+make test-ui    # UI tests: launch, and a complete 15 m time trial steered with a finger
 ```
 
 CI (`.github/workflows/ci.yml`) runs `swift test` for EggscapeCore and an unsigned simulator build of the app.
@@ -51,12 +51,16 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 
 ### Weather
 - [ ] Wind: gusts push the egg sideways, leaves blow across, the HUD arrow shows the direction.
-- [ ] Regen: drops land on the spoon, the egg wobbles longer, puddles splash with an extra kick.
-- [ ] Gewitter: a short warning flicker, then a bright flash, thunder and a strong push.
+- [ ] Regen: drops land on the spoon, the egg wobbles longer, puddles splash with an extra kick (on 50 or 100 m: the
+      first puddle lies 25 m or more from the start).
+- [ ] Gewitter: a short warning flicker, then a bright flash, thunder and a strong push (on 50 or 100 m: the first
+      strike comes 8 s or more after the start, when a clean 15 m run is over).
 - [ ] Reduce Motion (iOS Settings → Accessibility) removes the camera shake.
 
 ### Modes and progress
 - [ ] Zeitrennen Kurz/Mittel/Lang with each weather, personal bests appear in Einzelspieler and Bestenliste.
+- [ ] Updating from a build with the 150 / 300 / 600 m courses: the old best times are gone ("Noch keine"), the
+      Endlos record is still there.
 - [ ] Endlos: the weather gets rougher every 100 m; the record is kept.
 - [ ] Gemeinsam an einem Handy: 2–4 players, pass-the-phone screens, final standings, "Nochmal".
 - [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works.
@@ -65,9 +69,9 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### Shop
 - [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
       in front of it and its price, cheapest first. "1 von 20 Eiern freigeschaltet" sits above the grid.
-- [ ] After the first clean 150 m run in calm weather (55 coins, plus 20 for the first personal best) the padlocks
-      and prices of the eggs within the balance (Hofei Braun, Wachtelei) turn orange; the eggs that still cost more
-      keep a frosted padlock and a grey price.
+- [ ] After the first clean 50 m run in calm weather (35 coins, plus 20 for the first personal best: 55) the padlock
+      and price of Hofei Braun, which costs exactly that, turn orange; the eggs that still cost more keep a frosted
+      padlock and a grey price. (A first clean 15 m run pays 48 coins, not enough for any egg yet.)
 - [ ] Tapping an orange (affordable) egg asks "Ei freischalten?" with its name and price. Confirming takes exactly
       that many coins, the padlock disappears, the egg is put on (orange border, "Ausgewählt"), the coin sound
       plays and, with Vibration on, a short success vibration follows. "Abbrechen" changes nothing.

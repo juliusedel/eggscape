@@ -5,7 +5,7 @@ extension View {
     /// orange than the dark-mode accent, so the white label stays readable (4.7:1) in both appearances. The label is
     /// white explicitly because list rows would otherwise tint its icon with the accent, invisible on the fill.
     func primaryActionStyle() -> some View {
-        prominentButtonStyle().tint(Color(.accentFill)).foregroundStyle(.white)
+        prominentButtonStyle().tint(Color(.accentFill)).modifier(PrimaryActionLabel())
     }
 
     @ViewBuilder
@@ -47,6 +47,16 @@ extension View {
         #else
             background(.regularMaterial, in: .rect(cornerRadius: cornerRadius))
         #endif
+    }
+}
+
+/// White on the orange fill. A disabled button is filled light gray instead, where white would be unreadable. Applied
+/// outside the `#available` branches: extra modifiers inside them crashed when SwiftUI destroyed the button.
+private struct PrimaryActionLabel: ViewModifier {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func body(content: Content) -> some View {
+        content.foregroundStyle(isEnabled ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
     }
 }
 

@@ -142,7 +142,8 @@ struct SprintButton: View {
         }
         .foregroundStyle(.white)
         .frame(width: 92, height: 92)
-        .background(Circle().fill(Color.accentColor.gradient))
+        // `AccentFill` like the primary buttons: the dark-mode accent is too light for the white label.
+        .background(Circle().fill(Color(.accentFill)))
         .scaleEffect(isSprinting ? 0.92 : 1)
         .animation(.spring(duration: 0.2), value: isSprinting)
         .shadow(color: .black.opacity(0.25), radius: 8, y: 4)

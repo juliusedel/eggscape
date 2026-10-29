@@ -1,7 +1,7 @@
 import Foundation
 
 /// One message on the wire, with its sender and the protocol version it was written in:
-/// `{"version":1,"sender":"<player id>","message":{"type":"progress",...}}` (the messages are listed at `NetMessage`).
+/// `{"version":2,"sender":"<player id>","message":{"type":"progress",...}}` (the messages are listed at `NetMessage`).
 ///
 /// ## Versioning
 ///

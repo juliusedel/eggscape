@@ -183,7 +183,7 @@ struct NetCodecTests {
 
     @Test func progressKeepsItsExactShape() throws {
         let data = try codec.encode(.progress(meters: 12.5, eggsLeft: 2), from: "anna")
-        let expected = #"{"message":{"eggsLeft":2,"meters":12.5,"type":"progress"},"sender":"anna","version":1}"#
+        let expected = #"{"message":{"eggsLeft":2,"meters":12.5,"type":"progress"},"sender":"anna","version":\#(EggscapeCore.protocolVersion)}"#
         #expect(text(data) == expected)
     }
 
@@ -191,7 +191,7 @@ struct NetCodecTests {
         let data = try codec.encode(.startRace(seed: .max, startAt: 5003.25), from: "anna")
         #expect(text(data) == #"""
         {"message":{"seed":"18446744073709551615","startAt":5003.25,"type":"startRace"},\#
-        "sender":"anna","version":1}
+        "sender":"anna","version":\#(EggscapeCore.protocolVersion)}
         """#)
     }
 
@@ -206,7 +206,7 @@ struct NetCodecTests {
         let data = try codec.encode(.results(RaceResults(entries: [entry])), from: "A")
         #expect(text(data) == #"""
         {"message":{"results":{"entries":[{"eggsLost":1,"nickname":"Anna","place":1,"playerID":"A",\#
-        "status":{"time":51.23,"type":"finished"}}]},"type":"results"},"sender":"A","version":1}
+        "status":{"time":51.23,"type":"finished"}}]},"type":"results"},"sender":"A","version":\#(EggscapeCore.protocolVersion)}
         """#)
     }
 

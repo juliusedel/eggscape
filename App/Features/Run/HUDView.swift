@@ -250,7 +250,9 @@ private struct RaceMenu: View {
             .confirmationDialog("Rennen verlassen?", isPresented: $confirmsLeave, titleVisibility: .visible) {
                 Button("Verlassen", role: .destructive, action: onLeave)
             } message: {
-                Text("Die anderen laufen ohne dich weiter.")
+                session.race?.isReferee == true
+                    ? Text("Die anderen laufen noch. Wenn du als Host gehst, endet das Rennen auch für sie.")
+                    : Text("Die anderen laufen ohne dich weiter.")
             }
             Button("Zurück zum Rennen", action: onClose)
                 .primaryActionStyle()

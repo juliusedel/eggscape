@@ -86,6 +86,7 @@ struct RunSessionTests {
     @Test func pausingARaceStillEndsTheSprint() {
         let session = makeSession(race: RaceHooks(
             startAt: .now + .seconds(3),
+            isReferee: false,
             onProgress: { _, _ in },
             onEggDropped: { _ in },
             onFinished: { _ in }

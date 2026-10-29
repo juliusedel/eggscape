@@ -288,6 +288,7 @@ final class NearbySession: Identifiable {
         let setup = RunSetup(mode: .timeTrial(settings.distance, settings.weather), raceSeed: seed)
         let hooks = RaceHooks(
             startAt: .now + .seconds(max(seconds, 0.5)),
+            isReferee: isHost,
             onProgress: { [weak self] meters, eggsLeft in
                 self?.reportProgress(meters: meters, eggsLeft: eggsLeft)
             },

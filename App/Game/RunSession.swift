@@ -58,6 +58,8 @@ struct RunRules {
 struct RaceHooks {
     /// "Los!" on this phone's clock, already converted from the host's clock.
     var startAt: ContinuousClock.Instant
+    /// This phone hosts the race and decides the finish order, so leaving ends the race for everybody.
+    var isReferee: Bool
     /// About ten times per second.
     var onProgress: (_ meters: Double, _ eggsLeft: Int) -> Void
     var onEggDropped: (_ eggsLeft: Int) -> Void

@@ -1,14 +1,16 @@
 /// Every tunable number of the game in one place. `docs/TUNING.md` explains how the defaults were chosen.
 ///
-/// Positions are in normalized bowl units (the rim is an ellipse with half-axes `bowlRadiusX` × `bowlRadiusY`),
-/// forces are accelerations in those units per second², kicks are velocity changes in units per second.
+/// Positions are in bowl units (the spoon's inner rim is 1.5 × 2 units) and say how far the egg has rolled from the
+/// middle of the bowl; it tips over the rim once it leaves the ellipse with half-axes `bowlRadiusX` × `bowlRadiusY`.
+/// Forces are accelerations in those units per second², kicks are velocity changes in units per second.
 public struct GameConfig: Sendable, Equatable {
     // MARK: Bowl and egg
 
-    /// Half-width of the bowl rim (sideways).
-    public var bowlRadiusX = 0.75
-    /// Half-length of the bowl rim along the handle (vertical on screen).
-    public var bowlRadiusY = 1.0
+    /// How far the egg rolls sideways before it tips over the rim. The egg nearly fills the bowl, so this is well
+    /// inside the rim's half-width of 0.75; the app draws a shorter way, with the egg riding up onto the rim.
+    public var bowlRadiusX = 0.57
+    /// How far it rolls along the handle (vertical on screen) before it tips; the bowl is longer that way.
+    public var bowlRadiusY = 0.76
     /// `G` in `a = G·sin(tilt) − k·p − c·v + disturbance`.
     public var gravity = 6.0
     /// `k`: restoring force of the concave bowl, makes small tilts forgiving.
@@ -52,8 +54,9 @@ public struct GameConfig: Sendable, Equatable {
 
     // MARK: Wind
 
-    /// Peak lateral force of a gust at full intensity.
-    public var windForce: ClosedRange<Double> = 0.3 ... 1.0
+    /// Peak lateral force of a gust at full intensity. Scaled with the tipping point, so the strongest gust still
+    /// pushes a level egg two thirds of the way to it.
+    public var windForce: ClosedRange<Double> = 0.23 ... 0.76
     public var gustRamp = 0.5
     public var gustHold: ClosedRange<Double> = 1.0 ... 3.0
     public var gustDecay = 1.0
@@ -84,8 +87,9 @@ public struct GameConfig: Sendable, Equatable {
     public var lightningInterval: ClosedRange<Double> = 8 ... 15
     /// Seconds of visual warning before a strike.
     public var lightningWarning = 0.6
-    /// Velocity kick of a strike.
-    public var lightningKick = 0.8
+    /// Velocity kick of a strike. Scaled with the tipping point like the gusts: in the wet storm bowl a strike moves a
+    /// centered egg a little over half the way to it, as before.
+    public var lightningKick = 0.6
 
     // MARK: Weather along the track
 

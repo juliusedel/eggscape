@@ -16,10 +16,11 @@ enum AppIcon {
     private static let tilt = 40.0 * Double.pi / 180
     /// The bowl's center in the icon, in pixels from the top left.
     private static let bowlCenter = (x: 588.0, y: 436.0)
-    /// The egg's shadow relative to the egg, in bowl units (as in `GameScene`: away from the light at the top right).
-    private static let eggShadowOffset = (x: -0.11, y: 0.07)
-    /// The egg's width in bowl units: larger than in the game (0.62) so it still reads at home-screen size.
-    private static let eggWidth = 0.8
+    /// The egg's width in bowl units, as in the game (`SceneLayout.eggWidth`): it nearly fills the bowl.
+    private static let eggWidth = 1.44
+    /// The egg's shadow relative to the egg, in bowl units (as in `SceneLayout.eggShadowOffset`: away from the light at
+    /// the top right, further for a bigger egg).
+    private static let eggShadowOffset = (x: -0.19 * eggWidth, y: 0.09 * eggWidth)
 
     private struct Layer {
         let image: PixelImage

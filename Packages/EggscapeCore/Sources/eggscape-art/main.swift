@@ -4,7 +4,8 @@ import Foundation
 
 // `eggscape-art`: renders the procedural artwork to PNG.
 //
-//     eggscape-art preview <dir> [sheet ...]   preview sheets (frame-white, egg-studio, skins, broken, effects)
+//     eggscape-art preview <dir> [sheet ...]   preview sheets (frame-white, frame-rim, drop, spoon, egg-studio,
+//                                              skins, broken, effects)
 //     eggscape-art assets <Assets.xcassets>    Spoon, SpoonShadow and SpoonHighlight image sets (@3x)
 //     eggscape-art icon <AppIcon.appiconset>   the 1024 × 1024 app icon
 //     eggscape-art timings                     render times of the expensive textures
@@ -64,13 +65,16 @@ do {
         try AppIcon.write(to: iconSet)
         print("wrote \(iconSet.appendingPathComponent("AppIcon.png").path)")
     case "timings":
-        let egg = median(runs: 9) { _ = EggArt.egg(Samples.farmBrown, width: 320) }
-        let broken = median(runs: 5) { _ = EggArt.broken(Samples.farmBrown, width: 400) }
+        // The egg and the splat as wide as the game draws them on a 402-pt iPhone at 3x (`GameScene`).
+        let eggWidth = Int((Previews.eggWidth * Previews.gameUnit * 3).rounded())
+        let brokenWidth = Int(Previews.eggWidth * 1.4 * Previews.gameUnit * 3)
+        let egg = median(runs: 9) { _ = EggArt.egg(Samples.farmBrown, width: eggWidth) }
+        let broken = median(runs: 5) { _ = EggArt.broken(Samples.farmBrown, width: brokenWidth) }
         let spoon = median(runs: 3) { _ = SpoonArt.spoon(unit: 498) }
         let shadow = median(runs: 3) { _ = SpoonArt.shadow(unit: 498) }
         let highlight = median(runs: 3) { _ = SpoonArt.highlight(unit: 498) }
-        print(String(format: "EggArt.egg(width: 320)       %7.1f ms", egg * 1000))
-        print(String(format: "EggArt.broken(width: 400)    %7.1f ms", broken * 1000))
+        print(String(format: "EggArt.egg(width: %d)       %7.1f ms", eggWidth, egg * 1000))
+        print(String(format: "EggArt.broken(width: %d)    %7.1f ms", brokenWidth, broken * 1000))
         print(String(format: "SpoonArt.spoon(unit: 498)    %7.1f ms", spoon * 1000))
         print(String(format: "SpoonArt.shadow(unit: 498)   %7.1f ms", shadow * 1000))
         print(String(format: "SpoonArt.highlight(unit: 498)%7.1f ms", highlight * 1000))

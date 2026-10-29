@@ -84,9 +84,11 @@ final class WeatherOverlayNode: SKNode {
         grading.alpha += (target - grading.alpha) * CGFloat(min(dt * 1.5, 1))
 
         rain.particleBirthRate = weather.isRaining ? CGFloat(60 + 140 * mix.rain) : 0
-        rain.emissionAngle = -.pi / 2 + CGFloat(weather.wind) * 0.18
+        // By the gust's share of the strongest one, so retuning the wind's force does not change the picture.
+        let gust = weather.wind < 0 ? -weather.gustStrength : weather.gustStrength
+        rain.emissionAngle = -.pi / 2 + CGFloat(gust) * 0.18
 
-        let windy = mix.wind > 0 && abs(weather.wind) > 0.05
+        let windy = mix.wind > 0 && weather.gustStrength > 0.05
         leaves.particleBirthRate = windy ? CGFloat(1.5 + 9 * weather.gustStrength) : 0
         let fromLeft = weather.wind > 0
         leaves.position = CGPoint(x: fromLeft ? -size.width / 2 - 30 : size.width / 2 + 30, y: 0)

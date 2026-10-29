@@ -41,6 +41,26 @@ struct GameSceneTests {
         #expect(framesAfterTheEnd == 0)
     }
 
+    /// The App Store screenshot of a storm (`ScreenshotStage`). Held with a fixed tilt instead, the egg falls three
+    /// times before the capture.
+    @Test func aHeldEggSurvivesTheStagedStorm() {
+        let setup = RunSetup(
+            mode: .timeTrial(.long, .fixed(.storm)),
+            raceSeed: LaunchOptions(arguments: ["--screenshot-mode", "run-storm"]).raceSeed()
+        )
+        let scene = GameScene(
+            engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
+            appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
+            reduceMotion: true
+        )
+        scene.holdEgg(at: SIMD2(0.22, -0.08))
+        scene.mode = .running
+        // The 47 seconds it skips, and the moments until the capture.
+        scene.fastForward(seconds: 55)
+        #expect(scene.engine.eggsLost == 0)
+        #expect(scene.engine.phase == .running)
+    }
+
     @Test func vignetteIsRenderedOncePerSizeAtASixteenthOfIt() {
         let size = CGSize(width: 402, height: 874)
         let texture = GameScene.vignette(size: size)

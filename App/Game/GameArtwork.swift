@@ -14,8 +14,6 @@ import UniformTypeIdentifiers
 final class GameArtwork {
     /// Pixels per bowl unit of the spoon images in the asset catalog (`eggscape-art assets`).
     static let spoonAssetUnit = 498.0
-    /// Width of the egg in bowl units.
-    static let eggWidthUnits = 0.62
 
     let spoon: SKTexture
     let spoonShadow: SKTexture
@@ -150,8 +148,9 @@ final class GameArtwork {
 
     // MARK: Disk cache
 
-    /// Bump when a renderer changes so cached PNGs are rendered again; the next launch deletes the old directory.
-    private nonisolated static let cacheVersion = 3
+    /// Bump when a renderer changes so cached PNGs are rendered again, or when the scene's egg size changes so the
+    /// PNGs of the old sizes are not kept; the next launch deletes the old directory.
+    private nonisolated static let cacheVersion = 4
     /// The directory in Caches that holds the current version's PNGs.
     nonisolated static let cacheDirectoryName = "EggArt-v\(cacheVersion)"
 

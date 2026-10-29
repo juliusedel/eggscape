@@ -422,20 +422,22 @@ struct WeatherSystemTests {
         }) == 1)
 
         // Zufall starts calm and announces every stretch in the step that enters it.
-        let schedule = WeatherSchedule(seed: 4, option: .random, course: .timeTrial(.long))
-        var runner = SteadyRunner(schedule)
-        var announced: [(meters: ClosedRange<Double>, conditions: WeatherConditions)] = []
-        while runner.meters < 600 {
-            let from = runner.meters
-            for case let .weatherChanged(conditions) in runner.step().events {
-                announced.append((from ... runner.meters, conditions))
+        for distance in RaceDistance.allCases {
+            let schedule = WeatherSchedule(seed: 4, option: .random, course: .timeTrial(distance))
+            var runner = SteadyRunner(schedule)
+            var announced: [(meters: ClosedRange<Double>, conditions: WeatherConditions)] = []
+            while runner.meters < distance.meters {
+                let from = runner.meters
+                for case let .weatherChanged(conditions) in runner.step().events {
+                    announced.append((from ... runner.meters, conditions))
+                }
             }
+            let stretches = schedule.stretches(in: 0 ..< distance.meters).dropFirst()
+            #expect(announced.map(\.conditions) == stretches.map(\.conditions), "\(distance)")
+            #expect(zip(announced, stretches).allSatisfy {
+                $0.meters.lowerBound < $1.meters.lowerBound && $1.meters.lowerBound <= $0.meters.upperBound
+            })
         }
-        let stretches = schedule.stretches(in: 0 ..< 600).dropFirst()
-        #expect(announced.map(\.conditions) == stretches.map(\.conditions))
-        #expect(zip(announced, stretches).allSatisfy {
-            $0.meters.lowerBound < $1.meters.lowerBound && $1.meters.lowerBound <= $0.meters.upperBound
-        })
     }
 
     // MARK: Inside RunEngine
@@ -464,11 +466,22 @@ struct WeatherSystemTests {
 
     @Test(arguments: [WeatherOption.random, .fixed(.storm)])
     func playersOfARaceShareTheWeather(option: WeatherOption) throws {
-        let course = Course.timeTrial(.long)
-        // For Zufall, a seed that ends in a thunderstorm, so lightning is part of the comparison.
+        let distance = RaceDistance.long
+        let course = Course.timeTrial(distance)
+        // A seed whose race brings lightning and a wet puddle, so both are part of the comparison. For Zufall that
+        // takes a thunderstorm that starts early enough for a strike before the finish.
         let seed = try #require((UInt64(1) ... 100).first { seed in
-            WeatherSchedule(seed: seed, option: option, course: course).stretches(in: 0 ..< 600)
-                .contains { $0.conditions.kind == .storm }
+            var probe = RunEngine(
+                config: bottomlessBowl,
+                course: course,
+                weather: WeatherSchedule(seed: seed, option: option, course: course),
+                localSeed: 1
+            )
+            var events: [RunEvent] = []
+            while !probe.isOver {
+                probe.step(.level, events: &events)
+            }
+            return events.contains(.lightningStrike) && events.contains(.puddle)
         })
         let schedule = WeatherSchedule(seed: seed, option: option, course: course)
         var first = RunEngine(config: bottomlessBowl, course: course, weather: schedule, localSeed: 1)
@@ -488,7 +501,8 @@ struct WeatherSystemTests {
         var firstShared: [Stamped] = []
         var secondShared: [Stamped] = []
         var sameSky = true
-        for step in 0 ..< 120 * 210 {
+        // Long enough for both runs to finish: the course at 3 m/s and a few seconds more.
+        for step in 0 ..< Int((distance.meters / 3 + 5) * 120) {
             var firstEvents: [RunEvent] = []
             var secondEvents: [RunEvent] = []
             first.step(.level, events: &firstEvents)

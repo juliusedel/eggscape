@@ -35,7 +35,7 @@ struct LeaderboardTests {
         // 1.1 * 100 is 110.00000000000001, and 0.07 * 100 is 7.000000000000001, in floating point.
         (1.1, 110),
         (0.07, 7),
-        (50.25, 5025),
+        (5.25, 525),
         (0.0, 0),
     ])
     func timesRoundUpToTheHundredth(seconds: Double, hundredths: Int) {
@@ -45,7 +45,8 @@ struct LeaderboardTests {
     @Test func reportedTimesAreNeverBetterThanTheRealOnes() {
         var rng = SplitMix64(seed: 2026)
         for _ in 0 ..< 10000 {
-            let seconds = rng.uniform(20 ... 400)
+            // From a sprint over the short course to a slow endless run.
+            let seconds = rng.uniform(1 ... 400)
             let reported = LeaderboardScore.seconds(hundredths: LeaderboardScore.hundredths(seconds: seconds))
             // At most the documented floating-point tolerance faster, and less than a hundredth slower.
             #expect(reported >= seconds - 1e-7)
@@ -81,20 +82,22 @@ struct LeaderboardTests {
         let score = try #require(LeaderboardScore(
             course: .timeTrial(.medium),
             finished: true,
-            time: 101.234,
-            meters: 300
+            time: 16.934,
+            meters: RaceDistance.medium.meters
         ))
-        #expect(score == LeaderboardScore(leaderboard: .mediumTimeTrial, value: 10124))
-        #expect(LeaderboardScore.seconds(hundredths: score.value) == 101.24)
+        #expect(score == LeaderboardScore(leaderboard: .mediumTimeTrial, value: 1694))
+        #expect(LeaderboardScore.seconds(hundredths: score.value) == 16.94)
     }
 
     @Test func aTimeTrialWithoutAFinishSubmitsNothing() {
         // Lower is better, so the short time of a run that ended early would top the leaderboard.
-        #expect(LeaderboardScore(course: .timeTrial(.short), finished: false, time: 12.5, meters: 40) == nil)
-        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: 0, meters: 150) == nil)
-        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: -1, meters: 150) == nil)
-        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: .nan, meters: 150) == nil)
-        #expect(LeaderboardScore(course: .timeTrial(.long), finished: true, time: .infinity, meters: 600) == nil)
+        let short = RaceDistance.short.meters
+        let long = RaceDistance.long.meters
+        #expect(LeaderboardScore(course: .timeTrial(.short), finished: false, time: 3.5, meters: 9.5) == nil)
+        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: 0, meters: short) == nil)
+        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: -1, meters: short) == nil)
+        #expect(LeaderboardScore(course: .timeTrial(.short), finished: true, time: .nan, meters: short) == nil)
+        #expect(LeaderboardScore(course: .timeTrial(.long), finished: true, time: .infinity, meters: long) == nil)
     }
 
     @Test func anEndlessRunSubmitsWholeMeters() throws {

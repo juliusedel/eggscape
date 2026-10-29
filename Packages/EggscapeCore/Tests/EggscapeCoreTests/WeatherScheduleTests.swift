@@ -85,9 +85,10 @@ struct WeatherScheduleTests {
             let calm = try #require(stretches.first)
             let finale = try #require(stretches.last)
 
-            // A calm start of 20 to 40 meters ...
+            // A calm start of 20 to 40 meters, but at most half the course ...
+            let half = distance.meters / 2
             #expect(calm.conditions == .clear)
-            #expect(calm.meters.lowerBound == 0 && (20 ... 40).contains(calm.meters.upperBound))
+            #expect(calm.meters.lowerBound == 0 && (min(20, half) ... min(40, half)).contains(calm.meters.upperBound))
             // ... then at least two stretches of weather that tile the rest of the track ...
             let weather = stretches.dropFirst()
             #expect(weather.count >= 2)
@@ -239,6 +240,7 @@ struct WeatherScheduleTests {
     }
 
     @Test func puddlesLieAlongTheTrackAndHoldWaterWhereItRains() {
+        // Fixed rain runs on past the finish line, so 600 m of track hold enough puddles to check their spacing.
         let rainy = WeatherSchedule(seed: 21, option: .fixed(.rain), course: .timeTrial(.long))
         let positions = rainy.puddles(in: 0 ... 600)
         #expect(positions == rainy.puddleSpots(in: 0 ... 600))

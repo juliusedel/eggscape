@@ -1,13 +1,15 @@
 /// A Game Center leaderboard, configured in App Store Connect.
 ///
 /// The raw values are the leaderboard ids there. They must never change: Game Center keeps the scores already
-/// submitted under the old id, so a renamed leaderboard would start empty.
+/// submitted under the old id, so a renamed leaderboard would start empty. The time trials kept their ids when they
+/// were shortened from 150, 300 and 600 m: a time from the longer courses that is already on a board is slower than
+/// any run over the new lengths, so it ranks last.
 public enum LeaderboardID: String, CaseIterable, Codable, Hashable, Sendable {
-    /// Best time over 150 m.
+    /// Best time over 15 m.
     case shortTimeTrial = "de.juliusedel.eggscape.time.short"
-    /// Best time over 300 m.
+    /// Best time over 50 m.
     case mediumTimeTrial = "de.juliusedel.eggscape.time.medium"
-    /// Best time over 600 m.
+    /// Best time over 100 m.
     case longTimeTrial = "de.juliusedel.eggscape.time.long"
     /// Longest endless run.
     case endless = "de.juliusedel.eggscape.endless"

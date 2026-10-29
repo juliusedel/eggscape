@@ -96,7 +96,7 @@ public struct GameConfig: Sendable, Equatable {
     // Changing any weather number changes the weather every seed produces, so phones with different numbers must not
     // race together.
 
-    /// Zufall: the first meters of a time trial are calm.
+    /// Zufall: the first meters of a time trial are calm, but never more than half the course, so 7.5 m of the 15 m.
     public var randomCalmStart: ClosedRange<Double> = 20 ... 40
     /// Zufall: typical length of one stretch of weather in meters. The rest of the course is cut into about
     /// `length / randomStretchLength` stretches, at least two.

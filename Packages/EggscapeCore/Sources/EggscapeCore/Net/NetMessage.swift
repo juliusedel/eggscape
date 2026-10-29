@@ -26,9 +26,9 @@
 ///     {"type":"startRace","seed":"9876543210123456789","startAt":5003.25}
 ///     {"type":"progress","meters":12.5,"eggsLeft":2}
 ///     {"type":"eggDropped","eggsLeft":1}
-///     {"type":"finished","report":{"completed":true,"time":51.23,"meters":150,"eggsLost":1}}
+///     {"type":"finished","report":{"completed":true,"time":35.83,"meters":100,"eggsLost":1}}
 ///     {"type":"results","results":{"entries":[{"place":1,"playerID":"A","nickname":"Anna",
-///       "status":{"type":"finished","time":51.23},"eggsLost":1}]}}
+///       "status":{"type":"finished","time":35.83},"eggsLost":1}]}}
 ///     {"type":"ping","id":7,"sentAt":102.5}
 ///     {"type":"pong","id":7,"pingSentAt":102.5,"hostTime":5000.75}
 ///

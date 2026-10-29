@@ -44,11 +44,26 @@ private func play(
     sprint: Bool = false,
     seconds: Double = 400
 ) -> RunEngine {
-    var engine = RunEngine(
-        course: course,
-        weather: WeatherSchedule(seed: raceSeed, option: weather, course: course),
-        localSeed: localSeed
+    play(
+        course,
+        schedule: WeatherSchedule(seed: raceSeed, option: weather, course: course),
+        localSeed: localSeed,
+        player: player,
+        sprint: sprint,
+        seconds: seconds
     )
+}
+
+/// `play(_:weather:...)` with a given weather plan, e.g. a hand-made one.
+private func play(
+    _ course: Course,
+    schedule: WeatherSchedule,
+    localSeed: UInt64 = 7,
+    player: AttentivePlayer? = nil,
+    sprint: Bool = false,
+    seconds: Double = 400
+) -> RunEngine {
+    var engine = RunEngine(course: course, weather: schedule, localSeed: localSeed)
     var player = player
     var events: [RunEvent] = []
     for _ in 0 ..< Int(seconds * engine.config.simulationRate) where !engine.isOver {
@@ -78,14 +93,27 @@ struct PlayabilityTests {
         let engine = play(.timeTrial(.short), weather: .off, player: AttentivePlayer(), sprint: true)
         #expect(engine.phase == .finished)
         #expect(engine.eggsLost == 0)
-        #expect(engine.elapsed < 31)
+        // At sprint speed all the way, but for the moment it takes to get going.
+        #expect(engine.elapsed < RaceDistance.short.meters / engine.config.sprintSpeed + 1)
     }
 
-    @Test func attentivePlayerKeepsAnEggThroughTheLongStorm() {
-        // Wind, a slippery bowl, puddles and lightning at full strength for 600 m: the hardest race there is.
-        let engine = play(.timeTrial(.long), weather: .fixed(.storm), player: AttentivePlayer())
+    @Test(arguments: RaceDistance.allCases)
+    func attentivePlayerKeepsAnEggThroughTheStorm(distance: RaceDistance) {
+        // Wind, a slippery bowl, puddles and lightning at full strength the whole way: the hardest race of each course.
+        let engine = play(.timeTrial(distance), weather: .fixed(.storm), player: AttentivePlayer())
         #expect(engine.phase == .finished)
         #expect(engine.eggsLeft >= 1)
+    }
+
+    @Test func attentivePlayerKeepsAnEggThroughTwoHundredSecondsOfStorm() {
+        // Even the long course is over in about half a minute. This keeps the endurance of the old 600 m course on its
+        // own: 200 s of full thunderstorm on a track without a finish line, however long the courses are.
+        let storm = WeatherSchedule(seed: 0xE665_CA9E, stretches: [
+            WeatherSchedule.Stretch(meters: 0 ..< .infinity, conditions: WeatherConditions(kind: .storm, intensity: 1)),
+        ])
+        let engine = play(.endless, schedule: storm, player: AttentivePlayer(), seconds: 200)
+        #expect(engine.eggsLeft >= 1)
+        #expect(engine.elapsed > 199.9)
     }
 
     @Test func carelessPlayerLosesAnEggSprintingInTheWind() {

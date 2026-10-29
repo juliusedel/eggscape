@@ -1,8 +1,9 @@
 @testable import EggscapeCore
 import Testing
 
+/// A run that reached the finish of the long course.
 private func completed(_ time: Double, eggsLost: Int = 0) -> FinishReport {
-    FinishReport(completed: true, time: time, meters: 150, eggsLost: eggsLost)
+    FinishReport(completed: true, time: time, meters: RaceDistance.long.meters, eggsLost: eggsLost)
 }
 
 private func outOfEggs(at meters: Double) -> FinishReport {
@@ -23,35 +24,35 @@ struct RaceRefereeTests {
         var referee = race("anna", "ben", "cem")
         // Ben's phone hitched, so it reports a faster time, but Anna's report reached the host first.
         let accepted = [
-            referee.recordFinished(completed(50.9), from: "anna"),
-            referee.recordFinished(completed(49.8), from: "ben"),
-            referee.recordFinished(completed(52.4), from: "cem"),
+            referee.recordFinished(completed(34.9), from: "anna"),
+            referee.recordFinished(completed(33.8), from: "ben"),
+            referee.recordFinished(completed(36.4), from: "cem"),
         ]
         #expect(accepted == [true, true, true])
         #expect(referee.arrivals == ["anna", "ben", "cem"])
         let entries = referee.results().entries
         #expect(entries.map(\.playerID) == ["anna", "ben", "cem"])
         #expect(entries.map(\.place) == [1, 2, 3])
-        #expect(entries.map(\.status) == [.finished(time: 50.9), .finished(time: 49.8), .finished(time: 52.4)])
+        #expect(entries.map(\.status) == [.finished(time: 34.9), .finished(time: 33.8), .finished(time: 36.4)])
     }
 
     @Test func outOfEggsRankByDistanceBehindCompletedRuns() {
         var referee = race("anna", "ben", "cem", "dana")
-        referee.recordFinished(outOfEggs(at: 80), from: "anna")
-        referee.recordFinished(outOfEggs(at: 120), from: "ben")
-        referee.recordProgress(meters: 140, eggsLeft: 1, from: "cem")
+        referee.recordFinished(outOfEggs(at: 40), from: "anna")
+        referee.recordFinished(outOfEggs(at: 60), from: "ben")
+        referee.recordProgress(meters: 70, eggsLeft: 1, from: "cem")
         referee.markDisconnected("cem")
-        referee.recordFinished(completed(55, eggsLost: 2), from: "dana")
+        referee.recordFinished(completed(39, eggsLost: 2), from: "dana")
         #expect(referee.isComplete)
 
         let entries = referee.results().entries
         // Cem got furthest but left, so Cem ranks last.
         #expect(entries.map(\.playerID) == ["dana", "ben", "anna", "cem"])
         #expect(entries.map(\.status) == [
-            .finished(time: 55),
-            .outOfEggs(meters: 120),
-            .outOfEggs(meters: 80),
-            .disconnected(meters: 140),
+            .finished(time: 39),
+            .outOfEggs(meters: 60),
+            .outOfEggs(meters: 40),
+            .disconnected(meters: 70),
         ])
         #expect(entries.map(\.eggsLost) == [2, 3, 3, 2])
         #expect(entries.map(\.place) == [1, 2, 3, 4])
@@ -65,7 +66,7 @@ struct RaceRefereeTests {
         for id: PlayerID in ["anna", "ben", "cem"] {
             referee.markDisconnected(id)
         }
-        referee.recordFinished(completed(50), from: "dana")
+        referee.recordFinished(completed(34), from: "dana")
         // Anna and Cem left at the same distance and keep their registration order.
         #expect(referee.results().entries.map(\.playerID) == ["dana", "ben", "anna", "cem"])
     }
@@ -82,7 +83,7 @@ struct RaceRefereeTests {
         var referee = race("anna", "ben", "cem")
         referee.markDisconnected("cem")
         #expect(!referee.isComplete)
-        referee.recordFinished(completed(50), from: "anna")
+        referee.recordFinished(completed(34), from: "anna")
         #expect(!referee.isComplete)
         referee.recordFinished(outOfEggs(at: 70), from: "ben")
         #expect(referee.isComplete)
@@ -90,24 +91,24 @@ struct RaceRefereeTests {
 
     @Test func losingTheLastRunnerCompletesTheRace() {
         var referee = race("anna", "ben")
-        referee.recordFinished(completed(50), from: "anna")
+        referee.recordFinished(completed(34), from: "anna")
         referee.recordProgress(meters: 42, eggsLeft: 1, from: "ben")
         #expect(!referee.isComplete)
         referee.markDisconnected("ben")
         #expect(referee.isComplete)
         #expect(referee.results().entries == [
-            RaceResultEntry(place: 1, playerID: "anna", nickname: "anna", status: .finished(time: 50), eggsLost: 0),
+            RaceResultEntry(place: 1, playerID: "anna", nickname: "anna", status: .finished(time: 34), eggsLost: 0),
             RaceResultEntry(place: 2, playerID: "ben", nickname: "ben", status: .disconnected(meters: 42), eggsLost: 2),
         ])
     }
 
     @Test func leavingAfterTheFinishKeepsThePlace() {
         var referee = race("anna", "ben")
-        referee.recordFinished(completed(50), from: "anna")
+        referee.recordFinished(completed(34), from: "anna")
         referee.markDisconnected("anna")
-        referee.recordFinished(completed(53), from: "ben")
+        referee.recordFinished(completed(37), from: "ben")
         #expect(referee.isComplete)
-        #expect(referee.results().entries.map(\.status) == [.finished(time: 50), .finished(time: 53)])
+        #expect(referee.results().entries.map(\.status) == [.finished(time: 34), .finished(time: 37)])
     }
 
     @Test func anEmptyRaceIsNeverComplete() {
@@ -117,11 +118,11 @@ struct RaceRefereeTests {
 
     @Test func ignoresReportsThatCannotCount() {
         var referee = race("anna", "ben")
-        let first = referee.recordFinished(completed(50), from: "anna")
-        let second = referee.recordFinished(completed(40), from: "anna")
-        let stranger = referee.recordFinished(completed(45), from: "zoe")
+        let first = referee.recordFinished(completed(34), from: "anna")
+        let second = referee.recordFinished(completed(24), from: "anna")
+        let stranger = referee.recordFinished(completed(29), from: "zoe")
         referee.markDisconnected("ben")
-        let afterLeaving = referee.recordFinished(completed(51), from: "ben")
+        let afterLeaving = referee.recordFinished(completed(35), from: "ben")
         let progressAfterFinish = referee.recordProgress(meters: 10, eggsLeft: 3, from: "anna")
         let eggAfterLeaving = referee.recordEggDropped(eggsLeft: 2, from: "ben")
         #expect(first)
@@ -131,16 +132,16 @@ struct RaceRefereeTests {
         #expect(!progressAfterFinish, "progress after the finish")
         #expect(!eggAfterLeaving, "a broken egg after leaving")
         #expect(referee.arrivals == ["anna"])
-        #expect(referee.results().entries.map(\.status) == [.finished(time: 50), .disconnected(meters: 0)])
+        #expect(referee.results().entries.map(\.status) == [.finished(time: 34), .disconnected(meters: 0)])
     }
 
     @Test func rejectsReportsNoRunCanProduce() {
         var referee = race("anna")
         let impossible = [
-            FinishReport(completed: true, time: .nan, meters: 150, eggsLost: 0),
-            FinishReport(completed: true, time: -2, meters: 150, eggsLost: 0),
+            FinishReport(completed: true, time: .nan, meters: RaceDistance.long.meters, eggsLost: 0),
+            FinishReport(completed: true, time: -2, meters: RaceDistance.long.meters, eggsLost: 0),
             FinishReport(completed: false, time: 9, meters: -1, eggsLost: 3),
-            FinishReport(completed: true, time: 9, meters: 150, eggsLost: -1),
+            FinishReport(completed: true, time: 9, meters: RaceDistance.long.meters, eggsLost: -1),
         ]
         for report in impossible {
             let accepted = referee.recordFinished(report, from: "anna")
@@ -178,14 +179,14 @@ struct RaceRefereeTests {
         let ben = try #require(referee.runner("ben"))
         #expect(ben.meters == 12.5)
         #expect(ben.eggsLeft == 2)
-        let finished = referee.receive(.finished(completed(48)), from: "ben")
+        let finished = referee.receive(.finished(completed(32)), from: "ben")
         #expect(finished)
         #expect(referee.arrivals == ["ben"])
     }
 
     @Test func rematchKeepsThePlayers() {
         var referee = race("anna", "ben", "cem")
-        referee.recordFinished(completed(50), from: "anna")
+        referee.recordFinished(completed(34), from: "anna")
         referee.recordProgress(meters: 33, eggsLeft: 1, from: "ben")
         referee.markDisconnected("cem")
         referee.recordFinished(outOfEggs(at: 70), from: "ben")
@@ -198,7 +199,7 @@ struct RaceRefereeTests {
         #expect(everyoneConnected)
         #expect(referee.arrivals.isEmpty)
         #expect(!referee.isComplete)
-        let accepted = referee.recordFinished(completed(47), from: "ben")
+        let accepted = referee.recordFinished(completed(31), from: "ben")
         #expect(accepted)
     }
 
@@ -234,7 +235,8 @@ struct RaceRefereeTests {
             run.step(.level, events: &events)
         }
         let report = try #require(FinishReport(run: run))
-        #expect(report == FinishReport(completed: true, time: run.elapsed, meters: 150, eggsLost: 0))
+        let length = RaceDistance.short.meters
+        #expect(report == FinishReport(completed: true, time: run.elapsed, meters: length, eggsLost: 0))
     }
 
     @Test func reportsARunOutOfEggs() throws {
@@ -249,6 +251,6 @@ struct RaceRefereeTests {
         #expect(!report.completed)
         #expect(report.eggsLost == 3)
         #expect(report.meters == run.meters)
-        #expect(report.meters < 600)
+        #expect(report.meters < RaceDistance.long.meters)
     }
 }

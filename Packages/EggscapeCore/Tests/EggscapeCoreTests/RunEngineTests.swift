@@ -18,12 +18,13 @@ private func makeEngine(_ course: Course, localSeed: UInt64 = 7) -> RunEngine {
 
 struct RunEngineTests {
     @Test func finishesShortCourseAtRunningSpeed() throws {
+        let length = RaceDistance.short.meters
         var engine = makeEngine(.timeTrial(.short))
         var events: [RunEvent] = []
         run(&engine, seconds: 60, events: &events)
 
         #expect(engine.phase == .finished)
-        #expect(engine.meters == 150)
+        #expect(engine.meters == length)
         #expect(engine.eggsLeft == 3)
         let finish = try #require(events.compactMap { event -> Double? in
             if case let .finished(time) = event {
@@ -32,8 +33,9 @@ struct RunEngineTests {
                 nil
             }
         }.first)
-        // 150 m at 3 m/s plus the quarter second it takes to get going.
-        #expect(finish > 50 && finish < 50.5)
+        // The course at 3 m/s plus the quarter second it takes to get going.
+        let cruising = length / engine.config.runSpeed
+        #expect(finish > cruising && finish < cruising + 0.5)
     }
 
     @Test func footstepsFollowTheCadence() {
@@ -116,8 +118,9 @@ struct RunEngineTests {
     }
 
     @Test func sameSeedsAndInputsGiveTheSameRun() {
-        var first = makeEngine(.timeTrial(.medium), localSeed: 99)
-        var second = makeEngine(.timeTrial(.medium), localSeed: 99)
+        // Endless, so no finish line ends the comparison early.
+        var first = makeEngine(.endless, localSeed: 99)
+        var second = makeEngine(.endless, localSeed: 99)
         var events: [RunEvent] = []
         let input = RunEngine.Input(tilt: SIMD2(radians(3), radians(-2)), sprint: true)
         run(&first, seconds: 20, input: input, events: &events)

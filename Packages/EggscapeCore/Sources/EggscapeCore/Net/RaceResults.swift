@@ -98,9 +98,9 @@ public struct RaceResultEntry: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
-/// Written out because the synthesized format (`{"finished":{"time":51.2}}`) would tie the wire to Swift's encoding
-/// of enums. Format: `{"type":"finished","time":51.2}`, `{"type":"outOfEggs","meters":120}` or
-/// `{"type":"disconnected","meters":80}`.
+/// Written out because the synthesized format (`{"finished":{"time":35.8}}`) would tie the wire to Swift's encoding
+/// of enums. Format: `{"type":"finished","time":35.8}`, `{"type":"outOfEggs","meters":80}` or
+/// `{"type":"disconnected","meters":60}`.
 extension RaceResultEntry.Status: Codable {
     private enum CodingKeys: String, CodingKey {
         case type

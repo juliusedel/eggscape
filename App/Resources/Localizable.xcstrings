@@ -11,12 +11,12 @@
         }
       }
     },
-    "%@ für %lld Münzen kaufen" : {
+    "%@ für %lld Münzen freischalten" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buy %1$@ for %2$lld coins"
+            "value" : "Unlock %1$@ for %2$lld coins"
           }
         }
       }
@@ -147,6 +147,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld Münzen, bestes Angebot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld coins, best value"
+          }
+        }
+      }
+    },
+    "%lld von %lld Eiern freigeschaltet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld eggs unlocked"
           }
         }
       }
@@ -407,6 +427,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leaderboard"
+          }
+        }
+      }
+    },
+    "Bestes Angebot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best Value"
           }
         }
       }
@@ -721,12 +751,12 @@
         }
       }
     },
-    "Ei kaufen?" : {
+    "Ei freischalten?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buy this egg?"
+            "value" : "Unlock This Egg?"
           }
         }
       }
@@ -871,6 +901,16 @@
         }
       }
     },
+    "Freigeschaltet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlocked"
+          }
+        }
+      }
+    },
     "Freunde" : {
       "localizations" : {
         "en" : {
@@ -911,22 +951,22 @@
         }
       }
     },
-    "Gekauft" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Owned"
-          }
-        }
-      }
-    },
     "Gemeinsam an einem Handy" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pass the Phone"
+          }
+        }
+      }
+    },
+    "Gesperrt, %lld Münzen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locked, %lld coins"
           }
         }
       }
@@ -1471,6 +1511,16 @@
         }
       }
     },
+    "Münzen kaufen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buy Coins"
+          }
+        }
+      }
+    },
     "Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr." : {
       "localizations" : {
         "en" : {
@@ -1827,6 +1877,16 @@
         }
       }
     },
+    "Schaltet das Ei frei." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlocks the egg."
+          }
+        }
+      }
+    },
     "Schließen" : {
       "localizations" : {
         "en" : {
@@ -2173,6 +2233,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wind"
+          }
+        }
+      }
+    },
+    "Wählt dieses Ei aus." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selects this egg."
+          }
+        }
+      }
+    },
+    "Zeigt die Münzpakete." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows the coin packs."
           }
         }
       }

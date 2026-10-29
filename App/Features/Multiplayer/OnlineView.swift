@@ -3,8 +3,10 @@ import SwiftUI
 
 /// "Online": race 2-4 players over Game Center, found by Apple's matchmaker or invited as friends.
 struct OnlineView: View {
-    var invite: GKInvite?
     @Environment(AppServices.self) private var services
+    /// The accepted invitation, for the first matchmaker only: GameKit takes it once, so later matchmakers start from a
+    /// new match request.
+    @State private var pendingInvite: GKInvite?
     @State private var session: NearbySession?
     /// A match whose players are still connecting; the race room opens once all of them are there.
     @State private var pendingMatch: GameKitTransport?
@@ -12,6 +14,10 @@ struct OnlineView: View {
     @State private var failure: String?
     @State private var showsMatchmaker = false
     @State private var signInOwner = LeaseOwner()
+
+    init(invite: GKInvite? = nil) {
+        _pendingInvite = State(initialValue: invite)
+    }
 
     var body: some View {
         Group {
@@ -32,7 +38,7 @@ struct OnlineView: View {
         .toolbar(session == nil && pendingMatch == nil ? .automatic : .hidden, for: .tabBar)
         .onAppear {
             services.gameCenter.signIn(for: signInOwner)
-            if invite != nil {
+            if pendingInvite != nil {
                 showsMatchmaker = true
             }
         }
@@ -43,8 +49,9 @@ struct OnlineView: View {
             pendingMatch?.close()
             pendingMatch = nil
         }
-        .sheet(isPresented: $showsMatchmaker) {
-            MatchmakerView(invite: invite) { match in
+        // However the matchmaker closes (a match, cancelled, failed or swiped away), the invitation is used up.
+        .sheet(isPresented: $showsMatchmaker, onDismiss: { pendingInvite = nil }) {
+            MatchmakerView(invite: pendingInvite) { match in
                 showsMatchmaker = false
                 open(GameKitTransport(match: match))
             } onCancel: {

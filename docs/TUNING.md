@@ -88,6 +88,9 @@ Intensity 1 means the values below; the "Zufall" escalation and Endlos scale int
 | Rain | `rainDampingFactor` 0.4, `rainDropRate`, `rainDropKick`, `puddleKick`, `puddleSpacing` | Damping drops to 0.48 (ζ ≈ 0.17, ≈ 58 % overshoot): the egg wobbles much longer and sudden corrections overshoot. Raindrops add a fine tremble; puddles one extra kick. Unchanged with the tighter tipping point, so rain got harder: a level phone now loses eggs in full rain (median half a minute), an attentive player none. |
 | Gewitter | wind + rain + `lightningInterval` 8–15 s, `lightningWarning` 0.6 s, `lightningKick` 0.6 | In the wet storm bowl a strike moves a resting egg ≈ 0.33 units, 58 % of the way to the sideways tipping point: enough to drop it if the player is already fighting a gust. Scaled with the tipping point like the wind (it was 0.8): at 0.8 an attentive player lost an egg in one full-storm race of twelve, at 0.6 in one of fifty. |
 
+The HUD's wind arrow, the wind sound, the slant of the rain and the blowing leaves follow the gust's share of the
+strongest one (`WeatherSystem.gustStrength`), not its force, so retuning `windForce` keeps them as they are.
+
 The schedule (stretches, gusts, lightning, puddles) is derived from the race seed with SplitMix64, so every player of
 a race gets the same weather; see `WeatherTests`.
 

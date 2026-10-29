@@ -10,9 +10,9 @@ revisited deliberately.
 - **No Homebrew on the build Mac.** `brew install xcodegen` was not possible, so `scripts/bootstrap.sh` builds pinned
   versions of XcodeGen (2.46.0) and SwiftFormat (0.64.4) from source into `.tools/` (git-ignored). The Makefile
   prefers tools on `PATH`, so `brew install xcodegen swiftformat fastlane` remains the normal setup.
-- **No GitHub credentials on the build Mac.** The repository could not be cloned or pushed. Work happens in a local
-  repository whose first commit mirrors the GitHub "Initial commit" (tagged `local-initial`); `docs/RELEASE.md`
-  explains how to replay the work onto `origin/main` and push.
+- **No GitHub credentials on the build Mac.** The repository could not be cloned or pushed at first, so the work
+  started in a local repository whose first commit mirrored the GitHub "Initial commit". That history was later
+  replayed onto GitHub's initial commit and merged into `main`.
 - **fastlane is not installed on the build Mac** (system Ruby 2.6 is too old for current fastlane). The lanes are
   written and syntax-checked but could not be executed; they need `brew install fastlane` (or `bundle install`).
 - **Swift 6 language mode** everywhere, with strict concurrency checking.
@@ -64,9 +64,11 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   grouped background (light and dark), which the first tab shows.
 - **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
-- **Game Center.** Sign-in starts when the Bestenliste tab opens or a run ends with a score; scores reached while
-  signed out are submitted from the personal bests right after signing in. Time-trial leaderboards take the best time
-  of any weather, because one board per weather option would split the few players.
+- **Game Center.** The player is signed in silently at launch (not in UI tests or screenshot mode), so scores reach
+  the leaderboards right after a run and an accepted invitation opens the online room, also when it launched the app.
+  Apple's sign-in sheet, if GameKit asks for one, waits until Bestenliste or Online opens instead of popping up over a
+  run. Scores reached while signed out are submitted from the personal bests right after signing in. Time-trial
+  leaderboards take the best time of any weather, because one board per weather option would split the few players.
 - **MultipeerConnectivity warnings.** The deprecation warnings are silenced only inside `MultipeerTransport.swift` with
   `@diagnose(DeprecatedDeclaration, as: ignored)`, guarded by `#if hasAttribute(diagnose)` so older compilers (CI)
   still build it, just with warnings.

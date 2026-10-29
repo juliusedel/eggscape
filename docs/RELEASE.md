@@ -2,19 +2,6 @@
 
 From a fresh checkout to an app in review. Steps marked **Owner** need your Apple account and cannot be automated.
 
-## 0. Push the repository (once)
-
-This work was created in a local repository whose first commit mirrors the GitHub "Initial commit" (tag
-`local-initial`), because the build machine had no GitHub credentials. Replay it onto the real history and push:
-
-```bash
-git fetch origin
-git rebase --onto origin/main local-initial feat/eggscape-v1
-git push -u origin feat/eggscape-v1
-```
-
-Open a pull request into `main`; CI runs `swift test` for EggscapeCore and a simulator build.
-
 ## 1. Tools
 
 ```bash

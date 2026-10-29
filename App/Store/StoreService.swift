@@ -3,7 +3,8 @@ import os
 import StoreKit
 
 /// Sells the coin packs (consumable in-app purchases) with StoreKit 2. Coins are credited through `credit`, which
-/// must credit every transaction id at most once; the transaction is finished afterwards either way.
+/// must credit every transaction id at most once; the transaction is finished afterwards. Transactions that are not
+/// verified, or are for a pack this build does not sell, stay unfinished, so StoreKit delivers them again later.
 @MainActor
 @Observable
 final class StoreService {
@@ -64,9 +65,13 @@ final class StoreService {
         purchaseState = .purchasing(productID: product.id)
         do {
             switch try await product.purchase() {
-            case let .success(verification):
-                await process(verification)
+            case let .success(.verified(transaction)):
+                await deliver(transaction)
                 purchaseState = .idle
+            case .success(.unverified):
+                // Nothing is credited and the transaction stays unfinished, but the player may have paid: say so.
+                logger.error("Ignoring an unverified purchase")
+                purchaseState = .failed(String(localized: "Der Kauf konnte nicht bestätigt werden."))
             case .pending:
                 purchaseState = .pending
             case .userCancelled:
@@ -74,6 +79,8 @@ final class StoreService {
             @unknown default:
                 purchaseState = .idle
             }
+        } catch StoreKitError.userCancelled {
+            purchaseState = .idle
         } catch {
             logger.error("Purchase failed: \(error.localizedDescription)")
             purchaseState = .failed(error.localizedDescription)
@@ -84,6 +91,16 @@ final class StoreService {
         // Only content from transactions signed by the App Store is granted.
         guard case let .verified(transaction) = result else {
             logger.error("Ignoring an unverified transaction")
+            return
+        }
+        await deliver(transaction)
+    }
+
+    private func deliver(_ transaction: Transaction) async {
+        // A pack added in a later version (bought with an offer code, or approved via Ask to Buy before updating) is
+        // credited by that version.
+        guard productIDs.contains(transaction.productID) else {
+            logger.error("Leaving the transaction for the unknown product \(transaction.productID) unfinished")
             return
         }
         if transaction.revocationDate == nil, transaction.productType == .consumable {

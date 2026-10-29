@@ -63,19 +63,25 @@ final class GameCenterService {
         }
     }
 
-    /// Signs in silently, once at launch. A sign-in sheet GameKit asks for waits for `signIn()`.
+    /// Signs in silently, once at launch. A sign-in sheet GameKit asks for waits for `signIn(for:)`.
     func authenticate() {
         perform(signInFlow.authenticateAtLaunch())
     }
 
-    /// For screens that need Game Center, and "Erneut versuchen": shows Apple's sign-in sheet if GameKit asks for one.
-    func signIn() {
+    /// For screens that need Game Center, and "Erneut versuchen": shows Apple's sign-in sheet if GameKit asks for one
+    /// while `screen` is open. Call `stopWaitingForSignIn(for:)` when it closes.
+    func signIn(for screen: AnyObject) {
         // UI tests and staged screenshots never touch GameKit, so their records never reach a leaderboard.
         guard !LaunchOptions.current.usesEphemeralData else {
             signInFlow.failed(nil)
             return
         }
-        perform(signInFlow.signIn())
+        perform(signInFlow.signIn(for: screen))
+    }
+
+    /// `screen` closed: a sign-in sheet GameKit asks for later waits for the next screen instead of covering another.
+    func stopWaitingForSignIn(for screen: AnyObject) {
+        signInFlow.stopWaitingForSignIn(for: screen)
     }
 
     private func perform(_ step: GameCenterSignIn<UIViewController>.Step) {

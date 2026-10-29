@@ -30,13 +30,25 @@ final class NearbySession: Identifiable {
         case racing
         case results(RaceResults)
         case failed(String)
+
+        /// In the room the players wait for each other: in the lobby, for the others to finish and over the results. A
+        /// phone that locks meanwhile is suspended and drops out, and a host takes the room down for everybody.
+        var keepsScreenAwake: Bool {
+            switch self {
+            case .lobby, .racing, .results: true
+            case .browsing, .connecting, .failed: false
+            }
+        }
     }
 
     let role: Role
     let me: PlayerInfo
     /// A nearby host advertises the room only while it takes players, which depends on the stage and the lobby.
     private(set) var stage: Stage {
-        didSet { nearby?.updateAdvertising() }
+        didSet {
+            nearby?.updateAdvertising()
+            updateIdleTimer()
+        }
     }
 
     /// The host's lobby; joiners mirror the last `lobbyState` they received.
@@ -68,6 +80,8 @@ final class NearbySession: Identifiable {
     @ObservationIgnored private var joiningRoomID: String?
     @ObservationIgnored private var listener: Task<Void, Never>?
     @ObservationIgnored private var pinger: Task<Void, Never>?
+    /// Set by `leave()`. Messages that were already on their way can still change the stage afterwards.
+    @ObservationIgnored private var hasLeft = false
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "nearby")
 
     /// - Parameter networking: `false` only for the staged App Store screenshot (no prompt, no radio).
@@ -92,6 +106,8 @@ final class NearbySession: Identifiable {
             return stage == .lobby && !lobby.isFull
         }
         multipeer.onRoomsChanged = { [weak self] rooms in self?.rooms = rooms }
+        // `didSet` does not run in an initializer, and a host starts in its lobby.
+        updateIdleTimer()
         guard networking else { return }
         listen()
         switch role {
@@ -121,6 +137,7 @@ final class NearbySession: Identifiable {
         let referee = match.refereePeer
         stage = role == .host ? .lobby : .connecting(host: referee?.displayName ?? "")
         hostPeer = role == .host ? nil : referee
+        updateIdleTimer()
         listen()
         if role == .joiner {
             startPinging()
@@ -152,6 +169,14 @@ final class NearbySession: Identifiable {
     /// A nearby room rather than an online match: joiners pick it from a list.
     var isNearby: Bool {
         nearby != nil
+    }
+
+    /// The race's run is on screen: during the race and over its results.
+    var showsRun: Bool {
+        switch stage {
+        case .racing, .results: run != nil
+        case .browsing, .connecting, .lobby, .failed: false
+        }
     }
 
     /// Seconds on this phone's monotonic clock since the session began.
@@ -250,10 +275,18 @@ final class NearbySession: Identifiable {
     }
 
     func leave() {
+        hasLeft = true
         pinger?.cancel()
         listener?.cancel()
         run?.stop()
         transport.close()
+        updateIdleTimer()
+    }
+
+    /// Keeps the screen awake while the player is in the room, never after `leave()`. `IdleTimer` only recomputes when
+    /// asked, so the lease has to be given back here: a session that just goes away would keep the screen on.
+    private func updateIdleTimer() {
+        IdleTimer.setDisabled(stage.keepsScreenAwake && !hasLeft, for: self)
     }
 
     // MARK: Race
@@ -263,6 +296,7 @@ final class NearbySession: Identifiable {
         let setup = RunSetup(mode: .timeTrial(settings.distance, settings.weather), raceSeed: seed)
         let hooks = RaceHooks(
             startAt: .now + .seconds(max(seconds, 0.5)),
+            isReferee: isHost,
             onProgress: { [weak self] meters, eggsLeft in
                 self?.reportProgress(meters: meters, eggsLeft: eggsLeft)
             },

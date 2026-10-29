@@ -95,3 +95,17 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Dynamic Type at the largest size keeps the menus usable.
 - [ ] German and English: no untranslated texts, no truncation (Settings → General → Language & Region).
 - [ ] On an iPad the app runs in iPhone mode without crashing.
+
+### Waiting in rooms and invitations
+- [ ] Nearby and online: the phone that finishes first does not dim or lock while "Warte auf die anderen …", the
+      results or the lobby are shown (wait longer than Auto-Lock); after leaving the room it dims normally again.
+- [ ] Host (nearby) or referee (online): Pause → "Rennen verlassen" warns that the race ends for the others too; every
+      other player reads that the others keep running.
+- [ ] Accept an online invitation during a single run, a hot-seat turn or a nearby race: it opens only once the run
+      and its results are closed, never on top of them.
+- [ ] Accept one while in a nearby lobby or an online room: "Einladung annehmen?" asks first; "Annehmen" leaves the
+      room and opens the invitation, "Ablehnen" stays.
+- [ ] Signed out of Game Center: open Bestenliste, switch to Einzelspieler right away and start a run. Apple's
+      sign-in sheet never appears over the run; it appears on the next visit to Bestenliste.
+- [ ] Disabled primary buttons (e.g. "Rennen starten" before everybody is ready) and the Sprint button stay readable
+      in light and dark mode.

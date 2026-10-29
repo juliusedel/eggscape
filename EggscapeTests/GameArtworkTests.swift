@@ -69,9 +69,9 @@ struct GameArtworkTests {
     /// An egg that drops while its splat is still being prepared waits for that render instead of starting another.
     @Test func dropDuringThePrepareSharesItsTexture() async {
         let artwork = GameArtwork.shared(screenScale: 1)
-        async let prepared = artwork.brokenEgg(speckled, widthPixels: 52)
-        async let dropped = artwork.brokenEgg(speckled, widthPixels: 52)
-        let (first, second) = await (prepared, dropped)
-        #expect(first === second)
+        // Textures are not Sendable, so the prepare stays on the main actor and only says which texture it got.
+        let prepare = Task { await ObjectIdentifier(artwork.brokenEgg(speckled, widthPixels: 52)) }
+        let dropped = await artwork.brokenEgg(speckled, widthPixels: 52)
+        #expect(await prepare.value == ObjectIdentifier(dropped))
     }
 }

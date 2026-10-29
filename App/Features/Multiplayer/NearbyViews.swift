@@ -13,10 +13,7 @@ struct NearbyView: View {
     var body: some View {
         Group {
             if let session {
-                RaceRoomView(session: session) {
-                    session.leave()
-                    self.session = nil
-                }
+                RaceRoomView(session: session, onLeave: leave)
             } else {
                 chooser
             }
@@ -25,10 +22,13 @@ struct NearbyView: View {
         .navigationBarTitleDisplayMode(.inline)
         // A tab switch would leave the room (see onDisappear), which closes it for everybody when this phone hosts.
         .toolbar(session == nil ? .automatic : .hidden, for: .tabBar)
-        .onDisappear {
-            session?.leave()
-            session = nil
-        }
+        .holdsBackInvitations(inRoom: session != nil, showsRun: session?.showsRun ?? false, leaveRoom: leave)
+        .onDisappear(perform: leave)
+    }
+
+    private func leave() {
+        session?.leave()
+        session = nil
     }
 
     private var chooser: some View {
@@ -126,12 +126,7 @@ struct RaceRoomView: View {
     }
 
     private var isRacing: Binding<Bool> {
-        Binding {
-            switch session.stage {
-            case .racing, .results: session.run != nil
-            default: false
-            }
-        } set: { _ in }
+        Binding { session.showsRun } set: { _ in }
     }
 }
 

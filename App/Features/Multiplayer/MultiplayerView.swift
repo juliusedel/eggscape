@@ -44,6 +44,48 @@ struct MultiplayerView: View {
     }
 }
 
+extension View {
+    /// For the nearby and online rooms of the Mehrspieler tab: an accepted invitation does not cover the room but waits
+    /// (see `RootView`). While no run is on screen, the room asks whether to leave it for the invitation.
+    func holdsBackInvitations(inRoom: Bool, showsRun: Bool, leaveRoom: @escaping () -> Void) -> some View {
+        modifier(RoomInvitationPrompt(isInRoom: inRoom, showsRun: showsRun, leaveRoom: leaveRoom))
+    }
+}
+
+private struct RoomInvitationPrompt: ViewModifier {
+    let isInRoom: Bool
+    let showsRun: Bool
+    var leaveRoom: () -> Void
+    @Environment(AppServices.self) private var services
+    @Environment(\.dismiss) private var dismiss
+    @State private var owner = LeaseOwner()
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { services.navigation.setBusy(isInRoom, for: owner) }
+            .onChange(of: isInRoom) { _, inRoom in services.navigation.setBusy(inRoom, for: owner) }
+            .onDisappear { services.navigation.setBusy(false, for: owner) }
+            .alert("Einladung annehmen?", isPresented: asksToLeave) {
+                Button("Annehmen") {
+                    // The invitation appears once the room is gone; the tab goes back to its list meanwhile.
+                    leaveRoom()
+                    dismiss()
+                }
+                Button("Ablehnen", role: .cancel) {
+                    services.gameCenter.acceptedInvite = nil
+                }
+            } message: {
+                Text("Dafür verlässt du den Raum.")
+            }
+    }
+
+    /// Not over a run: the run's full-screen cover could not appear while the question is up.
+    private var asksToLeave: Binding<Bool> {
+        let asks = isInRoom && !showsRun && services.gameCenter.acceptedInvite != nil
+        return Binding(get: { asks }, set: { _ in })
+    }
+}
+
 struct ModeRow: View {
     let title: LocalizedStringKey
     let detail: LocalizedStringKey

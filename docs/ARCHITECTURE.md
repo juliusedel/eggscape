@@ -95,7 +95,7 @@ Portrait, full screen, SpriteKit scene of the view's size (`resizeFill`, origin 
   spoon hides whatever part is still over the bowl. It falls on outwards, shrinking to 60 % as it falls away from the
   eye, until it clears the bowl's edge (`SceneLayout.landing(ofEggFallingFrom:)`), fades, and a broken egg (shell
   pieces, egg white, yolk; its image 1.4 times as wide as the egg) appears there, beside the spoon. A new egg is placed
-  after two seconds.
+  after two seconds. The `drop` preview sheet shows the fall frame by frame.
 - **Weather overlays.** Rain: drops landing on the spoon and screen, streaks slanting with the wind, cooler and darker
   grading, wetter reflections. Wind: leaves and dust blowing across, wind arrow in the HUD. Gewitter: dark grading,
   warning flicker, bright flash. In camera mode the grading is a translucent overlay so it darkens the camera image.

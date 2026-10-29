@@ -3,7 +3,9 @@ import Foundation
 
 /// Writes the static spoon layers into an asset catalog as @3x image sets.
 enum AssetCatalog {
-    /// Pixels per bowl unit at @3x: `u = 0.4133 · 402 pt` on a 402-point-wide iPhone, times 3.
+    /// Pixels per bowl unit at @3x. Chosen for the game's original, larger spoon (`u = 0.4133 · 402 pt` on a
+    /// 402-point-wide iPhone, times 3); the current layout, `min(0.3 · width, 0.145 · height)` points per unit, needs
+    /// less and shrinks the images on screen (`GameArtwork.spoonAssetUnit`).
     static let unit = 498.0
 
     static func write(to catalog: URL) throws {

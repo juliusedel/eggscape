@@ -75,6 +75,8 @@ final class GameScene: SKScene {
     private let eggShadowClip = SKCropNode()
     private let spoonMask = SKSpriteNode()
     private let egg = SKSpriteNode()
+    /// The egg lies above the spoon and its own shadow; once it falls off, it drops below the spoon (`dropEgg`).
+    private static let eggZPosition: CGFloat = 6
     private let cameraNode = SKCameraNode()
     private var weather: WeatherOverlayNode?
 
@@ -96,7 +98,7 @@ final class GameScene: SKScene {
         spoonHighlight.blendMode = .add
         eggShadowClip.zPosition = 5
         eggShadowClip.addChild(eggShadow)
-        egg.zPosition = 6
+        egg.zPosition = Self.eggZPosition
         [backdrop, ground, spoonShadow, spoon, spoonHighlight, eggShadowClip, egg, cameraNode].forEach(addChild)
         camera = cameraNode
         applyBackground()
@@ -358,16 +360,18 @@ final class GameScene: SKScene {
     /// The egg rolls over the rim, falls off the spoon and smashes on the ground below.
     private func dropEgg(from position: SIMD2<Double>) {
         // On from where the egg was drawn, over the edge and down beside the spoon.
-        let offset = layout.eggOffset(for: position)
-        let length = max((offset * offset).sum().squareRoot(), 0.001)
-        let landing = layout.point(inBowl: offset + offset / length * 0.8)
+        let landing = layout.point(inBowl: SceneLayout.landing(ofEggFallingFrom: layout.eggOffset(for: position)))
+        let underSpoon = (spoonShadow.zPosition + spoon.zPosition) / 2
         egg.removeAction(forKey: "squash")
         egg.run(
             .sequence([
                 .group([
                     .move(to: landing, duration: 0.32),
-                    .scale(to: 0.6, duration: 0.32),
-                    .fadeAlpha(to: 0.3, duration: 0.32),
+                    .scale(to: CGFloat(SceneLayout.fallenEggScale), duration: 0.32),
+                    // Once over the rim it drops below it, and the steel hides what is still over the bowl. It only
+                    // fades after that, so the steel never shows through it.
+                    .sequence([.wait(forDuration: 0.1), .run { [weak egg] in egg?.zPosition = underSpoon }]),
+                    .sequence([.wait(forDuration: 0.16), .fadeAlpha(to: 0.3, duration: 0.16)]),
                 ]),
                 .hide(),
                 .fadeAlpha(to: 1, duration: 0),
@@ -404,6 +408,7 @@ final class GameScene: SKScene {
     /// A fresh egg is set down into the bowl from above.
     private func placeNewEgg() {
         egg.removeAction(forKey: "fall")
+        egg.zPosition = Self.eggZPosition
         egg.isHidden = false
         egg.alpha = 0
         egg.setScale(1.25)

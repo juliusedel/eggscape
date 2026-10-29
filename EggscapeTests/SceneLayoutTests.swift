@@ -78,6 +78,37 @@ struct SceneLayoutTests {
         #expect(abs(drawn.y - finger.y) < 1e-6)
     }
 
+    @Test func theFallingEggLandsBesideTheBowl() {
+        let layout = SceneLayout(size: Screen.iPhonePro.size)
+        let fallen = halfEgg * SceneLayout.fallenEggScale
+        for position in tippingPoints(layout) {
+            let offset = layout.eggOffset(for: position)
+            let landing = SceneLayout.landing(ofEggFallingFrom: offset)
+            // Straight on outwards from where the egg was drawn ...
+            #expect(abs(landing.x * offset.y - landing.y * offset.x) < 1e-12)
+            #expect((landing * offset).sum() > (offset * offset).sum())
+            // ... until the egg, shrunk as it falls away, touches the bowl's edge from outside.
+            let closest = (0 ..< 360).map { degree in
+                let angle = Double(degree) * .pi / 180
+                let point = (landing + fallen * SIMD2(cos(angle), sin(angle))) / SceneLayout.bowlEdge
+                return (point * point).sum().squareRoot()
+            }.min() ?? 0
+            #expect(closest > 0.999 && closest < 1.01)
+        }
+    }
+
+    @Test(arguments: [Screen.iPhoneSE, .iPhonePro, .iPhoneProMax])
+    func theBrokenEggLandsOnScreen(screen: Screen) {
+        let layout = SceneLayout(size: screen.size)
+        // The splat's yolk and most of its white, about 0.9 units across, stay on screen.
+        let margin = 0.4 * layout.unit
+        let visible = CGRect(origin: .zero, size: screen.size).insetBy(dx: margin, dy: margin)
+        for position in tippingPoints(layout) {
+            let landing = SceneLayout.landing(ofEggFallingFrom: layout.eggOffset(for: position))
+            #expect(visible.contains(layout.point(inBowl: landing)))
+        }
+    }
+
     /// The HUD (`HUDView`) keeps to the safe area: its stats panel ends at most 90 pt below the top, 145 pt with the
     /// progress bar of a multiplayer race, at the largest text size it allows. The 92-pt sprint button sits 20 pt from
     /// the right and 24 pt from the bottom.

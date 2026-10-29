@@ -13,11 +13,15 @@ struct SceneLayout: Equatable {
     /// Width of the egg in bowl units. The bowl's inner rim is `1.5 × 2` units, so only a thin edge of steel stays
     /// visible around the egg: the rolled lip and a few hundredths of a unit of the bowl.
     static let eggWidth = 1.44
+    /// Half the egg's width and height, in bowl units.
+    static let halfEgg = SIMD2(eggWidth, eggWidth * EggArt.aspect) / 2
     /// The outer edge of the bowl's rolled lip, in bowl units: the inner rim's half-axes plus the 0.055-unit lip
     /// (`SpoonGeometry`).
     static let bowlEdge = SIMD2(0.805, 1.055)
     /// How far the egg hangs over the bowl's edge at the tipping point, as a share of its half-width.
     static let overhang = 1.0 / 3
+    /// The egg falling off the spoon shrinks to this share of its size as it falls away from the eye.
+    static let fallenEggScale = 0.6
     /// Offset of the egg's shadow from the egg, in bowl units. The key light is at the top right, 58° high
     /// (`Studio.shadowDirection`), so the shadow falls to the bottom left, about as far as a point a third of the way
     /// up the egg casts it: a bigger egg casts it further.
@@ -38,8 +42,7 @@ struct SceneLayout: Equatable {
         self.size = size
         unit = min(size.width * 0.3, size.height * 0.145)
         bowlCenter = CGPoint(x: size.width / 2, y: size.height * 0.53)
-        let halfEgg = SIMD2(Self.eggWidth, Self.eggWidth * EggArt.aspect) / 2
-        eggTravel = Self.bowlEdge + Self.overhang * halfEgg.x - halfEgg
+        eggTravel = Self.bowlEdge + Self.overhang * Self.halfEgg.x - Self.halfEgg
         tippingPoint = SIMD2(config.bowlRadiusX, config.bowlRadiusY)
     }
 
@@ -67,5 +70,17 @@ struct SceneLayout: Equatable {
     /// `eggOffset(for:)`.
     func eggPosition(forOffset offset: SIMD2<Double>) -> SIMD2<Double> {
         offset / eggTravel * tippingPoint
+    }
+
+    /// Where the egg that falls off the spoon from `offset` (where it was drawn, in bowl units from the bowl's center)
+    /// lands: straight on outwards until the egg, shrunk as it falls away from the eye, clears the bowl's edge. The
+    /// broken egg lies there too, beside the spoon instead of under it.
+    static func landing(ofEggFallingFrom offset: SIMD2<Double>) -> SIMD2<Double> {
+        // Ellipses of almost the same shape, like the bowl's edge and the egg, touch where their centers are as far
+        // apart as the ellipse whose half-axes are the sums of theirs.
+        let clearance = bowlEdge + halfEgg * fallenEggScale
+        let reach = offset / clearance
+        let distance = (reach * reach).sum().squareRoot()
+        return distance > 0 ? offset / distance : offset
     }
 }

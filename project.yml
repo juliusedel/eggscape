@@ -91,6 +91,10 @@ schemes:
       config: Debug
       # Local StoreKit testing of the coin packs; App Store builds use the real products.
       storeKitConfiguration: StoreKit/Eggscape.storekit
+      # Run starts the app without LLDB. On a Mac with little memory, attaching the debugger stalled the launch on a
+      # white screen while it read every system library from the simulator runtime's disk image. To debug, tick
+      # "Debug executable" in Edit Scheme → Run → Info.
+      debugEnabled: false
     test:
       config: Debug
       targets:

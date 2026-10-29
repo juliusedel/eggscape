@@ -59,9 +59,25 @@ final class AppNavigation {
         case shop
     }
 
+    /// The two pages of the shop tab.
+    enum ShopPage: Hashable {
+        /// Egg skins, unlocked with coins.
+        case eggs
+        /// Coin packs for real money.
+        case coins
+    }
+
     var tab = Tab.singleplayer
+    /// Kept next to the tab so the coin shop can be opened directly, e.g. when an egg costs more than the balance.
+    var shopPage = ShopPage.eggs
     var showsSettings = false
     var showsTutorial = false
     /// Only for the staged App Store screenshot of a nearby lobby.
     var showsScreenshotLobby = false
+
+    /// The shop's coin packs.
+    func showCoinShop() {
+        tab = .shop
+        shopPage = .coins
+    }
 }

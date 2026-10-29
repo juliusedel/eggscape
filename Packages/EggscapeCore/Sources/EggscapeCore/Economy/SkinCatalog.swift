@@ -4,6 +4,11 @@
 /// seed pins the natural irregularities, so changing either would take the skin away from its owners or change how
 /// the egg they bought looks. Prices and the display order may change.
 ///
+/// Only the classic white egg is free. The prices climb along the display order like a ladder: the brown egg costs
+/// what a clean short run pays (see `CoinRewards`), and every egg after it about 1.3 times the one before, rounded to
+/// a friendly number, up to 6,000 coins for the last one. So the next egg is always a few runs away, while the last
+/// ones take hours of play or a coin pack.
+///
 /// The colors are albedos for the photo-realistic renderer (`EggscapeArt`), which adds the key light from the top
 /// right, the shadows and the finish. Dyed colors are a little muted, like real egg dye on a white shell, because
 /// fully saturated colors read as plastic. The German names in the comments are the suggested shop names; the app
@@ -11,7 +16,7 @@
 public enum SkinCatalog {
     private typealias Color = EggAppearance.Color
 
-    /// All skins in display order: natural eggs, dyed eggs, patterns, then special finishes.
+    /// All skins in display order, which is also price order: natural eggs, dyed eggs, patterns, then special finishes.
     public static let all: [EggSkin] = [
         classicWhite, farmBrown, quail,
         skyBlue, lemonYellow, rose, mint, orange, lilac,
@@ -26,7 +31,7 @@ public enum SkinCatalog {
 
     public static let defaultSkinID = classicWhite.id
 
-    /// The skins every player owns from the start.
+    /// The skins every player owns from the start: only the classic white egg.
     public static let freeSkinIDs = Set(all.filter(\.isFree).map(\.id))
 
     /// The skin with `id`, or `nil` for an id this version does not know.
@@ -47,7 +52,8 @@ public enum SkinCatalog {
         tier: .common
     )
 
-    /// "Landei": a natural brown hen's egg like in a photo, matte, with fine darker brown speckles. Free.
+    /// "Landei": a natural brown hen's egg like in a photo, matte, with fine darker brown speckles. The first egg to
+    /// unlock: it costs what a clean short run pays.
     public static let farmBrown = EggSkin(
         id: "farm-brown",
         appearance: EggAppearance(
@@ -56,7 +62,7 @@ public enum SkinCatalog {
             finish: .matte,
             seed: 0x1C1B_04FB_02B2_BC5F
         ),
-        price: 0,
+        price: 55,
         tier: .common
     )
 
@@ -69,34 +75,34 @@ public enum SkinCatalog {
             finish: .matte,
             seed: 0xC782_8900_DE8D_F473
         ),
-        price: 300,
+        price: 70,
         tier: .common
     )
 
     // MARK: Dyed eggs
 
     /// "Himmelblau": dyed sky blue with a soft satin sheen.
-    public static let skyBlue = dyed("sky-blue", Color(hex: 0x84C3E6), price: 150, seed: 0xDF79_1C7A_27AA_6200)
+    public static let skyBlue = dyed("sky-blue", Color(hex: 0x84C3E6), price: 90, seed: 0xDF79_1C7A_27AA_6200)
 
     /// "Zitronengelb": dyed lemon yellow.
     public static let lemonYellow = dyed(
         "lemon-yellow",
         Color(hex: 0xF2D54B),
-        price: 150,
+        price: 120,
         seed: 0x6833_E16C_0625_998E
     )
 
     /// "Rosé": dyed rose pink.
-    public static let rose = dyed("rose", Color(hex: 0xE995AE), price: 200, seed: 0xA62B_C3DE_072B_A3C0)
+    public static let rose = dyed("rose", Color(hex: 0xE995AE), price: 160, seed: 0xA62B_C3DE_072B_A3C0)
 
     /// "Minze": dyed mint green.
     public static let mint = dyed("mint", Color(hex: 0xA3D9C1), price: 200, seed: 0xAAB0_2DED_AF74_0502)
 
     /// "Orange": dyed orange.
-    public static let orange = dyed("orange", Color(hex: 0xEF9447), price: 250, seed: 0x85AA_6824_4C7C_F7BB)
+    public static let orange = dyed("orange", Color(hex: 0xEF9447), price: 260, seed: 0x85AA_6824_4C7C_F7BB)
 
     /// "Flieder": dyed lilac.
-    public static let lilac = dyed("lilac", Color(hex: 0xB9A3D6), price: 250, seed: 0xC040_51A0_5376_23A6)
+    public static let lilac = dyed("lilac", Color(hex: 0xB9A3D6), price: 350, seed: 0xC040_51A0_5376_23A6)
 
     // MARK: Patterns
 
@@ -109,7 +115,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0xD42A_E514_F195_108B
         ),
-        price: 400,
+        price: 450,
         tier: .rare
     )
 
@@ -122,7 +128,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0x3BFF_197D_7BDF_8A83
         ),
-        price: 450,
+        price: 600,
         tier: .rare
     )
 
@@ -135,7 +141,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0x24D5_C4D5_6188_4B15
         ),
-        price: 500,
+        price: 750,
         tier: .rare
     )
 
@@ -148,7 +154,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0xF21B_6999_8BE0_1EBD
         ),
-        price: 550,
+        price: 1000,
         tier: .rare
     )
 
@@ -167,7 +173,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0x2AAD_6F8E_B22D_3D54
         ),
-        price: 600,
+        price: 1300,
         tier: .rare
     )
 
@@ -180,7 +186,7 @@ public enum SkinCatalog {
             finish: .glossy,
             seed: 0xC231_2970_CC3D_544D
         ),
-        price: 700,
+        price: 1700,
         tier: .rare
     )
 
@@ -193,7 +199,7 @@ public enum SkinCatalog {
             finish: .satin,
             seed: 0xADB8_F6BA_5007_48BC
         ),
-        price: 900,
+        price: 2200,
         tier: .epic
     )
 
@@ -203,7 +209,7 @@ public enum SkinCatalog {
     public static let pearlWhite = EggSkin(
         id: "pearl-white",
         appearance: EggAppearance(base: Color(hex: 0xF1EDEA), finish: .pearl, seed: 0x6193_1E61_B295_0968),
-        price: 1200,
+        price: 2800,
         tier: .epic
     )
 
@@ -211,7 +217,7 @@ public enum SkinCatalog {
     public static let silverMetallic = EggSkin(
         id: "silver-metallic",
         appearance: EggAppearance(base: Color(hex: 0xC5C9CF), finish: .metallic, seed: 0x7E6F_CECB_825D_FAC0),
-        price: 1500,
+        price: 3600,
         tier: .epic
     )
 
@@ -219,7 +225,7 @@ public enum SkinCatalog {
     public static let goldMetallic = EggSkin(
         id: "gold-metallic",
         appearance: EggAppearance(base: Color(hex: 0xD8B04C), finish: .metallic, seed: 0x24BC_B617_E7BD_7D5D),
-        price: 2500,
+        price: 4800,
         tier: .legendary
     )
 
@@ -239,7 +245,7 @@ public enum SkinCatalog {
             finish: .glossy,
             seed: 0xC96F_339D_8F78_E63E
         ),
-        price: 2500,
+        price: 6000,
         tier: .legendary
     )
 

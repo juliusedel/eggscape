@@ -1,4 +1,5 @@
 @testable import EggscapeCore
+import Foundation
 import Testing
 
 struct CoinPackTests {
@@ -29,10 +30,55 @@ struct CoinPackTests {
 
     @Test func packsAreSizedAgainstSkinPrices() {
         let prices = { (tier: EggSkin.Tier) in SkinCatalog.all.filter { $0.tier == tier }.map(\.price) }
-        // The small pack covers most rare skins, the medium one any epic skin, the large one both legendary skins.
-        let rare = prices(.rare)
-        #expect(rare.filter { $0 <= CoinPack.small.coins }.count * 2 > rare.count)
-        #expect(prices(.epic).allSatisfy { $0 <= CoinPack.medium.coins })
-        #expect(prices(.legendary).reduce(0, +) <= CoinPack.large.coins)
+        // The small pack buys any common egg, the medium one any rare egg, the large one any egg but the last.
+        #expect(prices(.common).allSatisfy { $0 <= CoinPack.small.coins })
+        #expect(prices(.rare).allSatisfy { $0 <= CoinPack.medium.coins })
+        #expect(SkinCatalog.all.dropLast().allSatisfy { $0.price <= CoinPack.large.coins })
+    }
+
+    @Test func theDearestEggTakesTheLargePackPlusSomePlay() {
+        let dearest = SkinCatalog.all.map(\.price).max() ?? 0
+        #expect(dearest > CoinPack.large.coins)
+        // On top of the pack, about twenty clean short runs.
+        #expect(dearest - CoinPack.large.coins <= 20 * oneRunReward, "\(dearest) coins")
+    }
+
+    @Test func theBestValueIsTheMostCoinsForTheMoney() {
+        // The suggested App Store prices: 0.99, 2.99 and 5.99.
+        let appStore: [String: Decimal] = [
+            CoinPack.small.productID: Decimal(99) / 100,
+            CoinPack.medium.productID: Decimal(299) / 100,
+            CoinPack.large.productID: Decimal(599) / 100,
+        ]
+        #expect(CoinPack.bestValue(prices: appStore) == .large)
+        // Another storefront may price the packs so that the medium one is the deal.
+        let other: [String: Decimal] = [
+            CoinPack.small.productID: 1,
+            CoinPack.medium.productID: 2,
+            CoinPack.large.productID: 9,
+        ]
+        #expect(CoinPack.bestValue(prices: other) == .medium)
+    }
+
+    @Test func aTieGoesToTheBiggerPack() {
+        let prices: [String: Decimal] = [
+            CoinPack.small.productID: 1,
+            CoinPack.medium.productID: 2,
+            CoinPack.large.productID: 5,
+        ]
+        #expect(CoinPack.bestValue(prices: prices) == .large)
+    }
+
+    @Test func aBestValueNeedsTwoPricedPacks() {
+        #expect(CoinPack.bestValue(prices: [:]) == nil)
+        #expect(CoinPack.bestValue(prices: [CoinPack.small.productID: 1]) == nil)
+        // Unknown products and prices that are not positive do not count.
+        #expect(CoinPack.bestValue(prices: [
+            CoinPack.small.productID: 1,
+            CoinPack.medium.productID: 0,
+            CoinPack.large.productID: -5,
+            "de.juliusedel.eggscape.coins.huge": Decimal(1) / 100,
+        ]) == nil)
+        #expect(CoinPack.bestValue(prices: [CoinPack.medium.productID: 0, CoinPack.large.productID: 6]) == nil)
     }
 }

@@ -2,6 +2,15 @@
 import Foundation
 import Testing
 
+/// What a clean, finished 150 m time trial in calm weather pays: the yardstick for the skin prices.
+let oneRunReward = CoinRewards.reward(for: RewardInput(
+    course: .timeTrial(.short),
+    weather: .off,
+    finished: true,
+    meters: 150,
+    eggsLost: 0
+)).total
+
 struct SkinCatalogTests {
     @Test func idsAreStableAndInDisplayOrder() {
         // Wallets store these ids, so a renamed id takes the skin away from its owners: append, never change.
@@ -56,10 +65,10 @@ struct SkinCatalogTests {
         }
     }
 
-    @Test func exactlyTheTwoStarterSkinsAreFree() {
-        #expect(SkinCatalog.all.filter(\.isFree).map(\.id) == ["classic-white", "farm-brown"])
-        #expect(SkinCatalog.freeSkinIDs == ["classic-white", "farm-brown"])
-        #expect(SkinCatalog.all.filter(\.isFree).allSatisfy { $0.tier == .common })
+    @Test func onlyTheClassicWhiteEggIsFree() {
+        #expect(SkinCatalog.all.filter(\.isFree).map(\.id) == ["classic-white"])
+        #expect(SkinCatalog.freeSkinIDs == ["classic-white"])
+        #expect(SkinCatalog.classicWhite.tier == .common)
     }
 
     @Test func pricesMatchTiers() {
@@ -77,7 +86,43 @@ struct SkinCatalogTests {
             #expect(lower < higher)
             #expect(lower.priceRange.upperBound < higher.priceRange.lowerBound)
         }
-        #expect(EggSkin.Tier.legendary.priceRange.contains(2500))
+    }
+
+    @Test func pricesClimbExponentiallyAlongTheDisplayOrder() throws {
+        let ladder = SkinCatalog.all.dropFirst()
+        for (cheaper, dearer) in zip(ladder, ladder.dropFirst()) {
+            let step = Double(dearer.price) / Double(cheaper.price)
+            #expect(cheaper.price < dearer.price, "\(dearer.id) costs \(dearer.price)")
+            #expect((1.2 ... 1.4).contains(step), "\(cheaper.id) → \(dearer.id) is ×\(step)")
+            // The tier bands follow the ladder, so a higher tier never comes before a lower one.
+            #expect(cheaper.tier <= dearer.tier, "\(dearer.id)")
+        }
+        // About ×1.3 per egg on average.
+        let first = try #require(ladder.first)
+        let last = try #require(ladder.last)
+        let growth = pow(Double(last.price) / Double(first.price), 1 / Double(ladder.count - 1))
+        #expect((1.25 ... 1.35).contains(growth), "×\(growth) per egg")
+    }
+
+    @Test func pricesAreFriendlyNumbers() {
+        for skin in SkinCatalog.all {
+            // Steps of 5 below 100 coins, of 10 below 1,000 and of 100 above.
+            let step = skin.price < 100 ? 5 : skin.price < 1000 ? 10 : 100
+            #expect(skin.price.isMultiple(of: step), "\(skin.id) costs \(skin.price)")
+        }
+    }
+
+    @Test func theBrownEggCostsAboutOneRun() {
+        // The first egg to unlock is about one run away, and no egg is cheaper.
+        let price = Double(SkinCatalog.farmBrown.price)
+        #expect(abs(price - Double(oneRunReward)) <= 0.2 * Double(oneRunReward), "\(price) vs \(oneRunReward)")
+        #expect(SkinCatalog.all.filter { !$0.isFree }.map(\.price).min() == SkinCatalog.farmBrown.price)
+    }
+
+    @Test func theLastEggIsTheDearestAtAboutSixThousand() {
+        let prices = SkinCatalog.all.map(\.price)
+        #expect(prices.last == prices.max())
+        #expect((5500 ... 6500).contains(prices.last ?? 0))
     }
 
     @Test func everyPatternAndFinishIsSold() {
@@ -101,7 +146,7 @@ struct SkinCatalogTests {
         }
     }
 
-    @Test func starterSkinsLookNatural() {
+    @Test func theWhiteAndBrownEggsLookNatural() {
         let white = SkinCatalog.classicWhite.appearance
         #expect(white.pattern == .plain)
         #expect(white.finish == .matte)

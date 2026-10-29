@@ -32,6 +32,11 @@ final class WalletStore {
         wallet.owns(skinID: skin.id)
     }
 
+    /// The coins still missing to unlock `skin`, 0 if the balance covers its price.
+    func coinsMissing(for skin: EggSkin) -> Int {
+        wallet.coinsMissing(for: skin)
+    }
+
     func purchase(_ skin: EggSkin) throws(WalletError) {
         try wallet.purchase(skin: skin)
         save()

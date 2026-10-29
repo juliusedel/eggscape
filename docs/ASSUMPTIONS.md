@@ -64,6 +64,28 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   grouped background (light and dark), which the first tab shows.
 - **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
+- **Egg prices (owner, 2026-10-28).** Only the classic white egg is free; every other egg is locked until it is
+  unlocked with coins. The owner asked for the brown egg to cost about one game and for the others to get
+  exponentially harder. So the brown egg costs 55 coins, exactly what a clean 150 m time trial in calm weather pays,
+  and every following egg in catalog order costs about 1.3 times the one before (each step between 1.25× and 1.35×),
+  rounded to friendly numbers: 55, 70, 90, 120, 160, 200, 260, 350, 450, 600, 750, 1,000, 1,300, 1,700, 2,200,
+  2,800, 3,600, 4,800 and 6,000 for the rainbow egg. 1.3 is the factor that turns 19 paid eggs into a ladder from one
+  run to a long-term goal of about 110 short runs: the next egg is always a few runs away, while the last ones take
+  hours of play or a coin pack. A factor of 1.5 would put the last egg above 80,000 coins, 1.15 below 700. All eggs
+  together cost 26,505 coins, roughly seven hours of play. The tier bands (common 50–400, rare 450–2,000, epic
+  2,200–4,000, legendary 4,500–7,500) follow the ladder. Testers who got the brown egg for free in earlier builds keep
+  it, because wallets store it with the owned eggs.
+- **Coin packs** stay at 600 / 2,000 / 5,000 coins for the suggested 0.99 / 2.99 / 5.99 €: the small pack buys any
+  common egg, the medium one any rare egg, the large one any egg but the last, which takes the large pack plus about
+  twenty runs. Bigger packs give more coins per euro (606, 669, 835). The "Bestes Angebot" badge goes to the pack
+  with the most coins for the money at the prices StoreKit reports for the player's storefront, so it stays right
+  if a storefront is priced differently.
+- **Shop layout.** The shop stays one tab (the app keeps its four tabs) with two pages, "Eier" and "Münzen", picked
+  with a segmented control. The page is kept in `AppNavigation`, so the coin balance, the "Münzen kaufen" button of
+  the not-enough-coins alert and the screenshot staging can open the coin page. Locked eggs show their real look with
+  a padlock in front of them rather than a silhouette, so players see what they save for: the padlock is filled with
+  the accent color once the balance covers the price and frosted while it does not. Unlocking an egg also puts it on,
+  as buying did before.
 - **Game Center.** The player is signed in silently at launch (not in UI tests or screenshot mode), so scores reach
   the leaderboards right after a run and an accepted invitation opens the online room, also when it launched the app.
   Apple's sign-in sheet, if GameKit asks for one, waits until Bestenliste or Online opens instead of popping up over a

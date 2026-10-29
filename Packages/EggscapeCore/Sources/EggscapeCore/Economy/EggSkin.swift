@@ -10,16 +10,17 @@ public struct EggSkin: Codable, Hashable, Sendable, Identifiable {
         case epic
         case legendary
 
-        /// The coin prices skins of this tier sell for; the free starter skins are the only exception.
+        /// The coin prices skins of this tier sell for; the free starter skin is the only exception.
         ///
-        /// Runs pay roughly a coin per second of play (see `CoinRewards`), so a common skin costs a handful of runs
-        /// and a legendary one the better part of an hour, or a coin pack.
+        /// The bands cut the catalog's price ladder (see `SkinCatalog`) into tiers. Runs pay roughly a coin per
+        /// second of play (see `CoinRewards`), so a common skin costs one to six runs, a rare one up to half an hour
+        /// of play, an epic one up to an hour and a legendary one about an hour and a half, or a coin pack.
         public var priceRange: ClosedRange<Int> {
             switch self {
-            case .common: 150 ... 300
-            case .rare: 400 ... 700
-            case .epic: 900 ... 1500
-            case .legendary: 2000 ... 3000
+            case .common: 50 ... 400
+            case .rare: 450 ... 2000
+            case .epic: 2200 ... 4000
+            case .legendary: 4500 ... 7500
             }
         }
 
@@ -42,7 +43,7 @@ public struct EggSkin: Codable, Hashable, Sendable, Identifiable {
     /// everyone who owns it.
     public let id: String
     public let appearance: EggAppearance
-    /// Price in coins, 0 for the free starter skins.
+    /// Price in coins, 0 for the free starter skin.
     public let price: Int
     public let tier: Tier
 

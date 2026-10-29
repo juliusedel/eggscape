@@ -70,6 +70,11 @@ final class GameCenterService {
 
     /// For screens that need Game Center, and "Erneut versuchen": shows Apple's sign-in sheet if GameKit asks for one.
     func signIn() {
+        // UI tests and staged screenshots never touch GameKit, so their records never reach a leaderboard.
+        guard !LaunchOptions.current.usesEphemeralData else {
+            signInFlow.failed(nil)
+            return
+        }
         perform(signInFlow.signIn())
     }
 

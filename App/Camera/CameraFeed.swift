@@ -20,10 +20,9 @@ final class CameraFeed {
     /// The runs that show the camera; on "Nochmal" the new one starts before the old one stops.
     @ObservationIgnored private var owners = Leases()
 
-    /// `true` if the camera can be shown right now or after `start(for:)`. Access is checked again on every start,
-    /// since the player may allow it in the iOS settings at any time.
+    /// `true` if the camera can be shown right now or after `start(for:)`.
     var isUsable: Bool {
-        status != .unavailable
+        status != .unavailable && status != .denied
     }
 
     /// Asks for camera access if needed; returns whether the camera may be used.

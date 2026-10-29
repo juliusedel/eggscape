@@ -20,7 +20,8 @@ struct HUDSnapshot: Equatable {
 /// seen from directly above, on a white studio surface or over the live camera image.
 final class GameScene: SKScene {
     enum Mode {
-        /// The egg rests in the middle; used while calibrating.
+        /// The egg rests, in the middle before the start or where it was when a paused run is recalibrated; used while
+        /// calibrating.
         case preview
         /// The egg already reacts to the tilt, but the run has not started (countdown).
         case warmUp
@@ -372,7 +373,9 @@ final class GameScene: SKScene {
         // Clear until the texture is set, which it normally is long before the splat fades in.
         let broken = SKSpriteNode(color: .clear, size: CGSize(width: width, height: width * 0.8))
         Task { [weak broken, appearance, brokenEggPixels] in
-            broken?.texture = await artwork.brokenEgg(appearance, widthPixels: brokenEggPixels)
+            // Awaited first: `broken?.texture = await …` would hold the node strongly while the texture renders.
+            let texture = await artwork.brokenEgg(appearance, widthPixels: brokenEggPixels)
+            broken?.texture = texture
         }
         broken.position = landing
         broken.zRotation = CGFloat(rng.uniform(-Double.pi ... Double.pi))

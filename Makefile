@@ -45,11 +45,12 @@ test-ui: gen ## Run the UI tests on an iPhone simulator (a full race, takes a fe
 run: gen ## Build, install and launch the app on an iPhone simulator
 	scripts/sim.sh run
 
+# --config: inside a worktree under .claude/ SwiftFormat would also read the main checkout's config, which excludes it.
 format: ## Format all Swift sources
-	$(SWIFTFORMAT) .
+	$(SWIFTFORMAT) --config .swiftformat .
 
 lint: ## Check formatting without changing files
-	$(SWIFTFORMAT) --lint .
+	$(SWIFTFORMAT) --config .swiftformat --lint .
 
 strings: build ## Check that every UI string has an English translation
 	swift scripts/check_strings.swift $(DERIVED) App/Resources/Localizable.xcstrings

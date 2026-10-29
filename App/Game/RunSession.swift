@@ -264,14 +264,15 @@ final class RunSession: Identifiable {
     }
 
     /// App Store screenshots: skips calibration and countdown, jumps `seconds` into the run and keeps running with
-    /// the egg held at `egg` (bowl units). Running until the end shows the results.
+    /// the egg held at `egg`, a physics position: `GameConfig.bowlRadiusX` × `bowlRadiusY` is the tipping point, and
+    /// `SceneLayout` draws it closer to the middle. Running until the end shows the results.
     func stageForScreenshot(skipping seconds: Double, egg: SIMD2<Double>) {
         countdownTask?.cancel()
-        scene.steer(toBowl: egg)
+        scene.holdEgg(at: egg)
         isUnderway = true
         phase = .running
         scene.mode = .running
-        scene.fastForward(seconds: seconds, input: RunEngine.Input(tilt: TouchSteering(target: egg).tilt))
+        scene.fastForward(seconds: seconds)
     }
 
     /// Shows a short note about another racer.

@@ -162,7 +162,9 @@ countdown, pause, results, rewards) around a `GameScene`, which steps the `RunEn
 `SKScene.update(_:)`. `RunRules` say what a run counts towards (records, leaderboards, coins). Multiplayer races plug
 into a run through `RaceHooks` (shared start instant, progress, drops, finish). `NearbySession` coordinates a nearby
 room on top of `MultipeerTransport`; `GameKitTransport` carries the same messages over a Game Center match.
-`--screenshot-mode <scene>` stages deterministic scenes for the App Store (`ScreenshotStage`).
+`--screenshot-mode <scene>` stages deterministic scenes for the App Store (`ScreenshotStage`). A staged run holds the
+egg at a chosen physics position with feedback (`GameScene.holdEgg(at:)`), like a quick and attentive player, so it
+keeps its eggs in any weather and after any retuning of `GameConfig`.
 
 ## Multiplayer contract
 

@@ -44,6 +44,8 @@ final class GameScene: SKScene {
     /// Finger steering for devices without motion sensors.
     var usesTouchSteering = false
     private(set) var touchSteering = TouchSteering()
+    /// Where staged screenshots keep the egg (`holdEgg(at:)`).
+    private var heldPosition: SIMD2<Double>?
 
     /// The live camera is behind the scene: no white surface, no spoon shadow, translucent weather grading.
     var showsCamera = false {
@@ -246,12 +248,12 @@ final class GameScene: SKScene {
         render()
     }
 
-    /// Screenshots and tests: simulates `seconds` of the run at once. Only the events that end the run are reported,
-    /// so no burst of footstep sounds follows.
-    func fastForward(seconds: Double, input: RunEngine.Input) {
+    /// Screenshots and tests: simulates `seconds` of the run at once with the usual steering, e.g. `holdEgg(at:)`. Only
+    /// the events that end the run are reported, so no burst of footstep sounds follows.
+    func fastForward(seconds: Double) {
         var skipped: [RunEvent] = []
         for _ in 0 ..< Int(seconds * engine.config.simulationRate) where !engine.isOver {
-            engine.step(input, events: &skipped)
+            engine.step(currentInput, events: &skipped)
         }
         let endings = skipped.filter { event in
             switch event {
@@ -267,17 +269,32 @@ final class GameScene: SKScene {
         render()
     }
 
-    /// Points the finger fallback at a physics position in the bowl (screenshots: a slightly off-center egg).
-    func steer(toBowl position: SIMD2<Double>?) {
-        touchSteering.target = position
+    /// Screenshots: keeps the egg at a physics position in the bowl, e.g. slightly off center, instead of the player's
+    /// tilt or finger; `nil` lets go. It tilts the spoon against every wobble, as a quick and attentive player would: a
+    /// fixed tilt would leave the egg to the weather, which tips it off the spoon within seconds in rain or a storm.
+    func holdEgg(at position: SIMD2<Double>?) {
+        heldPosition = position
     }
 
     private var currentInput: RunEngine.Input {
         var value = input()
-        if usesTouchSteering {
+        if let heldPosition {
+            value.tilt = tilt(holding: heldPosition)
+        } else if usesTouchSteering {
             value.tilt = touchSteering.tilt
         }
         return value
+    }
+
+    /// The tilt that keeps the egg at `target`: the finger fallback's tilt, at which it would rest there, corrected by
+    /// 1 radian per unit the egg is off and 0.8 per unit per second it rolls (a PD controller, about critically damped
+    /// on top of the bowl's own pull and damping).
+    private func tilt(holding target: SIMD2<Double>) -> SIMD2<Double> {
+        let rolling = engine.egg
+        let tilt = TouchSteering(config: engine.config, target: target).tilt
+            - (rolling.position - target) - 0.8 * rolling.velocity
+        let limit = engine.config.maxTiltDegrees * .pi / 180
+        return SIMD2(min(max(tilt.x, -limit), limit), min(max(tilt.y, -limit), limit))
     }
 
     private func render() {

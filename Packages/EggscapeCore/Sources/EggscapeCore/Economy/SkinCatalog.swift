@@ -6,8 +6,8 @@
 ///
 /// Only the classic white egg is free. The prices climb along the display order like a ladder: the brown egg costs
 /// what a clean short run pays (see `CoinRewards`), and every egg after it about 1.3 times the one before, rounded to
-/// a friendly number, up to 6,000 coins for the last one. So the next egg is always a few runs away, while the last
-/// ones take hours of play or a coin pack.
+/// a friendly number, up to 6,000 coins for the last one. So the first eggs take one to a few runs each, while each of
+/// the last ones is a goal of many runs or a coin pack.
 ///
 /// The colors are albedos for the photo-realistic renderer (`EggscapeArt`), which adds the key light from the top
 /// right, the shadows and the finish. Dyed colors are a little muted, like real egg dye on a white shell, because

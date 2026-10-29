@@ -28,7 +28,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### Motion and calibration
 - [ ] Calibrate holding the phone flat, then again tilted towards you (~40°): in both poses a level hold keeps the
       egg in the middle.
-- [ ] Slowly tilting sideways drops the egg at roughly 14–15°, forwards/backwards at roughly 19–20°.
+- [ ] Slowly tilting sideways drops the egg at roughly 11°, forwards/backwards at roughly 15° (a quick tilt a little
+      earlier, about 9° and 12°).
 - [ ] A quick jerk drops it earlier (overshoot); small corrections feel forgiving.
 - [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
@@ -64,8 +65,9 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### Shop
 - [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
       in front of it and its price, cheapest first. "1 von 20 Eiern freigeschaltet" sits above the grid.
-- [ ] After one clean 150 m run in calm weather (55 coins) the padlock and price of Hofei Braun turn orange; the
-      eggs that still cost more keep a frosted padlock and a grey price.
+- [ ] After the first clean 150 m run in calm weather (55 coins, plus 20 for the first personal best) the padlocks
+      and prices of the eggs within the balance (Hofei Braun, Wachtelei) turn orange; the eggs that still cost more
+      keep a frosted padlock and a grey price.
 - [ ] Tapping an orange (affordable) egg asks "Ei freischalten?" with its name and price. Confirming takes exactly
       that many coins, the padlock disappears, the egg is put on (orange border, "Ausgewählt"), the coin sound
       plays and, with Vibration on, a short success vibration follows. "Abbrechen" changes nothing.

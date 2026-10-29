@@ -59,8 +59,8 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   closely; candidate A (physically based: exact surface of revolution, analytic studio lighting) won because its skin
   system was complete. The spoon, the broken egg and the weather effects were finished afterwards on top of it.
 - **App icon** is rendered from the same spoon and brown egg as the game (`eggscape-art icon`, `make icon`), laid
-  diagonally on the warm yolk gradient of the first, hand-drawn icon. The egg is drawn a little larger than in the game
-  (0.8 instead of 0.62 bowl units) so it still reads at home-screen size. The launch screen color is the system's
+  diagonally on the warm yolk gradient of the first, hand-drawn icon. The egg has the game's proportions (1.44 bowl units, it
+  nearly fills the bowl), so it reads well at home-screen size. The launch screen color is the system's
   grouped background (light and dark), which the first tab shows.
 - **Coins.** Single-player runs earn coins (`CoinRewards`); hot-seat turns earn none (several people share one
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
@@ -70,8 +70,8 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   and every following egg in catalog order costs about 1.3 times the one before (each step between 1.25× and 1.35×),
   rounded to friendly numbers: 55, 70, 90, 120, 160, 200, 260, 350, 450, 600, 750, 1,000, 1,300, 1,700, 2,200,
   2,800, 3,600, 4,800 and 6,000 for the rainbow egg. 1.3 is the factor that turns 19 paid eggs into a ladder from one
-  run to a long-term goal of about 110 short runs: the next egg is always a few runs away, while the last ones take
-  hours of play or a coin pack. A factor of 1.5 would put the last egg above 80,000 coins, 1.15 below 700. All eggs
+  run to a long-term goal of about 110 short runs: the first eggs take one to a few runs each, from about the twelfth
+  on each egg alone is a goal of 18 to 110 clean short runs, or a coin pack. A factor of 1.5 would put the last egg above 80,000 coins, 1.15 below 700. All eggs
   together cost 26,505 coins, roughly seven hours of play. The tier bands (common 50–400, rare 450–2,000, epic
   2,200–4,000, legendary 4,500–7,500) follow the ladder. Testers who got the brown egg for free in earlier builds keep
   it, because wallets store it with the owned eggs.

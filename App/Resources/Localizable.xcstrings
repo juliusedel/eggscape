@@ -43,24 +43,6 @@
     },
     "%lld Eier verloren" : {
       "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld egg lost"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld eggs lost"
-                }
-              }
-            }
-          }
-        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -74,6 +56,24 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld Eier verloren"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld egg lost"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld eggs lost"
                 }
               }
             }
@@ -113,24 +113,6 @@
     },
     "%lld Münzen" : {
       "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld coin"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld coins"
-                }
-              }
-            }
-          }
-        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -144,6 +126,24 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld Münzen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld coin"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld coins"
                 }
               }
             }
@@ -173,24 +173,6 @@
     },
     "+%lld Münzen" : {
       "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "+%lld coin"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "+%lld coins"
-                }
-              }
-            }
-          }
-        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -204,6 +186,24 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "+%lld Münzen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld coin"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "+%lld coins"
                 }
               }
             }
@@ -653,24 +653,6 @@
     },
     "Dir fehlen noch %lld Münzen. Lauf ein paar Runden oder hol dir ein Münzpaket." : {
       "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "You need %lld more coin. Run a few rounds or get a coin pack."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "You need %lld more coins. Run a few rounds or get a coin pack."
-                }
-              }
-            }
-          }
-        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -684,6 +666,24 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Dir fehlen noch %lld Münzen. Lauf ein paar Runden oder hol dir ein Münzpaket."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You need %lld more coin. Run a few rounds or get a coin pack."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You need %lld more coins. Run a few rounds or get a coin pack."
                 }
               }
             }
@@ -1011,6 +1011,16 @@
         }
       }
     },
+    "Halte „Sprint“ gedrückt, um schneller zu laufen. Aber Vorsicht: Das Ei wackelt dann viel mehr." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold “Sprint” to run faster. But careful: the egg wobbles a lot more."
+          }
+        }
+      }
+    },
     "Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“." : {
       "localizations" : {
         "en" : {
@@ -1047,16 +1057,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hold it the way you want to run and tap “Calibrate”. That pose then counts as level."
-          }
-        }
-      }
-    },
-    "Halte „Sprint“ gedrückt, um schneller zu laufen. Aber Vorsicht: Das Ei wackelt dann viel mehr." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hold “Sprint” to run faster. But careful: the egg wobbles a lot more."
           }
         }
       }
@@ -1371,6 +1371,16 @@
         }
       }
     },
+    "Löffel mit Ei" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spoon with egg"
+          }
+        }
+      }
+    },
     "Los geht’s" : {
       "localizations" : {
         "en" : {
@@ -1387,16 +1397,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Go!"
-          }
-        }
-      }
-    },
-    "Löffel mit Ei" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spoon with egg"
           }
         }
       }
@@ -1541,6 +1541,16 @@
         }
       }
     },
+    "Nächster Lauf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Run"
+          }
+        }
+      }
+    },
     "Neu kalibrieren" : {
       "localizations" : {
         "en" : {
@@ -1661,16 +1671,6 @@
         }
       }
     },
-    "Nächster Lauf" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next Run"
-          }
-        }
-      }
-    },
     "OK" : {
       "localizations" : {
         "en" : {
@@ -1712,17 +1712,18 @@
       }
     },
     "pause.resume" : {
+      "comment" : "Pause menu: continue the run",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resume"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Weiter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume"
           }
         }
       }
@@ -1763,6 +1764,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@’s Room"
+          }
+        }
+      }
+    },
+    "Räume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rooms"
           }
         }
       }
@@ -1867,16 +1878,6 @@
         }
       }
     },
-    "Räume" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rooms"
-          }
-        }
-      }
-    },
     "Schaltet das Ei frei." : {
       "localizations" : {
         "en" : {
@@ -1957,22 +1958,22 @@
         }
       }
     },
-    "Spieler %lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Player %lld"
-          }
-        }
-      }
-    },
     "Spieler (%lld von 4)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Players (%lld of 4)"
+          }
+        }
+      }
+    },
+    "Spieler %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Player %lld"
           }
         }
       }
@@ -2017,6 +2018,16 @@
         }
       }
     },
+    "Stärke %lld von 3" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strength %1$lld of 3"
+          }
+        }
+      }
+    },
     "Sternennacht" : {
       "localizations" : {
         "en" : {
@@ -2047,16 +2058,6 @@
         }
       }
     },
-    "Stärke %lld von 3" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strength %1$lld of 3"
-          }
-        }
-      }
-    },
     "Suche Räume in der Nähe …" : {
       "localizations" : {
         "en" : {
@@ -2083,6 +2084,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Polka Dots"
+          }
+        }
+      }
+    },
+    "Überspringen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
           }
         }
       }
@@ -2157,6 +2168,16 @@
         }
       }
     },
+    "Wählt dieses Ei aus." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selects this egg."
+          }
+        }
+      }
+    },
     "Warte auf die anderen …" : {
       "localizations" : {
         "en" : {
@@ -2177,22 +2198,22 @@
         }
       }
     },
-    "Weiter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
-          }
-        }
-      }
-    },
     "Weiß" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "White"
+          }
+        }
+      }
+    },
+    "Weiter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
           }
         }
       }
@@ -2233,16 +2254,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wind"
-          }
-        }
-      }
-    },
-    "Wählt dieses Ei aus." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selects this egg."
           }
         }
       }
@@ -2373,16 +2384,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dip Dye"
-          }
-        }
-      }
-    },
-    "Überspringen" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
           }
         }
       }

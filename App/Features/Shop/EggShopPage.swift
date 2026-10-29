@@ -6,16 +6,11 @@ struct EggShopPage: View {
     @Environment(AppServices.self) private var services
     /// A locked egg the player can afford, waiting for the confirmation.
     @State private var pendingSkin: EggSkin?
-    /// A locked egg that costs more than the balance.
-    @State private var shortfall: Shortfall?
+    /// The coins missing for a locked egg that costs more than the balance.
+    @State private var coinsShort: Int?
     @State private var unlockFailed = false
     /// Counts unlocks, to trigger the success haptic.
     @State private var unlocks = 0
-
-    private struct Shortfall {
-        let skin: EggSkin
-        let missing: Int
-    }
 
     var body: some View {
         let unlocked = SkinCatalog.all.filter { services.wallet.owns($0) }.count
@@ -59,18 +54,18 @@ struct EggShopPage: View {
         }
         .alert(
             Text("Nicht genug Münzen"),
-            isPresented: Binding(get: { shortfall != nil }, set: {
+            isPresented: Binding(get: { coinsShort != nil }, set: {
                 if !$0 {
-                    shortfall = nil
+                    coinsShort = nil
                 }
             }),
-            presenting: shortfall
+            presenting: coinsShort
         ) { _ in
             Button("Münzen kaufen", action: services.navigation.showCoinShop)
                 .accessibilityIdentifier("shop.buyCoins")
             Button("Abbrechen", role: .cancel) {}
-        } message: { shortfall in
-            Text("Dir fehlen noch \(shortfall.missing) Münzen. Lauf ein paar Runden oder hol dir ein Münzpaket.")
+        } message: { missing in
+            Text("Dir fehlen noch \(missing) Münzen. Lauf ein paar Runden oder hol dir ein Münzpaket.")
         }
         .alert(Text("Kauf nicht möglich"), isPresented: $unlockFailed) {
             Button("OK", role: .cancel) {}
@@ -98,7 +93,7 @@ struct EggShopPage: View {
             try? wallet.equip(skin)
             services.sounds.play(.plop)
         } else if missing > 0 {
-            shortfall = Shortfall(skin: skin, missing: missing)
+            coinsShort = missing
         } else {
             pendingSkin = skin
         }
@@ -111,7 +106,7 @@ struct EggShopPage: View {
             services.sounds.play(.coin)
             unlocks += 1
         } catch let .insufficientCoins(missing) {
-            shortfall = Shortfall(skin: skin, missing: missing)
+            coinsShort = missing
         } catch {
             unlockFailed = true
         }
@@ -208,7 +203,7 @@ private struct SkinCard: View {
         }
     }
 
-    /// What a double tap does.
+    /// What a double tap does, or why it cannot unlock the egg yet.
     private var accessibilityAction: Text {
         switch status {
         case .equipped:

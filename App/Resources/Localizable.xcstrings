@@ -221,6 +221,16 @@
         }
       }
     },
+    "Ablehnen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decline"
+          }
+        }
+      }
+    },
     "Alle" : {
       "localizations" : {
         "en" : {
@@ -317,6 +327,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signing in to Game Center …"
+          }
+        }
+      }
+    },
+    "Annehmen" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept"
           }
         }
       }
@@ -427,6 +447,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Please try again."
+          }
+        }
+      }
+    },
+    "Dafür verlässt du den Raum." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accepting it means leaving the room."
           }
         }
       }
@@ -707,6 +737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eggs"
+          }
+        }
+      }
+    },
+    "Einladung annehmen?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept the Invitation?"
           }
         }
       }

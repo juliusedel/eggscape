@@ -101,11 +101,16 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       results or the lobby are shown (wait longer than Auto-Lock); after leaving the room it dims normally again.
 - [ ] Host (nearby) or referee (online): Pause → "Rennen verlassen" warns that the race ends for the others too; every
       other player reads that the others keep running.
-- [ ] Accept an online invitation during a single run, a hot-seat turn or a nearby race: it opens only once the run
-      and its results are closed, never on top of them.
+- [ ] Accept an online invitation during a single run or a hot-seat turn: it waits until the run and its results are
+      closed, then opens, never on top of them. During a nearby or online race it waits for the race to end; back in
+      the room, "Einladung annehmen?" asks first.
 - [ ] Accept one while in a nearby lobby or an online room: "Einladung annehmen?" asks first; "Annehmen" leaves the
       room and opens the invitation, "Ablehnen" stays.
-- [ ] Signed out of Game Center: open Bestenliste, switch to Einzelspieler right away and start a run. Apple's
-      sign-in sheet never appears over the run; it appears on the next visit to Bestenliste.
+- [ ] A joiner who leaves "Einladung annehmen?" open still gets the race screen when the host starts; after the race
+      the question appears again in the lobby.
+- [ ] Host taps "Nochmal" with an invitation pending: the results close and the question appears.
+- [ ] Signed out of Game Center: right after launching the app, open Bestenliste and switch to Einzelspieler before
+      anything appears, then start a run. Apple's sign-in sheet never appears over the run; it appears on the next
+      visit to Bestenliste.
 - [ ] Disabled primary buttons (e.g. "Rennen starten" before everybody is ready) and the Sprint button stay readable
       in light and dark mode.

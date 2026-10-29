@@ -11,6 +11,7 @@ struct OnlineView: View {
     /// Why the last match did not get going.
     @State private var failure: String?
     @State private var showsMatchmaker = false
+    @State private var signInOwner = LeaseOwner()
 
     var body: some View {
         Group {
@@ -30,12 +31,13 @@ struct OnlineView: View {
         // A tab switch would leave the match (see onDisappear), which ends it for everybody when this phone referees.
         .toolbar(session == nil && pendingMatch == nil ? .automatic : .hidden, for: .tabBar)
         .onAppear {
-            services.gameCenter.signIn()
+            services.gameCenter.signIn(for: signInOwner)
             if invite != nil {
                 showsMatchmaker = true
             }
         }
         .onDisappear {
+            services.gameCenter.stopWaitingForSignIn(for: signInOwner)
             session?.leave()
             session = nil
             pendingMatch?.close()
@@ -85,7 +87,7 @@ struct OnlineView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                Button("Erneut versuchen") { services.gameCenter.signIn() }
+                Button("Erneut versuchen") { services.gameCenter.signIn(for: signInOwner) }
             }
         }
         .padding(28)

@@ -7,6 +7,7 @@ struct LeaderboardView: View {
     @State private var leaderboard = LeaderboardID.shortTimeTrial
     @State private var scope = GameCenterService.Scope.global
     @State private var state = LoadState.idle
+    @State private var signInOwner = LeaseOwner()
 
     enum LoadState: Equatable {
         case idle
@@ -45,7 +46,8 @@ struct LeaderboardView: View {
             }
             .navigationTitle("Bestenliste")
             .toolbar { SettingsToolbarButton() }
-            .onAppear { services.gameCenter.signIn() }
+            .onAppear { services.gameCenter.signIn(for: signInOwner) }
+            .onDisappear { services.gameCenter.stopWaitingForSignIn(for: signInOwner) }
             .task(id: LoadKey(leaderboard: leaderboard, scope: scope, status: services.gameCenter.status)) {
                 await load()
             }
@@ -69,7 +71,7 @@ struct LeaderboardView: View {
                 Text(message)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Button("Erneut versuchen") { services.gameCenter.signIn() }
+                Button("Erneut versuchen") { services.gameCenter.signIn(for: signInOwner) }
             }
             .padding(.vertical, 4)
         case .signedIn:

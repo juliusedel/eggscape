@@ -171,6 +171,14 @@ final class NearbySession: Identifiable {
         nearby != nil
     }
 
+    /// The race's run is on screen: during the race and over its results.
+    var showsRun: Bool {
+        switch stage {
+        case .racing, .results: run != nil
+        case .browsing, .connecting, .lobby, .failed: false
+        }
+    }
+
     /// Seconds on this phone's monotonic clock since the session began.
     private var now: Double {
         (ContinuousClock.now - epoch).seconds

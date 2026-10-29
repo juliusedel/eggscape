@@ -64,4 +64,20 @@ final class AppNavigation {
     var showsTutorial = false
     /// Only for the staged App Store screenshot of a nearby lobby.
     var showsScreenshotLobby = false
+    /// Screens an accepted invitation must not cover (see `RootView`): runs, and Apple's matchmaker and the rooms in
+    /// the Mehrspieler tab.
+    private var busyScreens = Leases()
+
+    var isBusy: Bool {
+        busyScreens.isHeld
+    }
+
+    /// `owner` is on screen and must not be covered by an invitation, or no longer; screens hand over in any order.
+    func setBusy(_ busy: Bool, for owner: AnyObject) {
+        if busy {
+            busyScreens.acquire(owner)
+        } else {
+            busyScreens.release(owner)
+        }
+    }
 }

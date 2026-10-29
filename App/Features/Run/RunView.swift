@@ -34,6 +34,8 @@ struct RunView<Results: View>: View {
         .persistentSystemOverlays(.hidden)
         .onAppear {
             session.start()
+            // An accepted invitation waits until the run and its results are gone (see `RootView`).
+            services.navigation.setBusy(true, for: session)
             if wantsCamera {
                 services.camera.start(for: session)
             }
@@ -41,6 +43,7 @@ struct RunView<Results: View>: View {
         }
         .onDisappear {
             session.stop()
+            services.navigation.setBusy(false, for: session)
             services.camera.stop(for: session)
         }
         .onChange(of: services.camera.status) {

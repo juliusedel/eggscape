@@ -3,6 +3,8 @@ import SwiftUI
 
 /// "Online": race 2-4 players over Game Center, found by Apple's matchmaker or invited as friends.
 struct OnlineView: View {
+    /// Opened for an accepted invitation (see `RootView`) rather than in the Mehrspieler tab.
+    private let isInvitation: Bool
     @Environment(AppServices.self) private var services
     /// The accepted invitation, for the first matchmaker only: GameKit takes it once, so later matchmakers start from a
     /// new match request.
@@ -14,18 +16,17 @@ struct OnlineView: View {
     @State private var failure: String?
     @State private var showsMatchmaker = false
     @State private var signInOwner = LeaseOwner()
+    @State private var matchmakerOwner = LeaseOwner()
 
     init(invite: GKInvite? = nil) {
+        isInvitation = invite != nil
         _pendingInvite = State(initialValue: invite)
     }
 
     var body: some View {
         Group {
             if let session {
-                RaceRoomView(session: session) {
-                    session.leave()
-                    self.session = nil
-                }
+                RaceRoomView(session: session, onLeave: leave)
             } else if pendingMatch != nil {
                 waiting
             } else {
@@ -36,6 +37,12 @@ struct OnlineView: View {
         .navigationBarTitleDisplayMode(.inline)
         // A tab switch would leave the match (see onDisappear), which ends it for everybody when this phone referees.
         .toolbar(session == nil && pendingMatch == nil ? .automatic : .hidden, for: .tabBar)
+        // Only the rooms of the Mehrspieler tab hold invitations back, not the room of an invitation.
+        .holdsBackInvitations(
+            inRoom: !isInvitation && (session != nil || pendingMatch != nil),
+            showsRun: session?.showsRun ?? false,
+            leaveRoom: leave
+        )
         .onAppear {
             services.gameCenter.signIn(for: signInOwner)
             if pendingInvite != nil {
@@ -44,10 +51,7 @@ struct OnlineView: View {
         }
         .onDisappear {
             services.gameCenter.stopWaitingForSignIn(for: signInOwner)
-            session?.leave()
-            session = nil
-            pendingMatch?.close()
-            pendingMatch = nil
+            leave()
         }
         // However the matchmaker closes (a match, cancelled, failed or swiped away), the invitation is used up.
         .sheet(isPresented: $showsMatchmaker, onDismiss: { pendingInvite = nil }) {
@@ -58,7 +62,18 @@ struct OnlineView: View {
                 showsMatchmaker = false
             }
             .ignoresSafeArea()
+            // Apple's matchmaker cannot be covered: in the Mehrspieler tab an invitation waits until it has closed.
+            .onAppear { services.navigation.setBusy(!isInvitation, for: matchmakerOwner) }
+            .onDisappear { services.navigation.setBusy(false, for: matchmakerOwner) }
         }
+    }
+
+    /// Leaves the race room, or the match that is still waiting for its players.
+    private func leave() {
+        session?.leave()
+        session = nil
+        pendingMatch?.close()
+        pendingMatch = nil
     }
 
     private var start: some View {

@@ -8,7 +8,8 @@ import UniformTypeIdentifiers
 
 /// Turns `EggscapeArt` pixel images into SpriteKit textures. The spoon comes pre-rendered from the asset catalog
 /// (`make art`); eggs and effects are rendered on demand, and eggs are also cached on disk because every skin costs a
-/// noticeable fraction of a second.
+/// noticeable fraction of a second. One instance per screen scale lives as long as the app (`shared(screenScale:)`),
+/// so runs, "Nochmal", hot-seat turns and races reuse its textures instead of rendering them again.
 @MainActor
 final class GameArtwork {
     /// Pixels per bowl unit of the spoon images in the asset catalog (`eggscape-art assets`).
@@ -24,11 +25,13 @@ final class GameArtwork {
     let eggShadow: SKTexture
     let raindrops: [SKTexture]
     let streak: SKTexture
-    let leaves: [SKTexture]
-    let splash: SKTexture
+    /// The blowing leaves' particle; an emitter takes a single texture.
+    let leaf: SKTexture
 
     private var eggs: [EggKey: SKTexture] = [:]
     private var brokenEggs: [EggKey: SKTexture] = [:]
+    private var brokenEggRenders: [EggKey: Task<PixelImage, Never>] = [:]
+    private static var instances: [CGFloat: GameArtwork] = [:]
     private static let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "artwork")
 
     private struct EggKey: Hashable {
@@ -36,7 +39,23 @@ final class GameArtwork {
         let width: Int
     }
 
-    init(screenScale: CGFloat) {
+    /// The artwork for a screen scale, created on first use.
+    static func shared(screenScale: CGFloat) -> GameArtwork {
+        if let artwork = instances[screenScale] {
+            return artwork
+        }
+        // The first artwork of a launch: the PNGs of older renderer versions are never read again.
+        if instances.isEmpty, let caches = cachesDirectory {
+            Task.detached(priority: .utility) {
+                removeStaleCaches(in: caches)
+            }
+        }
+        let artwork = GameArtwork(screenScale: screenScale)
+        instances[screenScale] = artwork
+        return artwork
+    }
+
+    private init(screenScale: CGFloat) {
         spoonLayout = SpoonArt.layout(unit: Self.spoonAssetUnit)
         spoon = Self.assetTexture("Spoon") { SpoonArt.spoon(unit: Self.spoonAssetUnit) }
         spoonShadow = Self.assetTexture("SpoonShadow") { SpoonArt.shadow(unit: Self.spoonAssetUnit) }
@@ -45,8 +64,7 @@ final class GameArtwork {
         raindrops = (1 ... 4)
             .map { Self.texture(EffectArt.raindrop(diameter: Int(20 * screenScale), seed: UInt64($0))) }
         streak = Self.texture(EffectArt.streak(length: Int(46 * screenScale)))
-        leaves = (11 ... 14).map { Self.texture(EffectArt.leaf(length: Int(26 * screenScale), seed: UInt64($0))) }
-        splash = Self.texture(EffectArt.splash(diameter: Int(90 * screenScale), seed: 7))
+        leaf = Self.texture(EffectArt.leaf(length: Int(26 * screenScale), seed: 11))
     }
 
     func egg(_ appearance: EggAppearance, widthPixels: Int) -> SKTexture {
@@ -57,20 +75,37 @@ final class GameArtwork {
         let texture = Self.texture(Self.cachedImage(name: "egg", key: key) {
             EggArt.egg(appearance, width: widthPixels)
         })
-        eggs[key] = texture
+        Self.keep(texture, for: key, in: &eggs)
         return texture
     }
 
-    func brokenEgg(_ appearance: EggAppearance, widthPixels: Int) -> SKTexture {
+    /// The egg smashed on the ground. Reading or rendering it takes long enough to stall a frame, so it happens off the
+    /// main actor; ask for it well before the drop.
+    func brokenEgg(_ appearance: EggAppearance, widthPixels: Int) async -> SKTexture {
         let key = EggKey(appearance: appearance, width: widthPixels)
         if let cached = brokenEggs[key] {
             return cached
         }
-        let texture = Self.texture(Self.cachedImage(name: "broken", key: key) {
-            EggArt.broken(appearance, width: widthPixels)
-        })
-        brokenEggs[key] = texture
+        let render = brokenEggRenders[key] ?? Task.detached(priority: .userInitiated) {
+            Self.cachedImage(name: "broken", key: key) { EggArt.broken(appearance, width: widthPixels) }
+        }
+        brokenEggRenders[key] = render
+        let image = await render.value
+        brokenEggRenders[key] = nil
+        // Of several callers waiting for the same render, the first to resume makes the texture.
+        if let cached = brokenEggs[key] {
+            return cached
+        }
+        let texture = Self.texture(image)
+        Self.keep(texture, for: key, in: &brokenEggs)
         return texture
+    }
+
+    /// Stores a skin's texture and drops those of other skins: only the equipped skin is played, and this object lives
+    /// as long as the app.
+    private static func keep(_ texture: SKTexture, for key: EggKey, in cache: inout [EggKey: SKTexture]) {
+        cache = cache.filter { $0.key.appearance == key.appearance }
+        cache[key] = texture
     }
 
     // MARK: Conversion
@@ -115,8 +150,17 @@ final class GameArtwork {
 
     // MARK: Disk cache
 
-    /// Rendered eggs are kept in Caches, keyed by everything that affects their pixels.
-    private static func cachedImage(name: String, key: EggKey, render: () -> PixelImage) -> PixelImage {
+    /// Bump when a renderer changes so cached PNGs are rendered again; the next launch deletes the old directory.
+    private nonisolated static let cacheVersion = 3
+    /// The directory in Caches that holds the current version's PNGs.
+    nonisolated static let cacheDirectoryName = "EggArt-v\(cacheVersion)"
+
+    private nonisolated static var cachesDirectory: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+    }
+
+    /// Rendered eggs are kept in Caches, keyed by everything that affects their pixels; usable from any thread.
+    private nonisolated static func cachedImage(name: String, key: EggKey, render: () -> PixelImage) -> PixelImage {
         let url = cacheURL(name: name, key: key)
         if let url, let data = try? Data(contentsOf: url), let image = decodePNG(data) {
             return image
@@ -128,31 +172,50 @@ final class GameArtwork {
         return image
     }
 
-    private static func cacheURL(name: String, key: EggKey) -> URL? {
-        guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
-              let encoded = try? JSONEncoder().encode(key.appearance)
+    private nonisolated static func cacheURL(name: String, key: EggKey) -> URL? {
+        guard let caches = cachesDirectory,
+              let fileName = cacheFileName(name: name, appearance: key.appearance, width: key.width)
         else { return nil }
-        // FNV-1a over the appearance's JSON: stable across launches, unlike `hashValue`.
+        let directory = caches.appendingPathComponent(cacheDirectoryName, isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent(fileName)
+    }
+
+    /// `name-width-hash.png`, hashing the appearance's JSON with FNV-1a. Sorted keys make the bytes, and so the name,
+    /// the same on every call and launch; the encoder's default key order is not, and neither is `hashValue`.
+    nonisolated static func cacheFileName(name: String, appearance: EggAppearance, width: Int) -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let encoded = try? encoder.encode(appearance) else { return nil }
         var digest: UInt64 = 0xCBF2_9CE4_8422_2325
         for byte in encoded {
             digest = (digest ^ UInt64(byte)) &* 0x100_0000_01B3
         }
-        let directory = caches.appendingPathComponent("EggArt-v\(cacheVersion)", isDirectory: true)
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory.appendingPathComponent("\(name)-\(key.width)-\(String(digest, radix: 16)).png")
+        return "\(name)-\(width)-\(String(digest, radix: 16)).png"
     }
 
-    /// Bump when a renderer changes so cached PNGs are rendered again.
-    private static let cacheVersion = 2
+    /// Deletes the cache directories of other renderer versions in `caches`.
+    nonisolated static func removeStaleCaches(in caches: URL) {
+        let fileManager = FileManager.default
+        guard let entries = try? fileManager.contentsOfDirectory(at: caches, includingPropertiesForKeys: nil) else {
+            return
+        }
+        for entry in entries {
+            let name = entry.lastPathComponent
+            if name.hasPrefix("EggArt-v"), name != cacheDirectoryName {
+                try? fileManager.removeItem(at: entry)
+            }
+        }
+    }
 
-    private static func writePNG(_ image: CGImage, to url: URL) {
+    private nonisolated static func writePNG(_ image: CGImage, to url: URL) {
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
         else { return }
         CGImageDestinationAddImage(destination, image, nil)
         CGImageDestinationFinalize(destination)
     }
 
-    private static func decodePNG(_ data: Data) -> PixelImage? {
+    private nonisolated static func decodePNG(_ data: Data) -> PixelImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
               let space = CGColorSpace(name: CGColorSpace.sRGB)

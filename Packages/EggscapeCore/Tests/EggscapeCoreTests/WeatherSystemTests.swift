@@ -224,7 +224,7 @@ struct WeatherSystemTests {
         )
         #expect(strikes.full.count == strikes.half.count && strikes.full.count > 30)
         #expect(zip(strikes.full, strikes.half).allSatisfy { $0.velocity * 0.5 == $1.velocity })
-        #expect(strikes.full.allSatisfy { abs(magnitude($0.velocity) - 0.8) < 1e-12 })
+        #expect(strikes.full.allSatisfy { abs(magnitude($0.velocity) - 0.6) < 1e-12 })
         // Half as many raindrops.
         let ratio = Double(drops.half) / Double(drops.full)
         #expect(ratio > 0.45 && ratio < 0.55)
@@ -365,9 +365,9 @@ struct WeatherSystemTests {
         let spacing = zip(strikes, strikes.dropFirst()).map { $1 - $0 }
         #expect(spacing.allSatisfy { $0 > 8 - dt - 1e-9 && $0 < 15 + dt + 1e-9 })
         #expect(warningShown)
-        // A strong jolt of 0.8 in the direction every phone agrees on.
+        // A strong jolt of 0.6 in the direction every phone agrees on.
         #expect(jolts.count == strikes.count)
-        #expect(zip(jolts, timeline).allSatisfy { $0.velocity == $1.direction * 0.8 })
+        #expect(zip(jolts, timeline).allSatisfy { $0.velocity == $1.direction * 0.6 })
     }
 
     @Test func lightningNeedsAStormWhenItsWarningStarts() throws {
@@ -401,7 +401,7 @@ struct WeatherSystemTests {
             landed = early.step().impact.kicks.first { $0.source == .lightning } ?? landed
         }
         #expect(early.events.contains(.lightningWarning) && early.events.contains(.lightningStrike))
-        #expect(landed?.velocity == strike.direction * 0.8)
+        #expect(landed?.velocity == strike.direction * 0.6)
     }
 
     // MARK: Announcements

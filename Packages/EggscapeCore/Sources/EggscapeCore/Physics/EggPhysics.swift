@@ -15,13 +15,13 @@ public struct EggPhysics: Sendable, Equatable {
         self.config = config
     }
 
-    /// Elliptical distance from the bowl centre: 0 in the middle, 1 on the rim.
+    /// Elliptical distance from the bowl centre: 0 in the middle, 1 at the tipping point.
     public var rimDistance: Double {
         let scaled = position / SIMD2(config.bowlRadiusX, config.bowlRadiusY)
         return (scaled * scaled).sum().squareRoot()
     }
 
-    /// The egg has rolled over the rim.
+    /// The egg has tipped over the rim.
     public var hasFallen: Bool {
         rimDistance > 1
     }

@@ -27,16 +27,17 @@ struct EggPhysicsTests {
         #expect(hold(.zero, for: 10).peak == 0)
     }
 
-    @Test(arguments: [2.0, 6.0, 10.0])
+    @Test(arguments: [2.0, 5.0, 8.0])
     func smallTiltKeepsEgg(degrees: Double) {
         #expect(!hold(SIMD2(radians(degrees), 0), for: 20).fell)
         #expect(!hold(SIMD2(0, radians(degrees)), for: 20).fell)
     }
 
     @Test func diagonalTiltAddsUp() {
-        // Both axes count towards the elliptical rim distance: 6° diagonally is fine, 10° is not.
-        #expect(!hold(SIMD2(radians(-6), radians(-6)), for: 20).fell)
-        #expect(hold(SIMD2(radians(10), radians(10)), for: 20).fell)
+        // Both axes count towards the elliptical rim distance: 5° diagonally is fine, 8° is not, though 8° on either
+        // axis alone is.
+        #expect(!hold(SIMD2(radians(-5), radians(-5)), for: 20).fell)
+        #expect(hold(SIMD2(radians(8), radians(8)), for: 20).fell)
     }
 
     @Test func settlesAtRestingPosition() {
@@ -52,24 +53,24 @@ struct EggPhysicsTests {
     }
 
     @Test func staticThresholdSideways() {
-        // Tilted slowly, the egg tolerates about 14.5° sideways.
-        #expect(!hold(SIMD2(radians(13.5), 0), for: 40, rampSeconds: 20).fell)
-        #expect(hold(SIMD2(radians(15.5), 0), for: 40, rampSeconds: 20).fell)
+        // Tilted slowly, the egg tolerates about 11° sideways.
+        #expect(!hold(SIMD2(radians(10), 0), for: 40, rampSeconds: 20).fell)
+        #expect(hold(SIMD2(radians(12), 0), for: 40, rampSeconds: 20).fell)
     }
 
     @Test func staticThresholdAlongHandle() {
-        // ... and about 19.5° forward or backward, because the bowl is longer along the handle.
-        #expect(!hold(SIMD2(0, radians(18.5)), for: 40, rampSeconds: 20).fell)
-        #expect(hold(SIMD2(0, radians(20.5)), for: 40, rampSeconds: 20).fell)
-        #expect(hold(SIMD2(0, radians(-20.5)), for: 40, rampSeconds: 20).fell)
+        // ... and about 15° forward or backward, because the bowl is longer along the handle.
+        #expect(!hold(SIMD2(0, radians(13.5)), for: 40, rampSeconds: 20).fell)
+        #expect(hold(SIMD2(0, radians(15.5)), for: 40, rampSeconds: 20).fell)
+        #expect(hold(SIMD2(0, radians(-15.5)), for: 40, rampSeconds: 20).fell)
     }
 
     @Test func abruptTiltDropsEarlier() {
-        // The underdamped bowl overshoots, so a sudden tilt drops the egg from about 12° / 16°.
-        #expect(!hold(SIMD2(radians(11), 0), for: 10).fell)
-        #expect(hold(SIMD2(radians(12.5), 0), for: 10).fell)
-        #expect(!hold(SIMD2(0, radians(15)), for: 10).fell)
-        #expect(hold(SIMD2(0, radians(17)), for: 10).fell)
+        // The underdamped bowl overshoots, so a sudden tilt drops the egg from about 9° / 12°.
+        #expect(!hold(SIMD2(radians(8), 0), for: 10).fell)
+        #expect(hold(SIMD2(radians(9.5), 0), for: 10).fell)
+        #expect(!hold(SIMD2(0, radians(11)), for: 10).fell)
+        #expect(hold(SIMD2(0, radians(13)), for: 10).fell)
     }
 
     @Test func overshootIsAboutTwentyThreePercent() {
@@ -92,16 +93,18 @@ struct EggPhysicsTests {
             egg.step(dt: 1.0 / 120, tilt: .zero)
             peak = max(peak, egg.position.x)
         }
-        // A strong footstep moves the egg visibly but nowhere near the rim, and the bowl brings it back.
+        // A strong footstep moves the egg visibly but not even half way to the tipping point, and the bowl brings it
+        // back.
         #expect(peak > 0.1 && peak < 0.2)
         #expect(egg.rimDistance < 0.01)
     }
 
     @Test func rimDistanceIsElliptical() {
         var egg = EggPhysics()
-        egg.kick(SIMD2(0.75, 0))
+        egg.kick(SIMD2(0.5, 0))
         egg.step(dt: 1, tilt: .zero, dampingScale: 0)
-        // After one second at 0.75 units/s, minus the bowl's pull, the egg sits short of the sideways rim.
-        #expect(egg.rimDistance == abs(egg.position.x) / 0.75)
+        // After one second at 0.5 units/s the egg sits short of the sideways tipping point.
+        #expect(egg.rimDistance == abs(egg.position.x) / 0.57)
+        #expect(egg.rimDistance < 1)
     }
 }

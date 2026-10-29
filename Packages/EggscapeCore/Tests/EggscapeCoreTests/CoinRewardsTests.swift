@@ -1,12 +1,12 @@
 @testable import EggscapeCore
 import Testing
 
-/// A clean, finished 150 m time trial in calm weather unless told otherwise.
+/// A clean, finished short time trial (15 m) in calm weather unless told otherwise.
 private func reward(
     _ course: Course = .timeTrial(.short),
     weather: WeatherOption = .off,
     finished: Bool = true,
-    meters: Double = 150,
+    meters: Double = RaceDistance.short.meters,
     eggsLost: Int = 0,
     personalBest: Bool = false,
     place: Int? = nil,
@@ -30,55 +30,68 @@ private func endless(meters: Double, weather: WeatherOption = .off, personalBest
 }
 
 struct CoinRewardsTests {
-    @Test func cleanShortRunInCalmWeatherPays55() {
+    @Test func cleanShortRunInCalmWeatherPays28() {
         let result = reward()
-        // 150 m / 5 m = 30, +15 for the finish, +10 for losing no egg.
+        // 15 m / 5 m = 3, +15 for the finish, +10 for losing no egg.
         #expect(result.lines == [
-            CoinReward.Line(kind: .distance, coins: 30),
+            CoinReward.Line(kind: .distance, coins: 3),
             CoinReward.Line(kind: .finish, coins: 15),
             CoinReward.Line(kind: .noEggLost, coins: 10),
         ])
-        #expect(result.total == 55)
+        #expect(result.total == 28)
         #expect(result.weatherMultiplier == 1)
+    }
+
+    @Test(arguments: [(RaceDistance.short, 28), (.medium, 35), (.long, 45)])
+    func cleanRunsInCalmWeatherPayByDistance(distance: RaceDistance, total: Int) {
+        // The 25 coins for finishing without a broken egg are the same on every course.
+        #expect(reward(.timeTrial(distance), meters: distance.meters).total == total)
     }
 
     @Test func aBrokenEggCostsTheNoEggLostBonus() {
         let result = reward(eggsLost: 1)
-        #expect(result.total == 45)
+        #expect(result.total == 18)
         #expect(result.coins(for: .noEggLost) == 0)
         #expect(!result.lines.contains { $0.kind == .noEggLost })
     }
 
     @Test func anUnfinishedTimeTrialPaysTheDistanceOnly() {
-        let result = reward(.timeTrial(.long), finished: false, meters: 212.7, eggsLost: 3)
-        #expect(result.lines == [CoinReward.Line(kind: .distance, coins: 42)])
+        let result = reward(.timeTrial(.long), finished: false, meters: 72.7, eggsLost: 3)
+        #expect(result.lines == [CoinReward.Line(kind: .distance, coins: 14)])
     }
 
     @Test(arguments: [
-        (WeatherOption.off, 55),
-        (WeatherOption.fixed(.clear), 55),
-        (WeatherOption.fixed(.wind), 66),
-        // 55 × 1.3 = 71.5, rounded half up.
-        (WeatherOption.fixed(.rain), 72),
-        (WeatherOption.fixed(.storm), 88),
-        (WeatherOption.random, 77),
+        (WeatherOption.off, 28),
+        (WeatherOption.fixed(.clear), 28),
+        // 28 × 1.2 = 33.6, rounded to the nearest coin.
+        (WeatherOption.fixed(.wind), 34),
+        (WeatherOption.fixed(.rain), 36),
+        (WeatherOption.fixed(.storm), 45),
+        (WeatherOption.random, 39),
     ])
     func weatherMultipliesTheSubtotal(weather: WeatherOption, total: Int) {
         #expect(reward(weather: weather).total == total)
     }
 
+    @Test func weatherRoundsHalfUp() {
+        // A clean long run in the rain: 45 × 1.3 = 58.5, rounded up to 59 rather than to the even 58.
+        let result = reward(.timeTrial(.long), weather: .fixed(.rain), meters: RaceDistance.long.meters)
+        #expect(result.coins(for: .weather) == 14)
+        #expect(result.total == 59)
+    }
+
     @Test func stormIsItemizedAndBonusesComeOnTop() {
         let result = reward(weather: .fixed(.storm), personalBest: true, place: 1, players: 3)
-        // (30 + 15 + 10) × 1.6 = 88; the personal best and the place bonus are not multiplied.
+        // (3 + 15 + 10) × 1.6 = 44.8, so 17 for the storm; the personal best and the place bonus are not multiplied.
         #expect(result.lines == [
-            CoinReward.Line(kind: .distance, coins: 30),
+            CoinReward.Line(kind: .distance, coins: 3),
             CoinReward.Line(kind: .finish, coins: 15),
             CoinReward.Line(kind: .noEggLost, coins: 10),
-            CoinReward.Line(kind: .weather, coins: 33),
+            CoinReward.Line(kind: .weather, coins: 17),
             CoinReward.Line(kind: .personalBest, coins: 20),
             CoinReward.Line(kind: .place, coins: 25),
         ])
-        #expect(result.total == 133)
+        #expect(result.total == 90)
         #expect(result.weatherMultiplier == 1.6)
     }
 
@@ -108,14 +121,14 @@ struct CoinRewardsTests {
 
     @Test func personalBestPaysTwenty() {
         #expect(endless(meters: 250, personalBest: true).total == 70)
-        #expect(reward(personalBest: true).total == 75)
+        #expect(reward(personalBest: true).total == 48)
     }
 
     @Test(arguments: [(1, 25), (2, 15), (3, 10), (4, 5)])
     func placeBonusInARaceOfFour(place: Int, bonus: Int) {
         let result = reward(place: place, players: 4)
         #expect(result.coins(for: .place) == bonus)
-        #expect(result.total == 55 + bonus)
+        #expect(result.total == 28 + bonus)
     }
 
     @Test func placeBonusNeedsAtLeastTwoPlayers() {
@@ -134,9 +147,9 @@ struct CoinRewardsTests {
     }
 
     @Test func aLosingRacerStillEarnsDistanceAndPlace() {
-        let result = reward(.timeTrial(.medium), finished: false, meters: 87, eggsLost: 3, place: 3, players: 3)
+        let result = reward(.timeTrial(.medium), finished: false, meters: 37, eggsLost: 3, place: 3, players: 3)
         #expect(result.lines == [
-            CoinReward.Line(kind: .distance, coins: 17),
+            CoinReward.Line(kind: .distance, coins: 7),
             CoinReward.Line(kind: .place, coins: 10),
         ])
     }
@@ -166,7 +179,7 @@ struct CoinRewardsTests {
         let weathers: [WeatherOption] = [.off, .fixed(.clear), .fixed(.wind), .fixed(.rain), .fixed(.storm), .random]
         for course in courses {
             for weather in weathers {
-                for meters in [-10.0, 0, 3, 150, 600] {
+                for meters in [-10.0, 0, 3] + RaceDistance.allCases.map(\.meters) + [600] {
                     for finished in [false, true] {
                         let result = reward(
                             course,

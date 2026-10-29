@@ -20,12 +20,13 @@ enum ScreenshotStage {
         services.settings.isSoundOn = false
         services.settings.isHapticsOn = false
         services.settings.playerName = "Sam"
-        // A believable history: a few bests, some coins, some eggs.
+        // A believable history: a few bests, some coins, some eggs. The brown egg, the most realistic one, is unlocked
+        // like any other; the shop's first rows then mix unlocked eggs with locked ones (745 coins left).
         services.records.recordTime(48.7, distance: .short, weather: .off)
         services.records.recordTime(101.3, distance: .medium, weather: .off)
         services.records.recordEndless(meters: 412)
-        services.wallet.earn(CoinReward(lines: [CoinReward.Line(kind: .distance, coins: 2140)]))
-        for id in ["sky-blue", "polka-dots", "pearl-white"] {
+        services.wallet.earn(CoinReward(lines: [CoinReward.Line(kind: .distance, coins: 1500)]))
+        for id in ["farm-brown", "sky-blue", "rose", "polka-dots"] {
             if let skin = SkinCatalog.skin(id: id) {
                 try? services.wallet.purchase(skin)
             }
@@ -38,6 +39,7 @@ enum ScreenshotStage {
             services.navigation.tab = .singleplayer
         case .shop:
             services.navigation.tab = .shop
+            services.navigation.shopPage = .eggs
         case .lobby:
             services.navigation.tab = .multiplayer
             services.navigation.showsScreenshotLobby = true

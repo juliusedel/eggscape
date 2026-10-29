@@ -143,30 +143,37 @@ struct SettingsView: View {
 private struct CalibrationSheet: View {
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
+    /// Holds the motion sensors while the sheet is open.
+    @State private var owner = LeaseOwner()
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Text("Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“.")
+            ScrollView {
+                VStack(spacing: 24) {
+                    Text(
+                        "Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“."
+                    )
                     .multilineTextAlignment(.center)
-                if services.motion.isAvailable {
-                    SpiritLevelView(tilt: { services.motion.tilt })
-                } else {
-                    Text("Dieses Gerät hat keinen Bewegungssensor.")
-                        .foregroundStyle(.secondary)
+                    if services.motion.isAvailable {
+                        SpiritLevelView(tilt: { services.motion.tilt })
+                    } else {
+                        Text("Dieses Gerät hat keinen Bewegungssensor.")
+                            .foregroundStyle(.secondary)
+                    }
+                    Button {
+                        services.settings.calibrationZero = services.motion.tilt
+                        dismiss()
+                    } label: {
+                        Text("Kalibrieren")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                    }
+                    .primaryActionStyle()
+                    .disabled(!services.motion.isAvailable)
                 }
-                Button {
-                    services.settings.calibrationZero = services.motion.tilt
-                    dismiss()
-                } label: {
-                    Text("Kalibrieren")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 36)
-                }
-                .primaryActionStyle()
-                .disabled(!services.motion.isAvailable)
+                .padding(24)
             }
-            .padding(24)
+            .scrollBounceBehavior(.basedOnSize)
             .navigationTitle("Kalibrieren")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -174,9 +181,10 @@ private struct CalibrationSheet: View {
                     Button("Abbrechen") { dismiss() }
                 }
             }
-            .onAppear { services.motion.start() }
-            .onDisappear { services.motion.stop() }
+            .onAppear { services.motion.start(for: owner) }
+            .onDisappear { services.motion.stop(for: owner) }
         }
-        .presentationDetents([.medium])
+        // Large text needs more than half the screen.
+        .presentationDetents([.medium, .large])
     }
 }

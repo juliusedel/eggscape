@@ -85,12 +85,12 @@ final class RunSession: Identifiable {
         case paused
         case finished(RunOutcome)
 
-        /// The screen must not dim while the player is busy holding the spoon.
+        /// The screen must not dim while the player is busy holding the spoon. A paused run, maybe left alone during a
+        /// call, may lock; "Weiter" goes through the countdown, which keeps the screen awake again.
         var keepsScreenAwake: Bool {
-            if case .finished = self {
-                false
-            } else {
-                true
+            switch self {
+            case .calibrating, .countdown, .running: true
+            case .paused, .finished: false
             }
         }
     }
@@ -107,9 +107,14 @@ final class RunSession: Identifiable {
     }
 
     private(set) var phase = Phase.calibrating {
-        didSet { UIApplication.shared.isIdleTimerDisabled = phase.keepsScreenAwake }
+        didSet { IdleTimer.setDisabled(phase.keepsScreenAwake, for: self) }
     }
 
+    /// Set once the run is over: finish line, last egg, or its screen closed. From then on nothing may pause, resume or
+    /// recalibrate it, also not in the moment before the results appear.
+    private(set) var hasEnded = false
+    /// Calibrating again from the pause menu; "Zurück" then returns there instead of ending the run.
+    private(set) var isRecalibrating = false
     private(set) var hud: HUDSnapshot
     /// Held down via the sprint button.
     var isSprinting = false
@@ -123,6 +128,9 @@ final class RunSession: Identifiable {
     @ObservationIgnored private let services: AppServices
     @ObservationIgnored private let rules: RunRules
     @ObservationIgnored private var calibration: TiltCalibration
+    /// "Los" has been given. Only the countdown before it lets the egg warm up, which also catches it at the rim; after
+    /// a pause the run must go on exactly where it stopped.
+    @ObservationIgnored private var isUnderway = false
     @ObservationIgnored private var countdownTask: Task<Void, Never>?
     @ObservationIgnored private var endTask: Task<Void, Never>?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
@@ -154,10 +162,7 @@ final class RunSession: Identifiable {
             self?.hud = snapshot
             self?.race?.onProgress(snapshot.meters, snapshot.eggsLeft)
         }
-        scene.onFrame = { [weak self] engine in
-            self?.services.haptics.updateDanger(rimDistance: engine.egg.rimDistance)
-            self?.updateWeatherSounds(engine.weather)
-        }
+        scene.onFrame = { [weak self] engine in self?.updateContinuousFeedback(engine) }
     }
 
     /// Raw device tilt for the calibration screen's spirit level, `nil` without motion sensors.
@@ -181,11 +186,13 @@ final class RunSession: Identifiable {
 
     // MARK: Lifecycle
 
+    /// The run's screen appeared. Motion, haptics and the awake screen are shared with other screens (the lobby, the
+    /// previous run on "Nochmal"), so the run holds its own lease on them until `stop()`.
     func start() {
-        services.motion.start()
-        services.haptics.prepare()
+        services.motion.start(for: self)
+        services.haptics.prepare(for: self)
         services.sounds.prepare()
-        UIApplication.shared.isIdleTimerDisabled = phase.keepsScreenAwake
+        IdleTimer.setDisabled(phase.keepsScreenAwake, for: self)
         // Multiplayer racers calibrated in the lobby; everybody counts down to the same moment.
         if let race {
             startCountdown(until: race.startAt)
@@ -193,18 +200,21 @@ final class RunSession: Identifiable {
     }
 
     func stop() {
+        hasEnded = true
         countdownTask?.cancel()
         endTask?.cancel()
         toastTask?.cancel()
-        services.motion.stop()
-        services.haptics.shutDown()
+        services.motion.stop(for: self)
+        services.haptics.shutDown(for: self)
         services.sounds.stopLoops()
         scene.mode = .ended
-        UIApplication.shared.isIdleTimerDisabled = false
+        IdleTimer.setDisabled(false, for: self)
     }
 
     /// Stores the current pose as level and starts (or resumes) with a countdown.
     func calibrate() {
+        guard !hasEnded, phase == .calibrating else { return }
+        isRecalibrating = false
         calibrateInPlace()
         startCountdown(until: .now + .seconds(3))
     }
@@ -218,11 +228,12 @@ final class RunSession: Identifiable {
     }
 
     func pause() {
-        guard allowsPause else { return }
+        // Also in races, which go on: a press the system cancelled (a call, Control Center) must not keep sprinting.
+        isSprinting = false
+        guard allowsPause, !hasEnded else { return }
         switch phase {
         case .running, .countdown:
             countdownTask?.cancel()
-            isSprinting = false
             phase = .paused
             scene.mode = .paused
             services.haptics.stopDanger()
@@ -233,14 +244,23 @@ final class RunSession: Identifiable {
     }
 
     func resume() {
-        guard phase == .paused else { return }
+        guard !hasEnded, phase == .paused else { return }
         startCountdown(until: .now + .seconds(3))
     }
 
     func recalibrate() {
-        guard phase == .paused else { return }
+        guard !hasEnded, phase == .paused else { return }
+        isRecalibrating = true
         phase = .calibrating
         scene.mode = .preview
+    }
+
+    /// "Zurück" on a recalibration from the pause menu: back to the menu with the run untouched.
+    func cancelRecalibration() {
+        guard !hasEnded, isRecalibrating else { return }
+        isRecalibrating = false
+        phase = .paused
+        scene.mode = .paused
     }
 
     /// App Store screenshots: skips calibration and countdown, jumps `seconds` into the run and keeps running with
@@ -248,6 +268,7 @@ final class RunSession: Identifiable {
     func stageForScreenshot(skipping seconds: Double, egg: SIMD2<Double>) {
         countdownTask?.cancel()
         scene.steer(toBowl: egg)
+        isUnderway = true
         phase = .running
         scene.mode = .running
         scene.fastForward(seconds: seconds, input: RunEngine.Input(tilt: TouchSteering(target: egg).tilt))
@@ -270,10 +291,14 @@ final class RunSession: Identifiable {
     /// keeps all phones of a race in step.
     private func startCountdown(until start: ContinuousClock.Instant) {
         countdownTask?.cancel()
-        scene.mode = .warmUp
+        scene.mode = isUnderway ? .paused : .warmUp
         countdownTask = Task { [weak self] in
             var announced = Int.max
             while true {
+                // Checked first, so a countdown cancelled before it ever ran does not announce anything either.
+                if Task.isCancelled {
+                    return
+                }
                 let remaining = (start - .now).seconds
                 if remaining <= 0 {
                     break
@@ -285,11 +310,9 @@ final class RunSession: Identifiable {
                     self?.services.sounds.play(.beep)
                 }
                 try? await Task.sleep(for: .milliseconds(20))
-                if Task.isCancelled {
-                    return
-                }
             }
             self?.services.sounds.play(.go)
+            self?.isUnderway = true
             self?.phase = .running
             self?.scene.mode = .running
         }
@@ -333,6 +356,19 @@ final class RunSession: Identifiable {
         }
     }
 
+    /// The danger buzz and the weather loops, once per rendered frame of the run.
+    private func updateContinuousFeedback(_ engine: RunEngine) {
+        // The frame that ends the run still gets here after `end()` stopped everything.
+        guard !hasEnded else { return }
+        if engine.phase == .running {
+            services.haptics.updateDanger(rimDistance: engine.egg.rimDistance)
+        } else {
+            // No egg in the bowl while the next one is placed, so nothing can fall.
+            services.haptics.stopDanger()
+        }
+        updateWeatherSounds(engine.weather)
+    }
+
     /// Rain and wind loops follow the weather where the runner is.
     private func updateWeatherSounds(_ weather: WeatherSystem) {
         services.sounds.setLoop(.rain, volume: Float(0.5 * weather.mix.rain))
@@ -343,6 +379,7 @@ final class RunSession: Identifiable {
     }
 
     private func end() {
+        hasEnded = true
         scene.mode = .ended
         isSprinting = false
         services.haptics.stopDanger()

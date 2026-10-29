@@ -9,6 +9,8 @@ final class MotionInput {
     private let manager = CMMotionManager()
     private let queue: OperationQueue
     private let store: TiltStore
+    /// Runs, the nearby lobby and the calibration sheet; their screens may overlap.
+    private var owners = Leases()
 
     init(filterTimeConstant: Double = GameConfig.standard.tiltFilterTimeConstant) {
         queue = OperationQueue()
@@ -28,7 +30,9 @@ final class MotionInput {
         store.tilt
     }
 
-    func start() {
+    /// Starts the updates for `owner`; they keep running until the last owner has called `stop(for:)`.
+    func start(for owner: AnyObject) {
+        owners.acquire(owner)
         guard manager.isDeviceMotionAvailable, !manager.isDeviceMotionActive else { return }
         manager.deviceMotionUpdateInterval = 1.0 / 100
         let store = store
@@ -40,7 +44,9 @@ final class MotionInput {
         }
     }
 
-    func stop() {
+    /// Stops the updates and forgets the tilt once nobody needs them any more.
+    func stop(for owner: AnyObject) {
+        guard owners.release(owner) else { return }
         manager.stopDeviceMotionUpdates()
         store.reset()
     }

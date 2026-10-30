@@ -5,9 +5,9 @@
 /// the egg they bought looks. Prices and the display order may change.
 ///
 /// Only the classic white egg is free. The prices climb along the display order like a ladder: the brown egg costs
-/// what a new player's first clean medium run pays, personal best included (see `CoinRewards`), and every egg after
-/// it about 1.3 times the one before, rounded to a friendly number, up to 6,000 coins for the last one. So the first
-/// eggs take one to a few runs each, while each of the last ones is a goal of many runs or a coin pack.
+/// what a clean long run (100 m) in calm weather pays, about half a minute of play (see `CoinRewards`), and every egg
+/// after it about 1.3 times the one before, rounded to a friendly number, up to 6,000 coins for the last one. So the
+/// first eggs take one to a few runs each, while each of the last ones is a goal of many runs or a coin pack.
 ///
 /// The colors are albedos for the photo-realistic renderer (`EggscapeArt`), which adds the key light from the top
 /// right, the shadows and the finish. Dyed colors are a little muted, like real egg dye on a white shell, because
@@ -53,7 +53,7 @@ public enum SkinCatalog {
     )
 
     /// "Landei": a natural brown hen's egg like in a photo, matte, with fine darker brown speckles. The first egg to
-    /// unlock: it costs what a new player's first clean medium run pays, or two clean short runs.
+    /// unlock: it costs what a clean 100 m run in calm weather pays, about one game.
     public static let farmBrown = EggSkin(
         id: "farm-brown",
         appearance: EggAppearance(

@@ -39,15 +39,9 @@ struct CoinPackTests {
     @Test func theDearestEggTakesTheLargePackPlusSomePlay() {
         let dearest = SkinCatalog.all.map(\.price).max() ?? 0
         #expect(dearest > CoinPack.large.coins)
-        // On top of the pack, 1,000 coins: about two dozen clean long runs in calm weather (36 short ones).
-        let cleanLongRun = CoinRewards.reward(for: RewardInput(
-            course: .timeTrial(.long),
-            weather: .off,
-            finished: true,
-            meters: RaceDistance.long.meters,
-            eggsLost: 0
-        )).total
-        #expect(dearest - CoinPack.large.coins <= 24 * cleanLongRun, "\(dearest) coins")
+        // On top of the pack, 1,000 coins: about 18 clean 100 m runs in calm weather (`oneRunReward`), ten minutes of
+        // play.
+        #expect(dearest - CoinPack.large.coins <= 20 * oneRunReward, "\(dearest) coins")
     }
 
     @Test func theBestValueIsTheMostCoinsForTheMoney() {

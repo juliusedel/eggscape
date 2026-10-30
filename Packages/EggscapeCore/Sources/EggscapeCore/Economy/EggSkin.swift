@@ -12,9 +12,10 @@ public struct EggSkin: Codable, Hashable, Sendable, Identifiable {
 
         /// The coin prices skins of this tier sell for; the free starter skin is the only exception.
         ///
-        /// The bands cut the catalog's price ladder (see `SkinCatalog`) into tiers. A clean short run in calm weather
-        /// pays 28 coins (see `CoinRewards`), so a common skin costs two to fifteen of them, a rare one dozens, an
-        /// epic one around a hundred and a legendary one about two hundred, or a coin pack.
+        /// The bands cut the catalog's price ladder (see `SkinCatalog`) into tiers. A clean 100 m run in calm weather
+        /// pays 55 coins in about 34 s (see `CoinRewards`), so a common skin costs about one to seven such runs, a
+        /// rare one up to 20 minutes of play, an epic one up to 40 minutes and a legendary one up to an hour and a
+        /// quarter, or a coin pack.
         public var priceRange: ClosedRange<Int> {
             switch self {
             case .common: 50 ... 400

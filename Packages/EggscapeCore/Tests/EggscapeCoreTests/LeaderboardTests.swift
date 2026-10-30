@@ -45,7 +45,7 @@ struct LeaderboardTests {
     @Test func reportedTimesAreNeverBetterThanTheRealOnes() {
         var rng = SplitMix64(seed: 2026)
         for _ in 0 ..< 10000 {
-            // From a sprint over the short course to a slow endless run.
+            // From faster than a sprint over the short course (3.2 s) to far slower than any finished time trial.
             let seconds = rng.uniform(1 ... 400)
             let reported = LeaderboardScore.seconds(hundredths: LeaderboardScore.hundredths(seconds: seconds))
             // At most the documented floating-point tolerance faster, and less than a hundredth slower.

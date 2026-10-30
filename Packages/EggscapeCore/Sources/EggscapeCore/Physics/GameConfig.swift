@@ -99,7 +99,8 @@ public struct GameConfig: Sendable, Equatable {
     /// Zufall: the first meters of a time trial are calm, but never more than half the course, so 7.5 m of the 15 m.
     public var randomCalmStart: ClosedRange<Double> = 20 ... 40
     /// Zufall: typical length of one stretch of weather in meters. The rest of the course is cut into about
-    /// `length / randomStretchLength` stretches, at least two.
+    /// `length / randomStretchLength` stretches, at least two. The time trials leave at most 80 m after the calm
+    /// start, so each gets exactly two and this value only matters below about 32 m.
     public var randomStretchLength = 75.0
     /// Zufall: the boundaries between stretches move by up to this share of a stretch, so the stretches differ in
     /// length. Capped at 0.45 to keep the boundaries in order.

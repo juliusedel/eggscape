@@ -34,8 +34,9 @@ public struct NetEnvelope: Codable, Equatable, Sendable {
 
 /// Why `NetCodec` could not read or write an envelope.
 public enum NetCodecError: Error, Equatable, Sendable {
-    /// The sender speaks another protocol version, so nothing else in the data can be trusted. The app asks the
-    /// players to install the same version of the game.
+    /// The sender speaks another protocol version, so nothing else in the data can be trusted. The app drops the
+    /// message without telling the players. Nearby rooms of other versions are not even listed; online matchmaking
+    /// does not check the version.
     case versionMismatch(received: Int, expected: Int)
     /// A message type this build does not know, from a newer build of the same protocol version. Safe to ignore.
     case unknownMessageType(String)

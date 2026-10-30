@@ -51,8 +51,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 
 ### Weather
 - [ ] Wind: gusts push the egg sideways, leaves blow across, the HUD arrow shows the direction.
-- [ ] Regen: drops land on the spoon, the egg wobbles longer, puddles splash with an extra kick (on 50 or 100 m: the
-      first puddle lies 25 m or more from the start).
+- [ ] Regen: drops land on the spoon, the egg wobbles longer, puddles splash with an extra kick (on 100 m: one to
+      three puddles, the first 25–60 m from the start; on 50 m only about seven races in ten have one, on 15 m none).
 - [ ] Gewitter: a short warning flicker, then a bright flash, thunder and a strong push (on 50 or 100 m: the first
       strike comes 8 s or more after the start, when a clean 15 m run is over).
 - [ ] Reduce Motion (iOS Settings → Accessibility) removes the camera shake.

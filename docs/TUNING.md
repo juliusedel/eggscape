@@ -100,15 +100,16 @@ The weather was tuned when the time trials were 150, 300 and 600 m long and stay
 and 100 m (5.2, 16.9 and 33.6 s at running speed). Shorter courses see less of it:
 
 - **Zufall** starts calm for 20–40 m, but for at most half the course (`WeatherSchedule.escalatingStretches`): 7.5 m
-  of the 15 m, 20–25 m of the 50 m, 20–40 m of the 100 m. The rest is cut into stretches of about
-  `randomStretchLength` (75 m), at least two, so every course now gets exactly two: wind or rain at 0.3–0.5, then the
-  finale at full strength, a thunderstorm in 59 % of the seeds. The finale begins 10–12 m into the 15 m, 31–41 m into
-  the 50 m and 48–79 m into the 100 m.
+  of the 15 m, 20–25 m of the 50 m, 20–40 m of the 100 m. The rest (7.5 m, 25–30 m or 60–80 m) would be cut into
+  stretches of about `randomStretchLength` (75 m), but never into fewer than two, so every course gets exactly two,
+  and `randomStretchLength` has no effect on the time trials unless it drops below about 32 m. The two are wind or
+  rain at 0.3–0.5, then the finale at full strength, a thunderstorm in 59 % of the seeds. The finale begins 10–12 m
+  into the 15 m, 31–41 m into the 50 m and 48–79 m into the 100 m.
 - **Lightning** strikes 8 to 15 s apart, counted from race time 0 (`LightningTimeline`), and reaches a runner only in
   a thunderstorm. So a 15 m run is over before the first strike, even after a broken egg (7.5 s); only a runner who
   breaks two eggs (9.7 s) can still meet one: a level phone did in 0.6 % of 2,000 simulated 15 m storms, the attentive
-  player never. A full storm brings one strike over 50 m (two in 0.5 % of the seeds) and two to four over 100 m (2.4
-  on average); Zufall strikes in 16 % of the 50 m races and half of the 100 m ones.
+  player never. A full storm brings one strike over 50 m (two in under 1 % of the seeds) and two to four over 100 m
+  (2.4 on average); Zufall strikes in 16 % of the 50 m races and half of the 100 m ones.
 - **Puddles** lie 25 to 60 m apart, counted from the start line (`PuddleTrack`), and hold water only where it rains:
   none on 15 m, one on 50 m for 71 % of the seeds, one to three on 100 m (two for 78 %).
 - **Gusts** blow 2.5–4.5 s with calm gaps of 0.5–2.5 s, so even the 15 m course sees one or two.

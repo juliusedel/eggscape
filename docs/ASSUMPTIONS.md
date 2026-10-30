@@ -76,16 +76,17 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   legendary 4,500–7,500) follow the ladder. Testers who got the brown egg for free in earlier builds keep it, because
   wallets store it with the owned eggs.
 
-  The courses were shortened later (see below) with prices and rewards left as they were, so a run pays less: a
-  clean time trial in calm weather pays 28 coins over 15 m, 35 over 50 m and 45 over 100 m. The brown egg now costs
-  what a new player's first clean 50 m run pays with its personal best (35 + 20), or two clean 15 m runs; from the
-  twelfth egg on each one alone takes 36 to 215 clean 15 m runs (23 to 134 over 100 m), and all eggs together about
-  950 clean 15 m runs or 590 over 100 m. Whether to retune that is up to the owner.
+  The courses were shortened later (see below) with prices and rewards left as they were, so for a while a run paid
+  less, and the 15 m course, at 28 coins in 5 s, paid the most per second. Then the coin rewards were made to follow
+  the course length (see below), with the prices unchanged: a clean 100 m time trial in calm weather pays 55 coins
+  again, exactly the brown egg, in about 34 s, and the shorter courses pay about as much per second (8 coins over
+  15 m, 28 over 50 m). From the twelfth egg on each one alone takes 18 to 109 clean 100 m runs (10 minutes to an
+  hour of play), and all eggs together about 480 of them, four and a half hours.
 - **Coin packs** stay at 600 / 2,000 / 5,000 coins for the suggested 0.99 / 2.99 / 5.99 €: the small pack buys any
   common egg, the medium one any rare egg, the large one any egg but the last, which takes the large pack plus 1,000
-  coins (23 clean 100 m runs or 36 clean 15 m runs in calm weather). Bigger packs give more coins per euro (606, 669,
-  835). The "Bestes Angebot" badge goes to the pack with the most coins for the money at the prices StoreKit reports
-  for the player's storefront, so it stays right if a storefront is priced differently.
+  coins (about 18 clean 100 m runs in calm weather, ten minutes of play). Bigger packs give more coins per euro (606,
+  669, 835). The "Bestes Angebot" badge goes to the pack with the most coins for the money at the prices StoreKit
+  reports for the player's storefront, so it stays right if a storefront is priced differently.
 - **Shop layout.** The shop stays one tab (the app keeps its four tabs) with two pages, "Eier" and "Münzen", picked
   with a segmented control. The page is kept in `AppNavigation`, so the coin balance, the "Münzen kaufen" button of
   the not-enough-coins alert and the screenshot staging can open the coin page. Locked eggs show their real look with
@@ -113,11 +114,31 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Shorter time trials (owner, 2026-10-29).** Kurz, Mittel and Lang are 15, 50 and 100 m, the lengths of a real
   egg-and-spoon race, instead of 150, 300 and 600 m; a clean run takes about 5, 17 or 34 s. Only the distances
   changed: the speeds, the race mode, the coin formulas and prices, every weather tunable, Endlos and the leaderboard
-  ids stay. Best times are stored under a new key, and those of the longer courses are deleted at the first launch
-  instead of read: personal bests know a distance by its name only, and a 150 m time is no best for 15 m and must not
-  reach that leaderboard. The Endlos record stays. The protocol version went to 3, so phones with the old lengths
-  cannot race phones with the new ones; nearby rooms now advertise that version (earlier builds advertised 1 whatever
-  their version), so such phones do not even list each other's rooms. Times from the longer courses that already
-  reached Game Center stay on the same boards; each is slower than any run over the new lengths, so they rank last.
-  With the weather unchanged, the short courses see less of it (`docs/TUNING.md`): on 15 m no puddle and, unless two
-  eggs break, no lightning.
+  ids stay (the coin bonuses were scaled to the course length right after, see the next entry). Best times are
+  stored under a new key, and those of the longer courses are deleted at the first launch instead of read: personal
+  bests know a distance by its name only, and a 150 m time is no best for 15 m and must not reach that leaderboard.
+  The Endlos record stays. The protocol version went to 3, so phones with the old lengths cannot race phones with the
+  new ones; nearby rooms now advertise that version (earlier builds advertised 1 whatever their version), so such
+  phones do not even list each other's rooms. Times from the longer courses that already reached Game Center stay on
+  the same boards; each is slower than any run over the new lengths, so they rank last. With the weather unchanged,
+  the short courses see less of it (`docs/TUNING.md`): on 15 m no puddle and, unless two eggs break, no lightning.
+- **Coin rewards follow the course length (owner, 2026-10-29).** On the shorter courses the flat bonuses (15 coins
+  for the finish, 10 for losing no egg, 20 for a personal best, 25 / 15 / 10 / 5 for the places) made up most of a
+  run's coins: a clean 15 m run paid 28 coins in 5 s, the 100 m run 45 in 34 s, so the short course paid over five
+  coins per second, four times the rate of the long one, and was a farm. The owner asked to pay roughly by play time
+  again and for the brown egg to cost about one game again. So the time-trial bonuses are set for 100 m of course
+  and paid in proportion to the course length, rounded half up: in full on 100 m, half on 50 m and 15 % on 15 m; a
+  longer course would get more in the same proportion. Per 100 m they are 20 coins for the finish, 15 for losing no
+  egg, 20 for a personal best and 25 / 15 / 10 / 5 for places 1 to 4. Unchanged: a coin per 5 m in every mode, the
+  weather multipliers (wind 1.2, rain 1.3, storm 1.6, Zufall 1.4) on the distance, finish and no-egg-lost coins,
+  personal-best and place bonuses on top of the weather, at least two players for a place, no coins for hot-seat
+  turns, every price, the coin packs and the wire format (each phone computes its own coins, so the protocol version
+  stays 3). Endlos pays exactly as before: 0.6 coins per second and a flat 20 for a record. A clean run in calm
+  weather now pays 8 coins over 15 m (3 for the distance + 3 for the finish + 2 for no broken egg), 28 over 50 m
+  (10 + 10 + 8) and 55 over 100 m (20 + 20 + 15), about 1.6 coins per second on every course. A personal best adds 3,
+  10 or 20; the places pay 4 / 2 / 2 / 1 over 15 m (second and third tie after rounding), 13 / 8 / 5 / 3 over 50 m
+  and 25 / 15 / 10 / 5 over 100 m. In bad weather a clean 100 m run pays what the old 150 m run paid: 66 coins in
+  wind, 72 in rain, 88 in a thunderstorm, 77 with Zufall. The brown egg (55) costs exactly one clean 100 m run; a new
+  player's first one pays 75 with the personal best, enough for the brown egg or the quail egg after it (70), and
+  first clean runs over 15 and 50 m pay 11 and 38. All 19 paid eggs (26,505 coins) take about four and a half hours
+  of clean 100 m runs. Wallets keep their coins.

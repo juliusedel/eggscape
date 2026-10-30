@@ -28,10 +28,10 @@ struct ShopTests {
         #expect(wallet.coinsMissing(for: brown) == brown.price)
         #expect(throws: WalletError.notOwned) { try wallet.equip(brown) }
 
-        // The first clean medium run in calm weather; as the first finish over 50 m it is a personal best, too. A
-        // short run would not do: 28 coins, 48 with the personal best.
-        let distance = RaceDistance.medium
-        let isPersonalBest = services.records.recordTime(16.9, distance: distance, weather: .off)
+        // The first clean long run in calm weather pays the brown egg's 55 coins; as the first finish over 100 m it is
+        // a personal best, too, worth another 20. That is also enough for the quail egg after it, though not for both.
+        let distance = RaceDistance.long
+        let isPersonalBest = services.records.recordTime(33.6, distance: distance, weather: .off)
         #expect(isPersonalBest)
         wallet.earn(CoinRewards.reward(for: RewardInput(
             course: .timeTrial(distance),
@@ -41,11 +41,13 @@ struct ShopTests {
             eggsLost: 0,
             isPersonalBest: isPersonalBest
         )))
+        #expect(wallet.coins == 75)
         #expect(wallet.coinsMissing(for: brown) == 0)
+        #expect(wallet.coinsMissing(for: SkinCatalog.quail) == 0)
         try wallet.purchase(brown)
         try wallet.equip(brown)
         #expect(wallet.equippedSkin.id == "farm-brown")
-        #expect(wallet.coins == 0)
+        #expect(wallet.coins == 20)
     }
 
     @Test func theCoinShopOpensFromAnyTab() {
@@ -79,5 +81,14 @@ struct ShopTests {
         ScreenshotStage.prepare(.start, services: services)
         #expect(services.wallet.equippedSkin.id == "farm-brown")
         #expect(services.navigation.tab == .singleplayer)
+    }
+
+    @Test func theStagedResultsRunIsNoNewBest() throws {
+        let services = makeServices()
+        ScreenshotStage.prepare(.start, services: services)
+        // Every scene gets the same history. The staged 100 m run does not sprint, so it is slower than 100 m at
+        // running speed, and the results show the 55 coins of a clean run without the 20 for a new best.
+        let best = try #require(services.records.bestTime(distance: .long, weather: .off))
+        #expect(best < RaceDistance.long.meters / GameConfig.standard.runSpeed)
     }
 }

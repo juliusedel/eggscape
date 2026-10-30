@@ -63,15 +63,17 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       Endlos record is still there.
 - [ ] Endlos: the weather gets rougher every 100 m; the record is kept.
 - [ ] Gemeinsam an einem Handy: 2–4 players, pass-the-phone screens, final standings, "Nochmal".
-- [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works.
+- [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works. A clean
+      run in calm weather that sets no new best shows "+8 Münzen" over 15 m, "+28" over 50 m and "+55" over 100 m.
 - [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins.
 
 ### Shop
 - [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
       in front of it and its price, cheapest first. "1 von 20 Eiern freigeschaltet" sits above the grid.
-- [ ] After the first clean 50 m run in calm weather (35 coins, plus 20 for the first personal best: 55) the padlock
-      and price of Hofei Braun, which costs exactly that, turn orange; the eggs that still cost more keep a frosted
-      padlock and a grey price. (A first clean 15 m run pays 48 coins, not enough for any egg yet.)
+- [ ] After the first clean 100 m run in calm weather (55 coins, plus 20 for the first personal best: 75) the
+      padlocks and prices of Hofei Braun (55) and Wachtelei (70) turn orange; the eggs that still cost more keep a
+      frosted padlock and a grey price. (A first clean run pays 11 coins over 15 m and 38 over 50 m, not enough for
+      any egg yet.)
 - [ ] Tapping an orange (affordable) egg asks "Ei freischalten?" with its name and price. Confirming takes exactly
       that many coins, the padlock disappears, the egg is put on (orange border, "Ausgewählt"), the coin sound
       plays and, with Vibration on, a short success vibration follows. "Abbrechen" changes nothing.

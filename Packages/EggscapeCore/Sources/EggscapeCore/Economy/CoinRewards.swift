@@ -38,10 +38,11 @@ public struct RewardInput: Hashable, Sendable {
 
 /// The coins a run earned, itemized for the results screen.
 public struct CoinReward: Hashable, Sendable {
-    /// One line of the breakdown, such as "Kein Ei verloren +10".
+    /// One line of the breakdown, such as "Kein Ei verloren +15" for a clean 100 m run.
     public struct Line: Hashable, Sendable {
+        /// The bonuses are paid in proportion to the course length (see `CoinRewards.bonusReferenceMeters`).
         public enum Kind: String, CaseIterable, Hashable, Sendable {
-            /// One coin per `CoinRewards.metersPerCoin` meters.
+            /// One coin per `CoinRewards.metersPerCoin` meters, on every course.
             case distance
             /// Reaching the finish of a time trial.
             case finish
@@ -49,6 +50,7 @@ public struct CoinReward: Hashable, Sendable {
             case noEggLost
             /// What the weather multiplier added to the distance, finish and no-egg-lost coins.
             case weather
+            /// A new personal best: the best time on the course, or the longest endless run.
             case personalBest
             /// The place in a multiplayer race.
             case place
@@ -86,26 +88,40 @@ public struct CoinReward: Hashable, Sendable {
 
 /// How many coins a run pays.
 ///
-/// Coins buy egg skins (see `SkinCatalog`), so this tuning decides how long a skin takes to earn. A clean time trial
-/// in calm weather pays 28 coins over 15 m (about 5 s), 35 over 50 m (17 s) and 45 over 100 m (34 s). Most of it is
-/// the 25 coins for finishing without a broken egg, so the short course pays the most per second of play; an endless
-/// run pays 0.6 coins per second. A new player's first clean 50 m run, a personal best, pays 55 coins, the price of
-/// the first egg to unlock; on the short course that takes two clean runs. A reward is never negative.
+/// Coins buy egg skins (see `SkinCatalog`), so this tuning decides how long a skin takes to earn. It pays by play
+/// time: distance pays a coin per 5 m, and the time-trial bonuses grow with the course (`bonusReferenceMeters`), so a
+/// clean time trial in calm weather pays about 1.6 coins per second on every course: 8 coins over 15 m (about 5 s),
+/// 28 over 50 m (17 s) and 55 over 100 m (34 s), what the first egg to unlock costs. An endless run pays 0.6 coins
+/// per second, plus 20 for a record. A reward is never negative.
 public enum CoinRewards {
     /// Distance pays one coin per 5 m, so every run earns something, even one that ends with broken eggs. At the
     /// running speed of 3 m/s that is 0.6 coins per second; sprinting pays more for its extra risk.
     public static let metersPerCoin = 5.0
 
-    /// Reaching the finish of a time trial, the goal of the mode.
-    public static let finishBonus = 15
+    /// The course length the time-trial bonuses below are set for. A course pays them in proportion to its length,
+    /// rounded half up: in full over 100 m, half over 50 m and 15 % over 15 m, and a longer course would get more in
+    /// the same proportion. Endless runs have no length and get the personal best in full.
+    ///
+    /// Flat bonuses made up most of a short run's coins: with the old ones (15 for the finish, 10 for no broken
+    /// egg), a clean 15 m run of 5 s paid 28 coins, over five coins per second and four times the rate of the 100 m
+    /// course, so the short course was the only one worth running for coins. In proportion, every course pays about
+    /// the same per second of play, and the brown egg costs exactly one clean 100 m run.
+    public static let bonusReferenceMeters = 100
 
-    /// A finished time trial without a broken egg: the skill the game is about.
-    public static let noEggLostBonus = 10
+    /// Reaching the finish of a time trial, the goal of the mode: 20 coins per 100 m of course.
+    public static let finishBonus = 20
 
-    /// A new personal best. Added after the weather multiplier, so a record pays the same in any weather.
+    /// A finished time trial without a broken egg, the skill the game is about: 15 coins per 100 m of course. With the
+    /// finish and the distance, a clean 100 m run in calm weather pays 55 coins.
+    public static let noEggLostBonus = 15
+
+    /// A new personal best: 20 coins per 100 m of course in a time trial, a flat 20 for the longest endless run. Added
+    /// after the weather multiplier, so a record pays the same in any weather.
     public static let personalBestBonus = 20
 
-    /// The prize for places 1 to 4 of a multiplayer race. Added after the weather multiplier: a prize is fixed.
+    /// The prize for places 1 to 4 of a multiplayer race, per 100 m of course. Added after the weather multiplier like
+    /// the personal best: a prize does not depend on the weather. Over 15 m second and third place both get 2 coins,
+    /// 2.25 and 1.5 rounded.
     public static let placeBonuses = [25, 15, 10, 5]
 
     /// A place bonus needs an opponent; alone, every "race" would be won.
@@ -124,20 +140,21 @@ public enum CoinRewards {
         Double(weatherPercent(for: weather, on: course)) / 100
     }
 
-    /// The coins `input` earned. The weather multiplies the distance, finish and no-egg-lost coins; the personal
-    /// best and place bonuses come on top.
+    /// The coins `input` earned. The bonuses follow the course length; the weather multiplies the distance, finish
+    /// and no-egg-lost coins, and the personal best and place bonuses come on top.
     public static func reward(for input: RewardInput) -> CoinReward {
+        let course = input.course
         // Only a time trial has a finish line, so an endless run reported as finished earns no finish bonus.
-        let finishedTimeTrial = input.finished && input.course.length != nil
+        let finishedTimeTrial = input.finished && course.length != nil
         let distance = distanceCoins(meters: input.meters)
-        let finish = finishedTimeTrial ? finishBonus : 0
-        let noEggLost = finishedTimeTrial && input.eggsLost <= 0 ? noEggLostBonus : 0
+        let finish = finishedTimeTrial ? scaled(finishBonus, to: course) : 0
+        let noEggLost = finishedTimeTrial && input.eggsLost <= 0 ? scaled(noEggLostBonus, to: course) : 0
         let subtotal = distance + finish + noEggLost
-        let percent = weatherPercent(for: input.weather, on: input.course)
+        let percent = weatherPercent(for: input.weather, on: course)
         // Rounded half up, in integers to stay exact.
         let weather = (subtotal * (percent - 100) + 50) / 100
-        let personalBest = input.isPersonalBest ? personalBestBonus : 0
-        let place = placeBonus(place: input.multiplayerPlace, playerCount: input.playerCount)
+        let personalBest = input.isPersonalBest ? scaled(personalBestBonus, to: course) : 0
+        let place = placeBonus(place: input.multiplayerPlace, playerCount: input.playerCount, on: course)
 
         let amounts: [(kind: CoinReward.Line.Kind, coins: Int)] = [
             (.distance, distance),
@@ -176,13 +193,22 @@ public enum CoinRewards {
         return Int(min(meters, maximumRewardedMeters) / metersPerCoin)
     }
 
-    /// The prize for `place`; 0 without a place, without an opponent, or for a place the race cannot have.
-    private static func placeBonus(place: Int?, playerCount: Int?) -> Int {
+    /// `bonus`, set for `bonusReferenceMeters` of course, paid for the length of `course`; in full without a length
+    /// (endless). Rounded half up, in integers to stay exact like the weather line: course lengths are whole meters.
+    private static func scaled(_ bonus: Int, to course: Course) -> Int {
+        guard let length = course.length else {
+            return bonus
+        }
+        return (bonus * Int(length.rounded()) + bonusReferenceMeters / 2) / bonusReferenceMeters
+    }
+
+    /// The prize for `place` on `course`; 0 without a place, without an opponent, or for a place the race cannot have.
+    private static func placeBonus(place: Int?, playerCount: Int?, on course: Course) -> Int {
         guard let place, let playerCount, playerCount >= minimumPlayersForPlaceBonus,
               (1 ... min(playerCount, placeBonuses.count)).contains(place)
         else {
             return 0
         }
-        return placeBonuses[place - 1]
+        return scaled(placeBonuses[place - 1], to: course)
     }
 }

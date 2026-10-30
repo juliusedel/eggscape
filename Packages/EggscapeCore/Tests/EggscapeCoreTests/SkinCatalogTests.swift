@@ -2,16 +2,14 @@
 import Foundation
 import Testing
 
-/// The yardstick for the skin prices: what a new player's first clean medium time trial (50 m) in calm weather pays,
-/// a personal best like every first finish on a distance. A clean short run pays 28 coins, 48 as a personal best, so
-/// on the short course the first egg takes two runs.
+/// The yardstick for the skin prices: what a clean long time trial (100 m) in calm weather pays without a personal
+/// best, about 34 s of play. The shorter courses pay about as much per second (8 coins over 15 m, 28 over 50 m).
 let oneRunReward = CoinRewards.reward(for: RewardInput(
-    course: .timeTrial(.medium),
+    course: .timeTrial(.long),
     weather: .off,
     finished: true,
-    meters: RaceDistance.medium.meters,
-    eggsLost: 0,
-    isPersonalBest: true
+    meters: RaceDistance.long.meters,
+    eggsLost: 0
 )).total
 
 struct SkinCatalogTests {
@@ -115,10 +113,9 @@ struct SkinCatalogTests {
         }
     }
 
-    @Test func theBrownEggCostsAboutOneRun() {
-        // The first egg to unlock is about one run away, and no egg is cheaper.
-        let price = Double(SkinCatalog.farmBrown.price)
-        #expect(abs(price - Double(oneRunReward)) <= 0.2 * Double(oneRunReward), "\(price) vs \(oneRunReward)")
+    @Test func theBrownEggCostsOneRun() {
+        // The first egg to unlock costs exactly one clean 100 m run in calm weather, and no egg is cheaper.
+        #expect(SkinCatalog.farmBrown.price == oneRunReward)
         #expect(SkinCatalog.all.filter { !$0.isFree }.map(\.price).min() == SkinCatalog.farmBrown.price)
     }
 

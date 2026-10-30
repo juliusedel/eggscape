@@ -275,3 +275,17 @@ struct LeaderboardScoreSubmissionTests {
         #expect(scores.contains(LeaderboardScore(leaderboard: .endless, value: 333)))
     }
 }
+
+struct LaunchOptionsTests {
+    @Test func aSimulatedFirstLaunchUsesThrowawayDataAndRandomSeeds() {
+        let firstLaunch = LaunchOptions(arguments: ["-first-launch"])
+        #expect(firstLaunch.usesEphemeralData)
+        #expect(!firstLaunch.fixesSeeds)
+        // The tutorial's UI test adds `-ui-testing` for reproducible races; screenshots always replay the same one.
+        #expect(LaunchOptions(arguments: ["-first-launch", "-ui-testing"]).fixesSeeds)
+        #expect(LaunchOptions(arguments: ["-ui-testing"]).raceSeed() == 0xE665_CA9E)
+        #expect(LaunchOptions(arguments: ["--screenshot-mode", "results"]).fixesSeeds)
+        #expect(!LaunchOptions(arguments: []).usesEphemeralData)
+        #expect(!LaunchOptions(arguments: []).fixesSeeds)
+    }
+}

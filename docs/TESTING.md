@@ -11,9 +11,9 @@ Launch arguments for tests and manual checks (`App/Support/LaunchOptions.swift`)
 leaves the real data alone:
 
 - `-ui-testing`: tutorial already seen, white background, fixed seeds.
-- `-first-launch`: like a new install: the tutorial with its name step, the default settings (camera background).
-  Combined with `-ui-testing` only the seeds are fixed. `xcrun simctl launch <device> de.juliusedel.eggscape
-  -first-launch` shows it in the Simulator.
+- `-first-launch`: like a new install: the tutorial with its name step, the default settings (camera background),
+  random seeds. Combined with `-ui-testing` only the seeds are fixed. `xcrun simctl launch <device>
+  de.juliusedel.eggscape -first-launch` shows it in the Simulator.
 - `--screenshot-mode <scene>`: the staged App Store scenes.
 
 CI (`.github/workflows/ci.yml`) runs `swift test` for EggscapeCore and an unsigned simulator build of the app.

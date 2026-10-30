@@ -5,8 +5,9 @@ struct LaunchOptions: Sendable {
     /// `-ui-testing`: fresh data on every launch, tutorial already seen, white background, fixed seeds.
     let isUITesting: Bool
     /// `-first-launch`: fresh data on every launch with nothing set, like a new install: the tutorial with its name
-    /// step appears and the background is the default (the camera). For the tutorial's UI test and for trying a first
-    /// launch without deleting the app and its data; may be combined with `-ui-testing`, which then only fixes seeds.
+    /// step appears, the background is the default (the camera) and races get random seeds. For the tutorial's UI test
+    /// and for trying a first launch without deleting the app and its data; may be combined with `-ui-testing`, which
+    /// then only fixes seeds.
     let simulatesFirstLaunch: Bool
     /// `--screenshot-mode <scene>`: renders a staged, deterministic scene for App Store screenshots.
     let screenshotScene: String?
@@ -28,9 +29,15 @@ struct LaunchOptions: Sendable {
         isUITesting || simulatesFirstLaunch || screenshotScene != nil
     }
 
-    /// Seed for new races: fixed under test so runs are reproducible.
+    /// UI tests and staged screenshots replay the same weather and footsteps; a simulated first launch plays like a
+    /// new install, unless `-ui-testing` is added.
+    var fixesSeeds: Bool {
+        isUITesting || screenshotScene != nil
+    }
+
+    /// Seed for new races: fixed under UI tests and for screenshots so runs are reproducible.
     func raceSeed() -> UInt64 {
-        usesEphemeralData ? 0xE665_CA9E : .random(in: .min ... .max)
+        fixesSeeds ? 0xE665_CA9E : .random(in: .min ... .max)
     }
 
     /// A defaults domain that is wiped on every launch.

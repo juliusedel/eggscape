@@ -102,10 +102,10 @@ public enum CoinRewards {
     /// rounded half up: in full over 100 m, half over 50 m and 15 % over 15 m, and a longer course would get more in
     /// the same proportion. Endless runs have no length and get the personal best in full.
     ///
-    /// Flat bonuses made up most of a short run's coins: the old ones (15 for the finish, 10 for no broken egg) paid
-    /// 28 coins for a clean 15 m run of 5 s, over five coins per second and four times the rate of the 100 m course,
-    /// so the short course was the only one worth running for coins. In proportion, every course pays about the same
-    /// per second of play, and the brown egg costs exactly one clean 100 m run.
+    /// Flat bonuses made up most of a short run's coins: with the old ones (15 for the finish, 10 for no broken
+    /// egg), a clean 15 m run of 5 s paid 28 coins, over five coins per second and four times the rate of the 100 m
+    /// course, so the short course was the only one worth running for coins. In proportion, every course pays about
+    /// the same per second of play, and the brown egg costs exactly one clean 100 m run.
     public static let bonusReferenceMeters = 100
 
     /// Reaching the finish of a time trial, the goal of the mode: 20 coins per 100 m of course.

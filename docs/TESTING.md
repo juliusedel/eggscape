@@ -108,7 +108,22 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Largest Dynamic Type size: names, prices and the coin cards stay readable, the padlocks stay on the eggs.
 
 ### In-app purchases
-Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed.
+Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed and no paid
+developer program. `make test-app` loads the packs from the same file and buys one in a StoreKitTest session
+(`StoreServiceTests`). Notes for running from Xcode:
+
+- It works without the debugger (the Run scheme leaves "Debug executable" off): Xcode syncs the configuration to the
+  Simulator or iPhone as part of the run (the run's log in the Report navigator lists a "StoreKitTesting" step,
+  "StoreKit Configuration sync"), and StoreKit keeps it for the app.
+- The sync needs a run that launched. A run that failed to launch (Developer Mode off, developer certificate not yet
+  trusted in Settings → General → VPN & Device Management) synced nothing, and opening the app from the Home Screen
+  then asks the real App Store, which has no packs for this app yet: the Münzen page says they are not available.
+  Run it from Xcode again once the device is set up.
+- If the page says so anyway, check Edit Scheme → Run → Options → StoreKit Configuration ("Eggscape.storekit") and
+  tap "Erneut versuchen".
+- Real purchases always use the Apple Account the device uses for the App Store (a Sandbox Apple Account for
+  testing); the app has no sign-in of its own. StoreKit testing in Xcode needs no account at all.
+
 - [ ] Shop → Münzen lists the three packs as cards with 0,99 € / 2,99 € / 5,99 € (German storefront of the
       configuration); the 5.000 pack carries "Bestes Angebot".
 - [ ] Buying a pack credits its coins exactly once (the balance counts up); Debug → StoreKit → Manage Transactions

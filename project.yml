@@ -61,8 +61,13 @@ targets:
     platform: iOS
     sources:
       - path: EggscapeTests
+      # The Run scheme's configuration, for the StoreKitTest session of StoreServiceTests. This also lists the file in
+      # the Xcode project, so it opens in the StoreKit editor there.
+      - path: StoreKit/Eggscape.storekit
+        buildPhase: resources
     dependencies:
       - target: Eggscape
+      - sdk: StoreKitTest.framework
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

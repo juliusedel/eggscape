@@ -179,21 +179,23 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   room list. Both sides log why a join failed and how long it took. Nothing pointed at the protocol or at the
   required encryption (both sides ask for it, with no identity), so both stay as they were. `NearbySession` takes its
   nearby transport as a `NearbyTransport`, so its join logic is tested with a fake.
-- **Coin shop and the Apple Account (owner, 2026-10-29).** The owner found that buying coins "does not work" and
-  asked whether buyers should sign in with their Apple Account so that a purchase is not lost. They need not: StoreKit
-  always buys with the Apple Account the device uses for the App Store, and the app never sees it. A purchase is lost
-  only if the app dies before crediting it, and then StoreKit delivers the unfinished transaction again at the next
-  launch (`Transaction.unfinished`, `Transaction.updates`), which the wallet credits once per transaction id. What
-  is lost is the coins themselves when the app is deleted: they live in `UserDefaults`, and coin packs are consumables,
+- **Coin shop and the Apple Account (owner, 2026-10-29).** The owner found that buying coins "does not work" and asked
+  whether buyers should sign in with their Apple Account so that a purchase is not lost. They need not: StoreKit always
+  buys with the Apple Account the device uses for the App Store, and the app never sees it. A purchase is not lost even
+  if the app dies before crediting it: the transaction stays unfinished, and StoreKit delivers it again at the next
+  launch (`Transaction.unfinished`, `Transaction.updates`), which the wallet credits once per transaction id. What is
+  lost is the coins themselves when the app is deleted: they live in `UserDefaults`, and coin packs are consumables,
   which Apple does not restore. Keeping them would take a sync of the wallet, with the iCloud key-value store (small,
-  enough for a balance, owned eggs and the credited transaction ids) or CloudKit; both need the iCloud capability,
-  which a free Personal Team cannot use, so it waits for the paid Apple Developer Program, as do real purchases (the
-  packs must exist in App Store Connect). Not built now. No bug was found in `StoreService` or the coin page, the
-  scheme's StoreKit path resolves (Xcode reads it relative to `Eggscape.xcodeproj/project.xcworkspace`, hence
-  `../../`), and the configuration sells exactly the three packs as consumables. Xcode's own run logs on the build Mac
-  show that the configuration reached the iPhone 18 Pro Simulator in a run with the debugger off ("StoreKit
-  Configuration sync"), and the Simulator's log shows the app loading the three packs from it in that run, while
-  both logged runs on the iPhone failed to launch (Developer Mode off, then an untrusted developer certificate) and so
-  synced nothing, which leaves an app opened from the Home Screen asking the real App Store. So the Run scheme keeps running without the
-  debugger, and no second scheme was added. The storekit file is now also a resource of the unit tests, which buy a
-  pack in a StoreKitTest session.
+  enough for a balance, owned eggs and the credited transaction ids) or CloudKit; both need the iCloud capability, which
+  a free Personal Team cannot use, so it waits for the paid Apple Developer Program, as do real purchases (the packs
+  must exist in App Store Connect). Not built now. No bug was found in `StoreService` or the coin page, the scheme's
+  StoreKit path resolves (Xcode reads it relative to `Eggscape.xcodeproj/project.xcworkspace`, hence `../../`), and the
+  configuration sells exactly the three packs as consumables. Xcode's own run logs on the build Mac show that the
+  configuration reached the iPhone 18 Pro Simulator in a run with the debugger off ("StoreKit Configuration sync"), and
+  the Simulator's log shows the app loading the three packs from it in that run, while both logged runs on the iPhone
+  failed to launch (Developer Mode off, then an untrusted developer certificate) and so synced nothing, which leaves an
+  app opened from the Home Screen asking the real App Store. So the Run scheme keeps running without the debugger, and
+  no second scheme was added. The storekit file is now also a resource of the unit tests, which buy a pack in a
+  StoreKitTest session. Launches with throwaway data (`-ui-testing`, `-first-launch`, staged screenshots) do not listen
+  for StoreKit's unfinished and updated transactions, so none of them is finished into a wallet that the next launch
+  wipes; StoreKit keeps them for the next normal launch.

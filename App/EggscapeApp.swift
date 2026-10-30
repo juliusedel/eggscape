@@ -9,10 +9,13 @@ struct EggscapeApp: App {
             RootView()
                 .environment(services)
                 .task {
-                    services.store.start()
                     // UI tests, staged screenshots and a simulated first launch never touch GameKit, so their records
-                    // never reach a leaderboard.
+                    // never reach a leaderboard. Nor do they pick up StoreKit's unfinished or updated transactions:
+                    // these would be credited to a throwaway wallet and finished, so the real one would never get the
+                    // coins. StoreKit keeps them for the next normal launch; a pack bought inside such a session is
+                    // still credited by `purchase()`.
                     if !LaunchOptions.current.usesEphemeralData {
+                        services.store.start()
                         services.gameCenter.authenticate()
                     }
                 }

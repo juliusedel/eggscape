@@ -8,7 +8,8 @@ make test-ui    # UI tests: launch, the tutorial's name step, and a complete 15 
 ```
 
 Launch arguments for tests and manual checks (`App/Support/LaunchOptions.swift`), all with fresh, throwaway data that
-leaves the real data alone:
+leaves the real data alone, without Game Center, and without picking up coin purchases that StoreKit still has to
+deliver (the next normal launch credits them):
 
 - `-ui-testing`: tutorial already seen, white background, fixed seeds.
 - `-first-launch`: like a new install: the tutorial with its name step, the default settings (camera background),

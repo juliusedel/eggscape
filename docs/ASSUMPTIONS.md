@@ -80,7 +80,7 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   less, and the 15 m course, at 28 coins in 5 s, paid the most per second. Then the coin rewards were made to follow
   the course length (see below), with the prices unchanged: a clean 100 m time trial in calm weather pays 55 coins
   again, exactly the brown egg, in about 34 s, and the shorter courses pay about as much per second (8 coins over
-  15 m, 28 over 50 m). From the twelfth egg on each one alone takes 18 to 109 clean 100 m runs (10 minutes to an
+  15 m, 28 over 50 m). From the twelfth egg on each one alone takes 19 to 110 clean 100 m runs (10 minutes to an
   hour of play), and all eggs together about 480 of them, four and a half hours.
 - **Coin packs** stay at 600 / 2,000 / 5,000 coins for the suggested 0.99 / 2.99 / 5.99 €: the small pack buys any
   common egg, the medium one any rare egg, the large one any egg but the last, which takes the large pack plus 1,000

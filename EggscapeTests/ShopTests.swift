@@ -82,4 +82,13 @@ struct ShopTests {
         #expect(services.wallet.equippedSkin.id == "farm-brown")
         #expect(services.navigation.tab == .singleplayer)
     }
+
+    @Test func theStagedResultsRunIsNoNewBest() throws {
+        let services = makeServices()
+        ScreenshotStage.prepare(.start, services: services)
+        // Every scene gets the same history. The staged 100 m run does not sprint, so it is slower than 100 m at
+        // running speed, and the results show the 55 coins of a clean run without the 20 for a new best.
+        let best = try #require(services.records.bestTime(distance: .long, weather: .off))
+        #expect(best < RaceDistance.long.meters / GameConfig.standard.runSpeed)
+    }
 }

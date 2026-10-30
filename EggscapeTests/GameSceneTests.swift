@@ -61,6 +61,26 @@ struct GameSceneTests {
         #expect(scene.engine.phase == .running)
     }
 
+    /// The App Store screenshot of the results (`ScreenshotStage`): the held egg has to last the whole 100 m, so the
+    /// results show a clean run and its 55 coins.
+    @Test func aHeldEggFinishesTheStagedResultsRun() {
+        let setup = RunSetup(
+            mode: .timeTrial(.long, .off),
+            raceSeed: LaunchOptions(arguments: ["--screenshot-mode", "results"]).raceSeed()
+        )
+        let scene = GameScene(
+            engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
+            appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
+            reduceMotion: true
+        )
+        scene.holdEgg(at: SIMD2(0.05, 0.05))
+        scene.mode = .running
+        // The 40 seconds it skips, past the finish at about 33.6 s.
+        scene.fastForward(seconds: 40)
+        #expect(scene.engine.phase == .finished)
+        #expect(scene.engine.eggsLost == 0)
+    }
+
     @Test func vignetteIsRenderedOncePerSizeAtASixteenthOfIt() {
         let size = CGSize(width: 402, height: 874)
         let texture = GameScene.vignette(size: size)

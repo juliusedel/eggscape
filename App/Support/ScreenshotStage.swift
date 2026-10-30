@@ -19,6 +19,8 @@ enum ScreenshotStage {
     static func prepare(_ scene: ScreenshotScene, services: AppServices) {
         services.settings.isSoundOn = false
         services.settings.isHapticsOn = false
+        // The white studio surface, whatever the default: the Simulator that captures them has no camera.
+        services.settings.background = .white
         services.settings.playerName = "Sam"
         // A believable history: a few bests, some coins, some eggs. The bests needed a little sprinting (15 m take
         // 5.2 s at running speed, 50 m 16.9 s, 100 m 33.6 s), so the staged results run over 100 m, which does not

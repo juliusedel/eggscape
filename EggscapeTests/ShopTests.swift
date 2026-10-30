@@ -81,6 +81,8 @@ struct ShopTests {
         ScreenshotStage.prepare(.start, services: services)
         #expect(services.wallet.equippedSkin.id == "farm-brown")
         #expect(services.navigation.tab == .singleplayer)
+        // The camera is the default background; the staged scenes show the studio surface.
+        #expect(services.settings.background == .white)
     }
 
     @Test func theStagedResultsRunIsNoNewBest() throws {

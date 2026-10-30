@@ -142,20 +142,21 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   player's first one pays 75 with the personal best, enough for the brown egg or the quail egg after it (70), and
   first clean runs over 15 and 50 m pay 11 and 38. All 19 paid eggs (26,505 coins) take about four and a half hours
   of clean 100 m runs. Wallets keep their coins.
-- **Steering and camera by default (owner, 2026-10-29).** The owner found the egg too sluggish and asked for the
-  default sensitivity to be 2.5 times as strong, with the slider left as it is, and for the camera to be the default
-  background. So `TiltCalibration` applies a base gain (`GameConfig.tiltGain` = 2.5) in front of the setting: the
-  slider keeps its 70–130 % and its 100 % default, a stored value keeps its place on it, and every value steers
-  2.5 times as strongly as before (`docs/TUNING.md`). The dead zone (0.5° of the phone) and the 30° clamp stay. The
-  gain is local input mapping, so the protocol version stays 3; finger steering in the Simulator is not affected.
-  Fresh installs and "Daten zurücksetzen" start with the camera background. A background the player picked is stored
-  and kept; installs that never picked one had the white default implicitly (nothing was stored) and now get the
-  camera too, since a stored choice is the only way to tell a choice from the old default. The camera prompt appears
-  on the calibration screen of the first single or hot-seat run, the first moment the camera is needed, and not
-  during a race's countdown, which it would cover while the others run on. Without a rear camera (the Simulator) the
-  app does not ask at all and shows the white surface. Answering the prompt with "no" shows the white surface and
-  sets the background to Weiß, so the settings show what the player sees; choosing Kamera again explains how to allow
-  it in the iOS settings. UI tests and staged screenshots set the white background explicitly.
+- **Steering and camera by default (owner, 2026-10-29).** The owner found the egg too sluggish and asked for the default
+  sensitivity to be 2.5 times as strong, with the slider left as it is, and for the camera to be the default background.
+  So `TiltCalibration` applies a base gain (`GameConfig.tiltGain` = 2.5) in front of the setting: the slider keeps its
+  70–130 % and its 100 % default, a stored value keeps its place on it, and every value steers 2.5 times as strongly as
+  before (`docs/TUNING.md`). The dead zone (0.5° of the phone) and the 30° clamp stay. The gain is local input mapping,
+  so the protocol version stays 3; finger steering in the Simulator is not affected. Fresh installs and "Daten
+  zurücksetzen" start with the camera background. A background the player picked is stored and kept; installs that never
+  picked one had the white default implicitly (nothing was stored) and now get the camera too, since a stored choice is
+  the only way to tell a choice from the old default. The camera prompt appears on the calibration screen of the first
+  single or hot-seat run, the first moment the camera is needed, and not during a race's countdown, which it would cover
+  while the others run on. Without a rear camera (the Simulator) the app does not ask at all and shows the white
+  surface. Answering the prompt with "no" shows the white surface and sets the background to Weiß, so the settings show
+  what the player sees; choosing Kamera again explains how to allow it in the iOS settings. For the same reason "Daten
+  zurücksetzen" leaves the background on Weiß while iOS still denies the camera: resetting the data does not reset the
+  permission. UI tests and staged screenshots set the white background explicitly.
 - **Tutorial asks for the name (owner, 2026-10-29).** The owner asked for a bigger "Überspringen" button and for the
   tutorial to end by asking for the player's name. "Überspringen" is now a bordered (Liquid Glass) button of at least
   44 pt in a bar of its own above the pages, so it cannot cover their text at any text size. After the three steps

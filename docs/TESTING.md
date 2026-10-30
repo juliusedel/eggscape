@@ -63,6 +63,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       German, English in English); allowing it shows the camera right away.
 - [ ] Declining that prompt keeps the run on the white background, without a black screen or an error, and switches
       Einstellungen → Hintergrund to Weiß; choosing Kamera there again explains how to allow it.
+- [ ] After declining the camera, Einstellungen → Daten zurücksetzen leaves Hintergrund on Weiß (iOS keeps the "no");
+      with camera access allowed or never asked it shows Kamera.
 - [ ] A fresh install whose first run is a nearby or online race shows no prompt during the countdown (the race runs
       on white); the next single run asks.
 - [ ] A background chosen in an earlier build is kept after the update (Weiß stays Weiß).

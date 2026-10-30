@@ -28,6 +28,12 @@ final class CameraFeed {
         status != .unavailable && status != .denied
     }
 
+    /// The player said "no" earlier, or camera access is restricted on this device: iOS will not ask again, so only
+    /// the iOS settings can allow it.
+    static var isDeniedBySystem: Bool {
+        [.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video))
+    }
+
     /// Asks for camera access if needed; returns whether the camera may be used.
     func requestAccess() async -> Bool {
         let granted: Bool

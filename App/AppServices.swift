@@ -47,6 +47,12 @@ final class AppServices {
     /// "Daten zurücksetzen": settings, records, coins and skins on this device.
     func resetAllData() {
         settings.reset()
+        // Resetting the data does not reset the iOS camera permission. After an earlier "no" the default camera would
+        // show white in every run while the settings say Kamera, and tapping Kamera there, already selected, would
+        // never explain how to allow it.
+        if settings.background == .camera, CameraFeed.isDeniedBySystem {
+            settings.background = .white
+        }
         records.reset()
         wallet.reset()
     }

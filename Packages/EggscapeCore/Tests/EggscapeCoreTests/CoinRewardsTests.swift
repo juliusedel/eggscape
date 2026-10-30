@@ -73,11 +73,13 @@ struct CoinRewardsTests {
         #expect(reward(weather: weather).total == total)
     }
 
-    @Test func weatherRoundsHalfUp() {
-        // A clean long run in the rain: 45 × 1.3 = 58.5, rounded up to 59 rather than to the even 58.
-        let result = reward(.timeTrial(.long), weather: .fixed(.rain), meters: RaceDistance.long.meters)
-        #expect(result.coins(for: .weather) == 14)
-        #expect(result.total == 59)
+    @Test(arguments: [(RaceDistance.medium, 11, 46), (.long, 14, 59)])
+    func weatherRoundsHalfUp(distance: RaceDistance, weather: Int, total: Int) {
+        // Rain adds 30 %: 10.5 coins to a clean medium run, rounded up to 11 rather than to the even 10, and 13.5 to a
+        // clean long run, 58.5 in all, rounded up to 59 rather than to the even 58.
+        let result = reward(.timeTrial(distance), weather: .fixed(.rain), meters: distance.meters)
+        #expect(result.coins(for: .weather) == weather)
+        #expect(result.total == total)
     }
 
     @Test func stormIsItemizedAndBonusesComeOnTop() {

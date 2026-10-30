@@ -63,11 +63,11 @@ struct TutorialView: View {
             // A bar of its own above the pages, so the button never covers their text, at any text size.
             HStack {
                 Spacer(minLength: 0)
+                // A large control is at least 44 pt high (50 pt at the default text size) and grows with the text.
                 Button(action: askForName) {
                     Text("Überspringen")
                         .font(.headline)
                         .padding(.horizontal, 8)
-                        .frame(minHeight: 44)
                 }
                 .secondaryActionStyle()
                 .controlSize(.large)

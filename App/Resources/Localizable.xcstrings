@@ -651,12 +651,12 @@
         }
       }
     },
-    "Diesen Namen sehen die anderen, wenn ihr zusammen spielt. Ohne Namen heißt du „Spieler“." : {
+    "Diesen Namen sehen die anderen, wenn ihr in der Nähe oder an einem Handy zusammen spielt." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Others see this name when you play together. Without a name, you’re “Player”."
+            "value" : "Others see this name when you play nearby or on one phone."
           }
         }
       }

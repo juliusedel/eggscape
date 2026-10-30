@@ -114,7 +114,7 @@ struct TutorialView: View {
             stepPage(
                 symbol: "person.crop.circle",
                 title: "Wie heißt du?",
-                text: "Diesen Namen sehen die anderen, wenn ihr zusammen spielt. Ohne Namen heißt du „Spieler“."
+                text: "Diesen Namen sehen die anderen, wenn ihr in der Nähe oder an einem Handy zusammen spielt."
             )
             .onTapGesture { isNameFocused = false }
 

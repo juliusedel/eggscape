@@ -468,7 +468,11 @@ final class NearbySession: Identifiable {
                 // Nearby joiners announce themselves with their invitation.
                 guard let data = nearby.joinContext(for: peer),
                       let decoded = try? JSONDecoder().decode(JoinRequest.self, from: data)
-                else { return }
+                else {
+                    // The joiner waits for a lobby that never comes and gives up; this line on the host says why.
+                    logger.notice("Could not seat \(peer.displayName): no readable join request")
+                    return
+                }
                 request = decoded
             } else {
                 // Online players are known by their Game Center id and name.
@@ -489,6 +493,7 @@ final class NearbySession: Identifiable {
             )
             guard lobby.join(player) else {
                 // No seat left: a full lobby without the phone in it tells it so, and it leaves.
+                logger.notice("No seat for \(request.nickname): the lobby is full")
                 send(.lobbyState(lobby), to: [peer])
                 return
             }

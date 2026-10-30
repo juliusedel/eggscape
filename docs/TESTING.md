@@ -158,9 +158,9 @@ anyway, both must be on the same Wi-Fi without client isolation or VPN, and the 
 local network (System Settings → Privacy & Security → Local Network, and the firewall).
 
 Why a join failed is logged (subsystem `de.juliusedel.eggscape`, category `nearby`): the joiner logs the reason and how
-many seconds it took, the host why it turned an invitation down. Read it in Xcode's console (it shows the app's log
-also without the debugger, which the Run scheme leaves off), in Console.app with the iPhone selected, or for the
-Simulator with
+many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. Read it
+in Xcode's console (it shows the app's log also without the debugger, which the Run scheme leaves off), in Console.app
+with the iPhone selected, or for the Simulator with
 `xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
 
 - [ ] The Local Network prompt appears only when entering "In der Nähe", with the explanatory text.
@@ -170,8 +170,10 @@ Simulator with
 - [ ] During the race every phone shows all players' markers; egg drops show a toast on the other phones.
 - [ ] Results list finish times and lost eggs; "Nochmal" returns to the lobby with the same players.
 - [ ] Turning off Wi-Fi/Bluetooth on one phone mid-race marks it "Verbindung verloren"; the race continues.
-- [ ] A fifth phone cannot join a full room: the host stops listing it, and a phone that still lists it reads
-      "Beitreten hat nicht geklappt …". "Der Raum ist voll." only appears when two phones take the last seat at once.
+- [ ] A fifth phone cannot join a full room: the host stops listing it, and a phone that still lists it, or asks
+      for the last seat at the same moment as another phone, reads "Beitreten hat nicht geklappt …". "Der Raum ist
+      voll." is only a fallback for a lobby that has no seat once the joiner has connected; it should not normally
+      appear.
 - [ ] A join that does not work out (e.g. the host leaves while the joiner shows "Verbinde …") returns to the room
       list with "Beitreten hat nicht geklappt …", which names the possible reasons and what helps; it never waits on
       "Verbinde …" for more than about half a minute, and joining again from the list works.

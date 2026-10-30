@@ -21,10 +21,12 @@ struct DiscoveredRoom: Identifiable, Hashable, Sendable {
 enum JoinFailure: Equatable, Sendable {
     /// The room had gone from the list before the invitation went out.
     case roomGone
-    /// MultipeerConnectivity reported the host as not connected before it ever connected: the host turned the
-    /// invitation down (racing, showing results or full) or the connection could not be set up.
+    /// MultipeerConnectivity reported the host as not connected early, before it ever connected and well within the
+    /// invitation timeout: the host turned the invitation down (racing, showing results or full) or the connection
+    /// could not be set up.
     case declinedOrFailed
-    /// The host did not answer the invitation in time.
+    /// No answer or no connection within the invitation timeout: MultipeerConnectivity reported the host as not
+    /// connected only at the timeout, or reported nothing (or was still connecting) when the transport gave up.
     case expired
     /// The host let us in, but the connection broke before it sent the lobby.
     case droppedWhileConnecting
@@ -36,7 +38,7 @@ enum JoinFailure: Equatable, Sendable {
         switch self {
         case .roomGone: "the room was no longer in the list"
         case .declinedOrFailed: "the host turned the invitation down or the connection could not be set up"
-        case .expired: "the invitation expired without an answer"
+        case .expired: "no answer or no connection within the invitation timeout"
         case .droppedWhileConnecting: "the host connected, but the connection broke before the lobby came"
         case .noLobby: "the host connected, but sent no lobby with this player in it"
         }

@@ -123,7 +123,8 @@ final class MultipeerTransport: NearbyTransport {
         invitedAt = .now
         logger.info("Inviting ourselves to \(room.hostName)")
         browser.invitePeer(host, to: session, withContext: context, timeout: Self.invitationTimeout)
-        // A turned-down or expired invitation shows up as `.notConnected` for the host; this covers it never coming.
+        // A turned-down or expired invitation shows up as `.notConnected` for the host; this covers it never coming,
+        // and a connection that is still being set up when the invitation is long over.
         invitationDeadline = Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.invitationTimeout + 2))
             guard !Task.isCancelled else { return }
@@ -206,7 +207,10 @@ final class MultipeerTransport: NearbyTransport {
             if wasConnected {
                 continuation.yield(.disconnected(remote))
             } else if remote.id == invitedHost {
-                joinFailed(.declinedOrFailed)
+                // MultipeerConnectivity reports an invitation that ran out of time like a turned-down one; only the
+                // time tells them apart.
+                let ranOut = secondsSinceInvitation >= Self.invitationTimeout - 1
+                joinFailed(ranOut ? .expired : .declinedOrFailed)
             }
         case .connecting:
             break
@@ -222,7 +226,14 @@ final class MultipeerTransport: NearbyTransport {
 
     fileprivate func invitation(from peer: MCPeerID, context: Data?, reply: InvitationReply) {
         let id = Self.remote(peer).id
-        let hasSeat = connectedPeers.count + pendingPeers.count + 1 < Self.maxPlayers
+        // A joiner keeps its peer id across attempts, so a retry may come while the host still holds a seat for the
+        // attempt it gave up on. That seat is the retry's own: counting it would turn the retry down for the last seat.
+        if pendingPeers[id] != nil {
+            logger.info("\(peer.displayName) asks again while its last attempt is still connecting")
+        }
+        let seated = connectedPeers.count(where: { $0.id != id })
+        let joining = pendingPeers.keys.count(where: { $0 != id })
+        let hasSeat = seated + joining + 1 < Self.maxPlayers
         let isOpen = acceptsPlayers()
         let accept = hasSeat && isOpen
         if accept {
@@ -234,7 +245,7 @@ final class MultipeerTransport: NearbyTransport {
         } else {
             // The joiner only learns that it did not get in; this line on the host says why.
             let room = isOpen ? "open" : "racing, showing results or full"
-            let seats = "\(connectedPeers.count) in, \(pendingPeers.count) joining"
+            let seats = "\(seated) in, \(joining) joining"
             logger.notice("Turned \(peer.displayName) down: room \(room, privacy: .public), \(seats, privacy: .public)")
         }
         reply.callback(accept, accept ? session : nil)
@@ -266,7 +277,7 @@ final class MultipeerTransport: NearbyTransport {
     // MARK: Helpers
 
     /// The host turned the invitation down (racing, showing results or full), the connection could not be set up, or
-    /// the invitation expired.
+    /// nothing came through within the invitation timeout.
     private func joinFailed(_ failure: JoinFailure) {
         guard invitedHost != nil else { return }
         cancelJoin()

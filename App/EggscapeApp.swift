@@ -28,6 +28,8 @@ struct EggscapeApp: App {
             wallet: WalletStore(defaults: defaults)
         )
         services.settings.hasSeenTutorial = true
+        // The white studio surface: the Simulator has no camera, and the camera prompt would stop a UI test.
+        services.settings.background = .white
         return services
     }
 }

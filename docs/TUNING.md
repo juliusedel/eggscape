@@ -74,9 +74,26 @@ Random kicks make the egg jitter around its resting point. The stationary spread
 | Constant | Default | Meaning |
 |---|---|---|
 | `tiltFilterTimeConstant` | 50 ms | Low-pass on the gravity vector against sensor jitter (adds ~50 ms latency). |
-| `deadZoneDegrees` | 0.5° | Hand tremor below this counts as level; the response stays continuous. |
-| `maxTiltDegrees` | 30° | Clamp. Beyond 15° the egg falls anyway; the clamp keeps extreme poses from feeling "binary". |
-| `sensitivityRange` | 0.7 … 1.3 | The player's setting, multiplies the calibrated tilt. |
+| `deadZoneDegrees` | 0.5° | Hand tremor below this counts as level; the response stays continuous. Measured on the phone, before the gain. |
+| `tiltGain` | 2.5 | Base gain: the egg feels the phone's tilt beyond the dead zone two and a half times as strongly. |
+| `maxTiltDegrees` | 30° | Clamp on the tilt the egg feels. Beyond 15° the egg falls anyway; the clamp keeps extreme poses from feeling "binary". |
+| `sensitivityRange` | 0.7 … 1.3 | The player's setting (Einstellungen → Empfindlichkeit, 70–130 %), multiplies the gain. |
+
+`TiltCalibration` turns the phone's tilt `φ` (relative to the calibrated pose) into the tilt the egg feels:
+`θ = min((|φ| − 0.5°) · tiltGain · sensitivity, 30°)` with the sign of `φ`, and 0 inside the dead zone. Every angle
+elsewhere on this page (tipping points, the simulated players of Playability) is `θ`.
+
+**Why a gain of 2.5 (owner, 2026-10-29).** With the gain at 1 the owner found the egg too sluggish: it took a big turn
+of the wrist to move it, and the tipping point lay at 11.5° of phone tilt. The owner asked for the default to steer
+2.5 times as strongly while the slider stays as it is, so the gain sits in front of the setting instead of moving
+its range: 100 % still is the recommended steering, and stored settings keep their meaning. At 100 % the phone now
+tips the egg sideways at about **4.9°** (`0.5° + 11°/2.5`) and along the handle at about **6.4°** (`0.5° + 14.7°/2.5`),
+a sudden tilt at about 4.1° and 5.3°; at 70 % at about 6.8° and 8.9°, at 130 % at about 3.9° and 5.0°. The clamp is
+reached at 12.5° of phone tilt, where the egg has long fallen, so it still only tames extreme poses. The dead zone
+stays at 0.5° of the phone: it is applied before the gain, so it swallows the same tremor as before; a bigger one
+would swallow the small corrections that the stronger steering is about. The gain only maps one phone's hand to its
+own egg (the race sees `θ`), so phones with different gains can race together and the protocol version stays.
+Finger steering in the Simulator (`TouchSteering`) computes `θ` from the finger directly and is not affected.
 
 ## Weather
 

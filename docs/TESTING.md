@@ -17,7 +17,9 @@ sudo automationmodetool enable-automationmode-without-authentication
 ```
 
 The Simulator has no motion sensors, camera, haptics or Game Center account. There the game switches to finger
-steering (drag the egg), the camera mode falls back to the white background, and Game Center shows "not available".
+steering (drag the egg), the camera mode (the default background) falls back to the white background without asking
+for camera access, and Game Center shows "not available". UI tests and staged screenshots set the white background
+themselves (`EggscapeApp.makeServices`).
 Everything below therefore has to be checked on real iPhones before a release.
 
 ## Manual device checklist
@@ -28,10 +30,12 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### Motion and calibration
 - [ ] Calibrate holding the phone flat, then again tilted towards you (~40°): in both poses a level hold keeps the
       egg in the middle.
-- [ ] Slowly tilting sideways drops the egg at roughly 11°, forwards/backwards at roughly 15° (a quick tilt a little
-      earlier, about 9° and 12°).
+- [ ] At Empfindlichkeit 100 %, slowly tilting the phone sideways drops the egg at roughly 5°, forwards/backwards
+      at roughly 6.5° (a quick tilt a little earlier, about 4° and 5°): the base gain of 2.5 makes small turns of the
+      wrist enough (`docs/TUNING.md`).
 - [ ] A quick jerk drops it earlier (overshoot); small corrections feel forgiving.
-- [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart.
+- [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart. A value set in an
+      earlier build stays where it was on the slider.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
 - [ ] The screen never dims during calibration, countdown or a run, and dims normally in the menus.
 
@@ -44,7 +48,15 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       menu and in the settings mutes immediately.
 
 ### Camera mode
-- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once (German text in German, English in English).
+- [ ] Fresh install (or Daten zurücksetzen with camera access never asked): Einstellungen → Hintergrund shows
+      Kamera. The first single run or hot-seat run asks for camera access on its calibration screen (German text in
+      German, English in English); allowing it shows the camera right away.
+- [ ] Declining that prompt keeps the run on the white background, without a black screen or an error, and switches
+      Einstellungen → Hintergrund to Weiß; choosing Kamera there again explains how to allow it.
+- [ ] A fresh install whose first run is a nearby or online race shows no prompt during the countdown (the race runs
+      on white); the next single run asks.
+- [ ] A background chosen in an earlier build is kept after the update (Weiß stays Weiß).
+- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked.
 - [ ] The live rear camera fills the screen behind the spoon, upright, with no visible lag.
 - [ ] Declining access falls back to the white background and explains how to allow it.
 - [ ] Rain and storm darken the camera image; the broken egg appears on the "ground".

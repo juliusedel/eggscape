@@ -19,7 +19,7 @@ struct SettingsStoreTests {
         #expect(settings.isHapticsOn)
         #expect(settings.sensitivity == 1)
         #expect(settings.playerName.isEmpty)
-        #expect(settings.background == .white)
+        #expect(settings.background == .camera)
         #expect(!settings.hasSeenTutorial)
         #expect(settings.calibrationZero == nil)
     }
@@ -31,7 +31,7 @@ struct SettingsStoreTests {
         settings.isHapticsOn = false
         settings.sensitivity = 1.2
         settings.playerName = "Julius"
-        settings.background = .camera
+        settings.background = .white
         settings.hasSeenTutorial = true
         settings.calibrationZero = SIMD2(0.1, -0.6)
 
@@ -40,9 +40,18 @@ struct SettingsStoreTests {
         #expect(!relaunched.isHapticsOn)
         #expect(relaunched.sensitivity == 1.2)
         #expect(relaunched.playerName == "Julius")
-        #expect(relaunched.background == .camera)
+        #expect(relaunched.background == .white)
         #expect(relaunched.hasSeenTutorial)
         #expect(relaunched.calibrationZero == SIMD2(0.1, -0.6))
+    }
+
+    @Test func backgroundChosenInAnEarlierBuildIsKept() {
+        let defaults = makeDefaults()
+        // What builds with the white default stored once the player picked a background.
+        defaults.set("white", forKey: "settings.background")
+        #expect(SettingsStore(defaults: defaults).background == .white)
+        defaults.set("camera", forKey: "settings.background")
+        #expect(SettingsStore(defaults: defaults).background == .camera)
     }
 
     @Test func sensitivityAndNameAreLimited() {
@@ -70,14 +79,17 @@ struct SettingsStoreTests {
         let settings = SettingsStore(defaults: defaults)
         settings.isSoundOn = false
         settings.playerName = "Julius"
+        settings.background = .white
         settings.calibrationZero = SIMD2(0.2, 0.2)
         settings.reset()
         #expect(settings.isSoundOn)
         #expect(settings.playerName.isEmpty)
+        #expect(settings.background == .camera)
         #expect(settings.calibrationZero == nil)
         let relaunched = SettingsStore(defaults: defaults)
         #expect(relaunched.isSoundOn)
         #expect(relaunched.playerName.isEmpty)
+        #expect(relaunched.background == .camera)
     }
 }
 

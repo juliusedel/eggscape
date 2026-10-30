@@ -70,10 +70,27 @@ struct TiltCalibrationTests {
     @Test func tiltIsMeasuredFromTheCalibratedPose() {
         var calibration = TiltCalibration()
         calibration.calibrate(at: SIMD2(0, radians(-38)))
-        let tilt = calibration.apply(SIMD2(radians(10), radians(-28)))
-        // 10° each, minus the 0.5° dead zone.
-        #expect(abs(degrees(tilt.x) - 9.5) < 1e-9)
-        #expect(abs(degrees(tilt.y) - 9.5) < 1e-9)
+        let tilt = calibration.apply(SIMD2(radians(4), radians(-34)))
+        // 4° each, minus the 0.5° dead zone, times the gain of 2.5.
+        #expect(abs(degrees(tilt.x) - 8.75) < 1e-9)
+        #expect(abs(degrees(tilt.y) - 8.75) < 1e-9)
+    }
+
+    @Test func defaultSteersTwoAndAHalfTimesAsStrongly() {
+        let calibration = TiltCalibration()
+        #expect(GameConfig.standard.tiltGain == 2.5)
+        // 4.5° on the phone are 4° beyond the dead zone, which the egg feels as 10°.
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(4.5), 0)).x) - 10) < 1e-9)
+        // The 30° limit is reached at 12.5° on the phone.
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(12), 0)).x) - 28.75) < 1e-9)
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(12.5), 0)).x) - 30) < 1e-9)
+    }
+
+    @Test func gainComesFromTheConfig() {
+        var config = GameConfig.standard
+        config.tiltGain = 1
+        let calibration = TiltCalibration(config: config)
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(10.5), 0)).x) - 10) < 1e-9)
     }
 
     @Test func deadZoneSwallowsJitter() {
@@ -84,7 +101,10 @@ struct TiltCalibrationTests {
 
     @Test func sensitivityScalesAndIsClamped() {
         var calibration = TiltCalibration(sensitivity: 1.3)
-        #expect(abs(degrees(calibration.apply(SIMD2(radians(10.5), 0)).x) - 13) < 1e-9)
+        // 4° beyond the dead zone × 2.5 × 1.3.
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(4.5), 0)).x) - 13) < 1e-9)
+        calibration.setSensitivity(0.7)
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(4.5), 0)).x) - 7) < 1e-9)
         calibration.setSensitivity(5)
         #expect(calibration.sensitivity == 1.3)
         calibration.setSensitivity(0.1)
@@ -101,8 +121,8 @@ struct TiltCalibrationTests {
     @Test func wrapsAroundInsteadOfJumping() {
         var calibration = TiltCalibration()
         calibration.calibrate(at: SIMD2(radians(175), 0))
-        // From 175° to -175° is a 10° turn, not 350°.
-        #expect(abs(degrees(calibration.apply(SIMD2(radians(-175), 0)).x) - 9.5) < 1e-9)
+        // From 175° to -175° is a 10° turn, not 350°: (10° − 0.5°) × 2.5.
+        #expect(abs(degrees(calibration.apply(SIMD2(radians(-175), 0)).x) - 23.75) < 1e-9)
     }
 }
 
@@ -118,6 +138,16 @@ struct TouchSteeringTests {
 
     @Test func noFingerMeansLevel() {
         #expect(TouchSteering().tilt == .zero)
+    }
+
+    @Test func gainDoesNotStrengthenTheFinger() {
+        var strong = GameConfig.standard
+        strong.tiltGain = 10
+        var steering = TouchSteering(config: strong)
+        steering.target = SIMD2(0.3, -0.5)
+        var standard = TouchSteering()
+        standard.target = steering.target
+        #expect(steering.tilt == standard.tilt)
     }
 
     @Test func farAwayFingerIsLimited() {

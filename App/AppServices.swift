@@ -31,6 +31,10 @@ final class AppServices {
         }
         haptics = Haptics(settings: settings)
         sounds = SoundPlayer(settings: settings)
+        // "No" to the camera prompt of a run (the camera is the default) is a choice for the white surface.
+        camera.onDeclined = { [weak settings] in
+            settings?.background = .white
+        }
         gameCenter.onSignIn = { [weak records, weak gameCenter] in
             // Bests set before signing in still reach the leaderboards.
             guard let records, let gameCenter else { return }

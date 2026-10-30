@@ -7,7 +7,13 @@ import Observation
 @Observable
 final class RecordsStore {
     private enum Key {
-        static let times = "records.bestTimes"
+        /// Best times over 15, 50 and 100 m.
+        static let times = "records.bestTimes.v2"
+        /// Where builds with the 150, 300 and 600 m courses kept their times, under the same distance names. Those
+        /// times are no bests for the shorter courses and must not reach their leaderboards, so they are deleted
+        /// instead of read.
+        static let retiredTimes = "records.bestTimes"
+        /// Endlos did not change with the courses, so its record keeps its key.
         static let endless = "records.endlessMeters"
     }
 
@@ -19,6 +25,7 @@ final class RecordsStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        defaults.removeObject(forKey: Key.retiredTimes)
         bestTimes = defaults.dictionary(forKey: Key.times) as? [String: Double] ?? [:]
         bestEndless = defaults.object(forKey: Key.endless) as? Double
     }

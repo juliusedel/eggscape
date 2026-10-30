@@ -27,9 +27,9 @@ final class TimeTrialUITests: XCTestCase {
         bowl.press(forDuration: 0.4, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.56, dy: 0.45)))
         bowl.press(forDuration: 0.4, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.5)))
 
-        // 150 m at 3 m/s take a little over 50 seconds.
+        // 15 m at 3 m/s take a little over 5 seconds, part of which the nudges above already used.
         let results = app.staticTexts["results.title"]
-        XCTAssertTrue(results.waitForExistence(timeout: 120))
+        XCTAssertTrue(results.waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["results.time"].exists, "a level egg must survive the short course")
 
         app.buttons["results.done"].tap()

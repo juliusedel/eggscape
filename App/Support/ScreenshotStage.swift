@@ -20,10 +20,12 @@ enum ScreenshotStage {
         services.settings.isSoundOn = false
         services.settings.isHapticsOn = false
         services.settings.playerName = "Sam"
-        // A believable history: a few bests, some coins, some eggs. The brown egg, the most realistic one, is unlocked
-        // like any other; the shop's first rows then mix unlocked eggs with locked ones (745 coins left).
-        services.records.recordTime(48.7, distance: .short, weather: .off)
-        services.records.recordTime(101.3, distance: .medium, weather: .off)
+        // A believable history: a few bests, some coins, some eggs. The bests needed a little sprinting (15 m take
+        // 5.2 s at running speed, 50 m 16.9 s), so the staged results run, which does not sprint, is no new best. The
+        // brown egg, the most realistic one, is unlocked like any other; the shop's first rows then mix unlocked eggs
+        // with locked ones (745 coins left).
+        services.records.recordTime(4.87, distance: .short, weather: .off)
+        services.records.recordTime(15.9, distance: .medium, weather: .off)
         services.records.recordEndless(meters: 412)
         services.wallet.earn(CoinReward(lines: [CoinReward.Line(kind: .distance, coins: 1500)]))
         for id in ["farm-brown", "sky-blue", "rose", "polka-dots"] {
@@ -45,14 +47,17 @@ enum ScreenshotStage {
             services.navigation.showsScreenshotLobby = true
         case .calibration:
             services.launcher.start(.timeTrial(.short, .off))
+        // The capture follows a few seconds after the jump, well before the finish (16.9 s over 50 m, 33.6 s over
+        // 100 m). The storm is captured between the lightning strikes at 12.9 and 23.1 s of the fixed seed, so no
+        // flash washes it out; the results run jumps past its finish.
         case .sunnyRun:
-            stageRun(.timeTrial(.medium, .off), skipping: 21, egg: SIMD2(0.16, 0.1), services: services)
+            stageRun(.timeTrial(.medium, .off), skipping: 4, egg: SIMD2(0.16, 0.1), services: services)
         case .rainRun:
-            stageRun(.timeTrial(.medium, .fixed(.rain)), skipping: 34, egg: SIMD2(-0.14, 0.18), services: services)
+            stageRun(.timeTrial(.medium, .fixed(.rain)), skipping: 7, egg: SIMD2(-0.14, 0.18), services: services)
         case .stormRun:
-            stageRun(.timeTrial(.long, .fixed(.storm)), skipping: 47, egg: SIMD2(0.22, -0.08), services: services)
+            stageRun(.timeTrial(.long, .fixed(.storm)), skipping: 14, egg: SIMD2(0.22, -0.08), services: services)
         case .results:
-            stageRun(.timeTrial(.short, .off), skipping: 60, egg: SIMD2(0.05, 0.05), services: services)
+            stageRun(.timeTrial(.short, .off), skipping: 10, egg: SIMD2(0.05, 0.05), services: services)
         }
     }
 

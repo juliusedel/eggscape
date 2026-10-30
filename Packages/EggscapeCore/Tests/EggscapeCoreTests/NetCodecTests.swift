@@ -13,8 +13,8 @@ private let sampleLobby = LobbyState(
 )
 
 private let sampleResults = RaceResults(entries: [
-    RaceResultEntry(place: 1, playerID: "ben", nickname: "Ben", status: .finished(time: 51.23), eggsLost: 1),
-    RaceResultEntry(place: 2, playerID: "anna", nickname: "Anna", status: .outOfEggs(meters: 120.5), eggsLost: 3),
+    RaceResultEntry(place: 1, playerID: "ben", nickname: "Ben", status: .finished(time: 35.83), eggsLost: 1),
+    RaceResultEntry(place: 2, playerID: "anna", nickname: "Anna", status: .outOfEggs(meters: 80.5), eggsLost: 3),
     RaceResultEntry(place: 3, playerID: "cem", nickname: "Cem", status: .disconnected(meters: 1.0 / 3), eggsLost: 0),
 ])
 
@@ -30,7 +30,7 @@ private let everyMessage: [NetMessage] = [
     .progress(meters: 12.5, eggsLeft: 2),
     .progress(meters: 0.1 + 0.2, eggsLeft: 0),
     .eggDropped(eggsLeft: 1),
-    .finished(FinishReport(completed: true, time: 51.234_567_89, meters: 150, eggsLost: 1)),
+    .finished(FinishReport(completed: true, time: 35.834_567_89, meters: 100, eggsLost: 1)),
     .finished(FinishReport(completed: false, time: 33.3, meters: 99.99, eggsLost: 3)),
     .results(sampleResults),
     .results(RaceResults(entries: [])),
@@ -42,7 +42,7 @@ private let everyMessage: [NetMessage] = [
 private let everyWeather: [WeatherOption] = [.off, .random] + WeatherKind.allCases.map(WeatherOption.fixed)
 
 private let everyStatus: [RaceResultEntry.Status] = [
-    .finished(time: 50.25),
+    .finished(time: 5.25),
     .outOfEggs(meters: 99.5),
     .disconnected(meters: 0),
 ]
@@ -80,20 +80,20 @@ private let documentedExamples: [(json: String, message: NetMessage)] = [
     (#"{"type":"progress","meters":12.5,"eggsLeft":2}"#, .progress(meters: 12.5, eggsLeft: 2)),
     (#"{"type":"eggDropped","eggsLeft":1}"#, .eggDropped(eggsLeft: 1)),
     (
-        #"{"type":"finished","report":{"completed":true,"time":51.23,"meters":150,"eggsLost":1}}"#,
-        .finished(FinishReport(completed: true, time: 51.23, meters: 150, eggsLost: 1))
+        #"{"type":"finished","report":{"completed":true,"time":35.83,"meters":100,"eggsLost":1}}"#,
+        .finished(FinishReport(completed: true, time: 35.83, meters: 100, eggsLost: 1))
     ),
     (
         #"""
         {"type":"results","results":{"entries":[{"place":1,"playerID":"A","nickname":"Anna",
-        "status":{"type":"finished","time":51.23},"eggsLost":1},{"place":2,"playerID":"B","nickname":"Ben",
-        "status":{"type":"outOfEggs","meters":120},"eggsLost":3},{"place":3,"playerID":"C","nickname":"Cem",
-        "status":{"type":"disconnected","meters":80},"eggsLost":0}]}}
+        "status":{"type":"finished","time":35.83},"eggsLost":1},{"place":2,"playerID":"B","nickname":"Ben",
+        "status":{"type":"outOfEggs","meters":80},"eggsLost":3},{"place":3,"playerID":"C","nickname":"Cem",
+        "status":{"type":"disconnected","meters":60},"eggsLost":0}]}}
         """#,
         .results(RaceResults(entries: [
-            RaceResultEntry(place: 1, playerID: "A", nickname: "Anna", status: .finished(time: 51.23), eggsLost: 1),
-            RaceResultEntry(place: 2, playerID: "B", nickname: "Ben", status: .outOfEggs(meters: 120), eggsLost: 3),
-            RaceResultEntry(place: 3, playerID: "C", nickname: "Cem", status: .disconnected(meters: 80), eggsLost: 0),
+            RaceResultEntry(place: 1, playerID: "A", nickname: "Anna", status: .finished(time: 35.83), eggsLost: 1),
+            RaceResultEntry(place: 2, playerID: "B", nickname: "Ben", status: .outOfEggs(meters: 80), eggsLost: 3),
+            RaceResultEntry(place: 3, playerID: "C", nickname: "Cem", status: .disconnected(meters: 60), eggsLost: 0),
         ]))
     ),
     (#"{"type":"ping","id":7,"sentAt":102.5}"#, .ping(id: 7, sentAt: 102.5)),
@@ -120,7 +120,7 @@ private let malformedMessages = [
     #"{"type":"setSettings","settings":{"distance":"short","weather":{"type":"fixed"}}}"#,
     #"{"type":"setSettings","settings":{"distance":"short","weather":{"type":"hail"}}}"#,
     #"{"type":"setSettings","settings":{"distance":"short","weather":"off"}}"#,
-    #"{"type":"finished","report":{"completed":true,"time":51.2,"meters":150}}"#,
+    #"{"type":"finished","report":{"completed":true,"time":35.8,"meters":100}}"#,
     #"""
     {"type":"results","results":{"entries":[{"place":1,"playerID":"A","nickname":"A","status":{"type":"won"},
     "eggsLost":0}]}}
@@ -200,13 +200,13 @@ struct NetCodecTests {
             place: 1,
             playerID: "A",
             nickname: "Anna",
-            status: .finished(time: 51.23),
+            status: .finished(time: 35.83),
             eggsLost: 1
         )
         let data = try codec.encode(.results(RaceResults(entries: [entry])), from: "A")
         #expect(text(data) == #"""
         {"message":{"results":{"entries":[{"eggsLost":1,"nickname":"Anna","place":1,"playerID":"A",\#
-        "status":{"time":51.23,"type":"finished"}}]},"type":"results"},"sender":"A","version":\#(EggscapeCore.protocolVersion)}
+        "status":{"time":35.83,"type":"finished"}}]},"type":"results"},"sender":"A","version":\#(EggscapeCore.protocolVersion)}
         """#)
     }
 

@@ -1,3 +1,4 @@
+import EggscapeCore
 import Foundation
 import MultipeerConnectivity
 import os
@@ -78,7 +79,7 @@ final class MultipeerTransport: PeerTransport {
         if advertises, advertiser == nil {
             let advertiser = MCNearbyServiceAdvertiser(
                 peer: localPeer,
-                discoveryInfo: ["v": String(EggscapeProtocol.version)],
+                discoveryInfo: ["v": String(EggscapeCore.protocolVersion)],
                 serviceType: Self.serviceType
             )
             advertiser.delegate = delegate
@@ -221,8 +222,9 @@ final class MultipeerTransport: PeerTransport {
     }
 
     fileprivate func found(_ peer: MCPeerID, info: [String: String]?) {
-        // Rooms of other protocol versions cannot race with us; do not list them.
-        guard info?["v"] == String(EggscapeProtocol.version) else { return }
+        // Rooms of other protocol versions cannot race with us; do not list them. Builds before protocol version 3
+        // advertised "1" whatever their version, so none of them is listed either.
+        guard info?["v"] == String(EggscapeCore.protocolVersion) else { return }
         let room = DiscoveredRoom(id: Self.remote(peer).id, hostName: peer.displayName, playerCount: nil)
         foundPeers[room.id] = (peer, room)
         rooms = foundPeers.values.map(\.room).sorted { $0.hostName < $1.hostName }
@@ -380,9 +382,4 @@ private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServ
         let message = error.localizedDescription
         Task { @MainActor in transport?.failed(message) }
     }
-}
-
-/// Shared protocol constants of the app.
-enum EggscapeProtocol {
-    static let version = 1
 }

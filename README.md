@@ -12,7 +12,7 @@ meters; tilt too far and it rolls over the rim and breaks.
 4. Hold **Sprint** to run faster, at the price of a much shakier egg.
 5. Three eggs per run. Wind pushes the egg sideways, rain makes the spoon slippery, a thunderstorm adds lightning.
 
-Modes: **Zeitrennen** (150 / 300 / 600 m), **Endlos** (weather gets rougher every 100 m), **Gemeinsam an einem
+Modes: **Zeitrennen** (15 / 50 / 100 m), **Endlos** (weather gets rougher every 100 m), **Gemeinsam an einem
 Handy** (2–4 players, pass the phone), **In der Nähe** (2–4 phones in the same room, no internet). Coins earned while
 playing buy egg skins in the **Shop**; coin packs are also sold as in-app purchases. **Bestenliste** shows personal
 bests and Game Center leaderboards. Backgrounds: white studio surface or the live rear camera ("see-through phone").
@@ -30,7 +30,7 @@ In the Simulator there are no motion sensors: drag the egg with a finger instead
 | Command | What it does |
 |---|---|
 | `make test` | EggscapeCore tests (`swift test`) and the app unit tests on a simulator |
-| `make test-ui` | UI tests, including a complete 150 m time trial |
+| `make test-ui` | UI tests, including a complete 15 m time trial |
 | `make build` | Unsigned simulator build (what CI runs) |
 | `make format` / `make lint` | SwiftFormat |
 | `make art` | Re-renders the spoon images into the asset catalog |

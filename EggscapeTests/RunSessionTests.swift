@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 struct RunSessionTests {
-    /// A short time trial on fresh data, silent and without records or coins.
+    /// A short time trial (15 m, a little over 5 s) on fresh data, silent and without records or coins.
     private func makeSession(race: RaceHooks? = nil) -> RunSession {
         let suite = "eggscape.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite) ?? .standard
@@ -35,7 +35,7 @@ struct RunSessionTests {
     @Test func theCountdownAfterAPauseKeepsTheEggWhereItWas() {
         let session = makeSession()
         defer { session.stop() }
-        session.stageForScreenshot(skipping: 5, egg: .zero)
+        session.stageForScreenshot(skipping: 2, egg: .zero)
         session.pause()
         #expect(session.phase == .paused)
         session.resume()
@@ -46,7 +46,7 @@ struct RunSessionTests {
     @Test func backFromARecalibrationIsThePauseMenu() {
         let session = makeSession()
         defer { session.stop() }
-        session.stageForScreenshot(skipping: 5, egg: .zero)
+        session.stageForScreenshot(skipping: 2, egg: .zero)
         session.pause()
         session.recalibrate()
         #expect(session.phase == .calibrating)
@@ -61,7 +61,7 @@ struct RunSessionTests {
     @Test func aRecalibrationCountsDownWithoutWarmingUp() {
         let session = makeSession()
         defer { session.stop() }
-        session.stageForScreenshot(skipping: 5, egg: .zero)
+        session.stageForScreenshot(skipping: 2, egg: .zero)
         session.pause()
         session.recalibrate()
         session.calibrate()
@@ -72,8 +72,8 @@ struct RunSessionTests {
     @Test func anEndedRunStaysEnded() {
         let session = makeSession()
         defer { session.stop() }
-        // Well past the finish of the 150 m course.
-        session.stageForScreenshot(skipping: 90, egg: .zero)
+        // Well past the finish of the short course.
+        session.stageForScreenshot(skipping: 2 * RaceDistance.short.meters / GameConfig.standard.runSpeed, egg: .zero)
         #expect(session.hasEnded)
         session.pause()
         session.resume()

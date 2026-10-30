@@ -86,16 +86,38 @@ struct RecordsStoreTests {
     @Test func keepsTheFastestTimePerDistanceAndWeather() {
         let defaults = makeDefaults()
         let records = RecordsStore(defaults: defaults)
-        #expect(records.recordTime(55.2, distance: .short, weather: .off))
-        #expect(!records.recordTime(57, distance: .short, weather: .off))
-        #expect(records.recordTime(51.9, distance: .short, weather: .off))
-        #expect(records.recordTime(70, distance: .short, weather: .fixed(.storm)))
-        #expect(records.bestTime(distance: .short, weather: .off) == 51.9)
-        #expect(records.bestTime(distance: .short, weather: .fixed(.storm)) == 70)
+        #expect(records.recordTime(5.52, distance: .short, weather: .off))
+        #expect(!records.recordTime(5.7, distance: .short, weather: .off))
+        #expect(records.recordTime(5.19, distance: .short, weather: .off))
+        #expect(records.recordTime(7.5, distance: .short, weather: .fixed(.storm)))
+        #expect(records.bestTime(distance: .short, weather: .off) == 5.19)
+        #expect(records.bestTime(distance: .short, weather: .fixed(.storm)) == 7.5)
         #expect(records.bestTime(distance: .medium, weather: .off) == nil)
 
         let relaunched = RecordsStore(defaults: defaults)
-        #expect(relaunched.bestTime(distance: .short, weather: .off) == 51.9)
+        #expect(relaunched.bestTime(distance: .short, weather: .off) == 5.19)
+    }
+
+    @Test func timesFromTheLongerCoursesOfEarlierBuildsAreDropped() {
+        let defaults = makeDefaults()
+        // What builds with the 150, 300 and 600 m courses stored.
+        defaults.set(["short.off": 48.7, "long.fixed-storm": 214.3], forKey: "records.bestTimes")
+        defaults.set(412.0, forKey: "records.endlessMeters")
+
+        let records = RecordsStore(defaults: defaults)
+        // A 150 m time is no best for 15 m, so it neither shows up nor reaches Game Center ...
+        #expect(records.bestTimes.isEmpty)
+        #expect(records.bestTime(distance: .short, weather: .off) == nil)
+        #expect(defaults.object(forKey: "records.bestTimes") == nil)
+        // ... while Endlos did not change and keeps its record.
+        #expect(records.bestEndless == 412)
+        #expect(records.leaderboardScores == [LeaderboardScore(leaderboard: .endless, value: 412)])
+
+        // The first time on the short course is a personal best again, and it is kept from now on.
+        #expect(records.recordTime(6.1, distance: .short, weather: .off))
+        let relaunched = RecordsStore(defaults: defaults)
+        #expect(relaunched.bestTime(distance: .short, weather: .off) == 6.1)
+        #expect(relaunched.bestEndless == 412)
     }
 
     @Test func keepsTheLongestEndlessRun() {
@@ -115,7 +137,7 @@ struct RecordsStoreTests {
     @Test func resetClearsEverything() {
         let defaults = makeDefaults()
         let records = RecordsStore(defaults: defaults)
-        records.recordTime(60, distance: .medium, weather: .off)
+        records.recordTime(17.4, distance: .medium, weather: .off)
         records.recordEndless(meters: 90)
         records.reset()
         #expect(records.bestTimes.isEmpty)
@@ -144,10 +166,11 @@ struct HotSeatRankingTests {
         ) { _ in
             preconditionFailure("not started in this test")
         }
-        session.finishTurn(with: outcome(finished: false, time: 30, meters: 80))
-        session.finishTurn(with: outcome(finished: true, time: 55, meters: 150))
-        session.finishTurn(with: outcome(finished: false, time: 40, meters: 120))
-        session.finishTurn(with: outcome(finished: true, time: 52, meters: 150))
+        let length = RaceDistance.short.meters
+        session.finishTurn(with: outcome(finished: false, time: 3, meters: 8))
+        session.finishTurn(with: outcome(finished: true, time: 5.5, meters: length))
+        session.finishTurn(with: outcome(finished: false, time: 4, meters: 12))
+        session.finishTurn(with: outcome(finished: true, time: 5.2, meters: length))
         #expect(session.ranking.map(\.name) == ["D", "B", "C", "A"])
         if case .standings = session.stage {} else {
             Issue.record("expected the standings after the last turn")
@@ -220,12 +243,12 @@ struct WalletStoreTests {
 struct LeaderboardScoreSubmissionTests {
     @Test func recordsBecomeOneScorePerBoard() {
         let records = RecordsStore(defaults: makeDefaults())
-        records.recordTime(55, distance: .short, weather: .off)
-        records.recordTime(51, distance: .short, weather: .fixed(.wind))
+        records.recordTime(5.5, distance: .short, weather: .off)
+        records.recordTime(5.1, distance: .short, weather: .fixed(.wind))
         records.recordEndless(meters: 333)
         let scores = records.leaderboardScores
         #expect(scores.count == 2)
-        #expect(scores.contains(LeaderboardScore(leaderboard: .shortTimeTrial, value: 5100)))
+        #expect(scores.contains(LeaderboardScore(leaderboard: .shortTimeTrial, value: 510)))
         #expect(scores.contains(LeaderboardScore(leaderboard: .endless, value: 333)))
     }
 }

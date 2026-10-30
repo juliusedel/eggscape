@@ -2,13 +2,16 @@
 import Foundation
 import Testing
 
-/// What a clean, finished 150 m time trial in calm weather pays: the yardstick for the skin prices.
+/// The yardstick for the skin prices: what a new player's first clean medium time trial (50 m) in calm weather pays,
+/// a personal best like every first finish on a distance. A clean short run pays 28 coins, 48 as a personal best, so
+/// on the short course the first egg takes two runs.
 let oneRunReward = CoinRewards.reward(for: RewardInput(
-    course: .timeTrial(.short),
+    course: .timeTrial(.medium),
     weather: .off,
     finished: true,
-    meters: 150,
-    eggsLost: 0
+    meters: RaceDistance.medium.meters,
+    eggsLost: 0,
+    isPersonalBest: true
 )).total
 
 struct SkinCatalogTests {

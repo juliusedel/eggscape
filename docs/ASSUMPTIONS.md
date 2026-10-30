@@ -66,20 +66,26 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   phone and wallet); nearby races earn coins including the place bonus once the host announces the results.
 - **Egg prices (owner, 2026-10-28).** Only the classic white egg is free; every other egg is locked until it is
   unlocked with coins. The owner asked for the brown egg to cost about one game and for the others to get
-  exponentially harder. So the brown egg costs 55 coins, exactly what a clean 150 m time trial in calm weather pays,
-  and every following egg in catalog order costs about 1.3 times the one before (each step between 1.25× and 1.35×),
-  rounded to friendly numbers: 55, 70, 90, 120, 160, 200, 260, 350, 450, 600, 750, 1,000, 1,300, 1,700, 2,200,
-  2,800, 3,600, 4,800 and 6,000 for the rainbow egg. 1.3 is the factor that turns 19 paid eggs into a ladder from one
-  run to a long-term goal of about 110 short runs: the first eggs take one to a few runs each, from about the twelfth
-  on each egg alone is a goal of 18 to 110 clean short runs, or a coin pack. A factor of 1.5 would put the last egg above 80,000 coins, 1.15 below 700. All eggs
-  together cost 26,505 coins, roughly seven hours of play. The tier bands (common 50–400, rare 450–2,000, epic
-  2,200–4,000, legendary 4,500–7,500) follow the ladder. Testers who got the brown egg for free in earlier builds keep
-  it, because wallets store it with the owned eggs.
+  exponentially harder. So the brown egg costs 55 coins, at the time exactly what a clean 150 m time trial in calm
+  weather paid, and every following egg in catalog order costs about 1.3 times the one before (each step between
+  1.25× and 1.35×), rounded to friendly numbers: 55, 70, 90, 120, 160, 200, 260, 350, 450, 600, 750, 1,000, 1,300,
+  1,700, 2,200, 2,800, 3,600, 4,800 and 6,000 for the rainbow egg. 1.3 is the factor that turns 19 paid eggs into a
+  ladder from one run to a long-term goal: the first eggs take one to a few runs each, from about the twelfth on each
+  egg alone is a goal of many runs, or a coin pack. A factor of 1.5 would put the last egg above 80,000 coins, 1.15
+  below 700. All eggs together cost 26,505 coins. The tier bands (common 50–400, rare 450–2,000, epic 2,200–4,000,
+  legendary 4,500–7,500) follow the ladder. Testers who got the brown egg for free in earlier builds keep it, because
+  wallets store it with the owned eggs.
+
+  The courses were shortened later (see below) with prices and rewards left as they were, so a run pays less: a
+  clean time trial in calm weather pays 28 coins over 15 m, 35 over 50 m and 45 over 100 m. The brown egg now costs
+  what a new player's first clean 50 m run pays with its personal best (35 + 20), or two clean 15 m runs; from the
+  twelfth egg on each one alone takes 36 to 215 clean 15 m runs (23 to 134 over 100 m), and all eggs together about
+  950 clean 15 m runs or 590 over 100 m. Whether to retune that is up to the owner.
 - **Coin packs** stay at 600 / 2,000 / 5,000 coins for the suggested 0.99 / 2.99 / 5.99 €: the small pack buys any
-  common egg, the medium one any rare egg, the large one any egg but the last, which takes the large pack plus about
-  twenty runs. Bigger packs give more coins per euro (606, 669, 835). The "Bestes Angebot" badge goes to the pack
-  with the most coins for the money at the prices StoreKit reports for the player's storefront, so it stays right
-  if a storefront is priced differently.
+  common egg, the medium one any rare egg, the large one any egg but the last, which takes the large pack plus 1,000
+  coins (23 clean 100 m runs or 36 clean 15 m runs in calm weather). Bigger packs give more coins per euro (606, 669,
+  835). The "Bestes Angebot" badge goes to the pack with the most coins for the money at the prices StoreKit reports
+  for the player's storefront, so it stays right if a storefront is priced differently.
 - **Shop layout.** The shop stays one tab (the app keeps its four tabs) with two pages, "Eier" and "Münzen", picked
   with a segmented control. The page is kept in `AppNavigation`, so the coin balance, the "Münzen kaufen" button of
   the not-enough-coins alert and the screenshot staging can open the coin page. Locked eggs show their real look with
@@ -104,3 +110,14 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Localization.** German keys are the German text; where one German word needs two English translations, the key is
   semantic with a German default value (e.g. `pause.resume` = "Weiter" → "Resume", while "Weiter" → "Next").
   `make strings` fails if any UI string lacks an English translation.
+- **Shorter time trials (owner, 2026-10-29).** Kurz, Mittel and Lang are 15, 50 and 100 m, the lengths of a real
+  egg-and-spoon race, instead of 150, 300 and 600 m; a clean run takes about 5, 17 or 34 s. Only the distances
+  changed: the speeds, the race mode, the coin formulas and prices, every weather tunable, Endlos and the leaderboard
+  ids stay. Best times are stored under a new key, and those of the longer courses are deleted at the first launch
+  instead of read: personal bests know a distance by its name only, and a 150 m time is no best for 15 m and must not
+  reach that leaderboard. The Endlos record stays. The protocol version went to 3, so phones with the old lengths
+  cannot race phones with the new ones; nearby rooms now advertise that version (earlier builds advertised 1 whatever
+  their version), so such phones do not even list each other's rooms. Times from the longer courses that already
+  reached Game Center stay on the same boards; each is slower than any run over the new lengths, so they rank last.
+  With the weather unchanged, the short courses see less of it (`docs/TUNING.md`): on 15 m no puddle and, unless two
+  eggs break, no lightning.

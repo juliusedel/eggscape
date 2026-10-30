@@ -1,7 +1,7 @@
 import Foundation
 
 /// One message on the wire, with its sender and the protocol version it was written in:
-/// `{"version":2,"sender":"<player id>","message":{"type":"progress",...}}` (the messages are listed at `NetMessage`).
+/// `{"version":3,"sender":"<player id>","message":{"type":"progress",...}}` (the messages are listed at `NetMessage`).
 ///
 /// ## Versioning
 ///
@@ -9,7 +9,8 @@ import Foundation
 /// version is the one thing every future build must still be able to read: it sits at the top level, and `NetCodec`
 /// checks it before it looks at the message. Bump the version when a message or field is removed, renamed, retyped
 /// or becomes required, and when an enum on the wire gains a value (a weather kind, a distance), because older
-/// builds cannot read those. Two changes keep the version:
+/// builds cannot read those. Bump it as well when the same messages come to mean another race, such as a distance
+/// of a new length, because the phones would then run different courses. Two changes keep the version:
 /// - a new optional field: decoders ignore keys they do not know, and newer ones must cope with it missing;
 /// - a new message type that older builds can do without: they report it as `NetCodecError.unknownMessageType`.
 public struct NetEnvelope: Codable, Equatable, Sendable {
@@ -33,8 +34,9 @@ public struct NetEnvelope: Codable, Equatable, Sendable {
 
 /// Why `NetCodec` could not read or write an envelope.
 public enum NetCodecError: Error, Equatable, Sendable {
-    /// The sender speaks another protocol version, so nothing else in the data can be trusted. The app asks the
-    /// players to install the same version of the game.
+    /// The sender speaks another protocol version, so nothing else in the data can be trusted. The app drops the
+    /// message without telling the players. Nearby rooms of other versions are not even listed; online matchmaking
+    /// does not check the version.
     case versionMismatch(received: Int, expected: Int)
     /// A message type this build does not know, from a newer build of the same protocol version. Safe to ignore.
     case unknownMessageType(String)

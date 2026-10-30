@@ -21,18 +21,25 @@ struct ShopTests {
     }
 
     @Test func aNewPlayerUnlocksTheBrownEggWithOneCleanRun() throws {
-        let wallet = makeServices().wallet
+        let services = makeServices()
+        let wallet = services.wallet
         let brown = SkinCatalog.farmBrown
         #expect(!wallet.owns(brown))
         #expect(wallet.coinsMissing(for: brown) == brown.price)
         #expect(throws: WalletError.notOwned) { try wallet.equip(brown) }
 
+        // The first clean medium run in calm weather; as the first finish over 50 m it is a personal best, too. A
+        // short run would not do: 28 coins, 48 with the personal best.
+        let distance = RaceDistance.medium
+        let isPersonalBest = services.records.recordTime(16.9, distance: distance, weather: .off)
+        #expect(isPersonalBest)
         wallet.earn(CoinRewards.reward(for: RewardInput(
-            course: .timeTrial(.short),
+            course: .timeTrial(distance),
             weather: .off,
             finished: true,
-            meters: 150,
-            eggsLost: 0
+            meters: distance.meters,
+            eggsLost: 0,
+            isPersonalBest: isPersonalBest
         )))
         #expect(wallet.coinsMissing(for: brown) == 0)
         try wallet.purchase(brown)

@@ -86,9 +86,11 @@ public struct CoinReward: Hashable, Sendable {
 
 /// How many coins a run pays.
 ///
-/// Coins buy egg skins (see `SkinCatalog`), so this tuning decides how long a skin takes to earn. It pays roughly a
-/// coin per second of play: a clean 150 m time trial in calm weather takes about 50 s and pays 55 coins, the price of
-/// the first egg to unlock. A reward is never negative.
+/// Coins buy egg skins (see `SkinCatalog`), so this tuning decides how long a skin takes to earn. A clean time trial
+/// in calm weather pays 28 coins over 15 m (about 5 s), 35 over 50 m (17 s) and 45 over 100 m (34 s). Most of it is
+/// the 25 coins for finishing without a broken egg, so the short course pays the most per second of play; an endless
+/// run pays 0.6 coins per second. A new player's first clean 50 m run, a personal best, pays 55 coins, the price of
+/// the first egg to unlock; on the short course that takes two clean runs. A reward is never negative.
 public enum CoinRewards {
     /// Distance pays one coin per 5 m, so every run earns something, even one that ends with broken eggs. At the
     /// running speed of 3 m/s that is 0.6 coins per second; sprinting pays more for its extra risk.

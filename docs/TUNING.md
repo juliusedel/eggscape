@@ -86,7 +86,7 @@ Intensity 1 means the values below; the "Zufall" escalation and Endlos scale int
 |---|---|---|
 | Wind | `windForce` 0.23 … 0.76, `gustRamp` 0.5 s, `gustHold` 1–3 s, `gustDecay` 1 s, `gustGap`, `windFlipChance` | A force `F` shifts the resting point by `F/k`: the strongest gust (0.76) pushes a level egg 0.38 units sideways, two thirds of the way to the tipping point; holding it needs ≈ 7.3° of counter-tilt. Scaled with the tipping point (it was 0.3 … 1.0): the old strongest gust would hold a level egg 88 % of the way out, where a footstep or 1.4° of tilt the wrong way tips it. |
 | Rain | `rainDampingFactor` 0.4, `rainDropRate`, `rainDropKick`, `puddleKick`, `puddleSpacing` | Damping drops to 0.48 (ζ ≈ 0.17, ≈ 58 % overshoot): the egg wobbles much longer and sudden corrections overshoot. Raindrops add a fine tremble; puddles one extra kick. Unchanged with the tighter tipping point, so rain got harder: a level phone now loses eggs in full rain (median half a minute), an attentive player none. |
-| Gewitter | wind + rain + `lightningInterval` 8–15 s, `lightningWarning` 0.6 s, `lightningKick` 0.6 | In the wet storm bowl a strike moves a resting egg ≈ 0.33 units, 58 % of the way to the sideways tipping point: enough to drop it if the player is already fighting a gust. Scaled with the tipping point like the wind (it was 0.8): at 0.8 an attentive player lost an egg in one full-storm race of twelve, at 0.6 in one of fifty. |
+| Gewitter | wind + rain + `lightningInterval` 8–15 s, `lightningWarning` 0.6 s, `lightningKick` 0.6 | In the wet storm bowl a strike moves a resting egg ≈ 0.33 units, 58 % of the way to the sideways tipping point: enough to drop it if the player is already fighting a gust. Scaled with the tipping point like the wind (it was 0.8): at 0.8 an attentive player lost an egg in one 600 m full-storm race of twelve, at 0.6 in one of fifty. |
 
 The HUD's wind arrow, the wind sound, the slant of the rain and the blowing leaves follow the gust's share of the
 strongest one (`WeatherSystem.gustStrength`), not its force, so retuning `windForce` keeps them as they are.
@@ -94,22 +94,52 @@ strongest one (`WeatherSystem.gustStrength`), not its force, so retuning `windFo
 The schedule (stretches, gusts, lightning, puddles) is derived from the race seed with SplitMix64, so every player of
 a race gets the same weather; see `WeatherTests`.
 
+### On the courses
+
+The weather was tuned when the time trials were 150, 300 and 600 m long and stayed as it was when they became 15, 50
+and 100 m (5.2, 16.9 and 33.6 s at running speed). Shorter courses see less of it:
+
+- **Zufall** starts calm for 20–40 m, but for at most half the course (`WeatherSchedule.escalatingStretches`): 7.5 m
+  of the 15 m, 20–25 m of the 50 m, 20–40 m of the 100 m. The rest (7.5 m, 25–30 m or 60–80 m) would be cut into
+  stretches of about `randomStretchLength` (75 m), but never into fewer than two, so every course gets exactly two,
+  and `randomStretchLength` has no effect on the time trials unless it drops below about 32 m. The two are wind or
+  rain at 0.3–0.5, then the finale at full strength, a thunderstorm in 59 % of the seeds. The finale begins 10–12 m
+  into the 15 m, 31–41 m into the 50 m and 48–79 m into the 100 m.
+- **Lightning** strikes 8 to 15 s apart, counted from race time 0 (`LightningTimeline`), and reaches a runner only in
+  a thunderstorm. So a 15 m run is over before the first strike, even after a broken egg (7.5 s); only a runner who
+  breaks two eggs (9.7 s) can still meet one: a level phone did in 0.6 % of 2,000 simulated 15 m storms, the attentive
+  player never. A full storm brings one strike over 50 m (two in under 1 % of the seeds) and two to four over 100 m
+  (2.4 on average); Zufall strikes in 16 % of the 50 m races and half of the 100 m ones.
+- **Puddles** lie 25 to 60 m apart, counted from the start line (`PuddleTrack`), and hold water only where it rains:
+  none on 15 m, one on 50 m for 71 % of the seeds, one to three on 100 m (two for 78 %).
+- **Gusts** blow 2.5–4.5 s with calm gaps of 0.5–2.5 s, so even the 15 m course sees one or two.
+
+Endlos is unchanged: its weather follows the meters run, not the courses.
+
 ## Playability
 
 `PlayabilityTests` plays whole runs with two simulated players and pins down that a tight tipping point is still fair:
 
 - **Attentive**: a PD controller on the egg's position and velocity (0.6 rad per unit, 0.35 rad per unit/s), reacting
-  150 ms late and never tilting more than 12°. It finishes the 150 m in calm weather without losing an egg, sprints
-  through it too, and keeps at least one egg over 600 m of full thunderstorm.
+  150 ms late and never tilting more than 12°. It finishes the 15 m in calm weather without losing an egg, sprints
+  the 100 m (about 20 s) without losing one either, keeps at least one egg in a full thunderstorm on every course, and
+  also through 200 s of full thunderstorm without a finish line, as long as the old 600 m course took, so the
+  endurance check does not shrink with the courses.
 - **Careless**: holds the phone level. Sprinting through the wind, it loses an egg within 20 s.
 
-Over 200 seeds each (`RunEngine` with the defaults), the attentive player lost no egg on 150 m of calm weather nor on
-600 m of wind, rain or Zufall, and one egg in 2 % of the 600 m storms; sprinting the 150 m it lost one in 0.5 % of the
-runs. A sloppier player (300 ms, weaker corrections, a hand that drifts by 3°) does lose eggs in rain and storms: that
-is where the tighter bowl bites. Before changing a number here, rerun such a sweep; `PlayabilityTests` shows how to
-drive a run.
+Over 200 seeds each (`RunEngine` with the defaults), the attentive player lost no egg on 15 m of calm weather,
+sprinting (3.2 s) or not (5.2 s), nor on 100 m of wind, rain, Zufall or thunderstorm. Sprinting the 100 m in calm
+weather (20.2 s) it lost one egg in 2,000 runs, where a level phone loses one in more than nine runs of ten. Through
+200 s of full thunderstorm it lost one egg in 2 % of the runs, the first after 77 s at the earliest, which is what
+the old 600 m storm cost. A sloppier player (300 ms, corrections of 0.4 rad per unit and 0.2 rad per unit/s, a hand
+that drifts slowly by up to 3°) loses an egg in 20 % of the 100 m storms, 6 % of the 50 m storms, 5.5 % of the
+100 m Zufall races and 0.5 % of the 15 m storms, but none in wind or rain on any course; it takes 200 s of rain to
+cost it an egg (3 %) and 200 s of storm costs it one in 74 % of the runs. So on the new courses the tighter bowl
+bites in thunderstorms, and in rain only over longer runs such as Endlos. Before changing a number here, rerun such
+a sweep; `PlayabilityTests` shows how to drive a run.
 
 ## Playtesting
 
 On a device, the quickest loop is: change a constant in `GameConfig`, `make run` on the phone from Xcode, run the
-150 m course twice with each weather. Record what changed here.
+100 m course twice with each weather (the 15 m course has no puddles and is over before the first strike). Record what
+changed here.

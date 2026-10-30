@@ -41,8 +41,8 @@ struct GameSceneTests {
         #expect(framesAfterTheEnd == 0)
     }
 
-    /// The App Store screenshot of a storm (`ScreenshotStage`). Held with a fixed tilt instead, the egg falls three
-    /// times before the capture.
+    /// The App Store screenshot of a storm (`ScreenshotStage`). Held with a fixed tilt instead, the egg falls before
+    /// the capture.
     @Test func aHeldEggSurvivesTheStagedStorm() {
         let setup = RunSetup(
             mode: .timeTrial(.long, .fixed(.storm)),
@@ -55,8 +55,8 @@ struct GameSceneTests {
         )
         scene.holdEgg(at: SIMD2(0.22, -0.08))
         scene.mode = .running
-        // The 47 seconds it skips, and the moments until the capture.
-        scene.fastForward(seconds: 55)
+        // The 14 seconds it skips, and the moments until the capture, still well short of the 100 m.
+        scene.fastForward(seconds: 22)
         #expect(scene.engine.eggsLost == 0)
         #expect(scene.engine.phase == .running)
     }

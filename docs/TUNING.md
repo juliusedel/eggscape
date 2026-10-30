@@ -121,20 +121,21 @@ Endlos is unchanged: its weather follows the meters run, not the courses.
 
 - **Attentive**: a PD controller on the egg's position and velocity (0.6 rad per unit, 0.35 rad per unit/s), reacting
   150 ms late and never tilting more than 12°. It finishes the 15 m in calm weather without losing an egg, sprints
-  through it too, keeps at least one egg in a full thunderstorm on every course, and also through 200 s of full
-  thunderstorm without a finish line, as long as the old 600 m course took, so the endurance check does not shrink
-  with the courses.
+  the 100 m (about 20 s) without losing one either, keeps at least one egg in a full thunderstorm on every course, and
+  also through 200 s of full thunderstorm without a finish line, as long as the old 600 m course took, so the
+  endurance check does not shrink with the courses.
 - **Careless**: holds the phone level. Sprinting through the wind, it loses an egg within 20 s.
 
 Over 200 seeds each (`RunEngine` with the defaults), the attentive player lost no egg on 15 m of calm weather,
-sprinting (3.2 s) or not (5.2 s), nor on 100 m of wind, rain, Zufall or thunderstorm. Through 200 s of full
-thunderstorm it lost one egg in 2 % of the runs, the first after 77 s at the earliest, which is what the old 600 m
-storm cost. A sloppier player (300 ms, corrections of 0.4 rad per unit and 0.2 rad per unit/s, a hand that drifts
-slowly by up to 3°) loses an egg in 20 % of the 100 m storms, 6 % of the 50 m storms, 5.5 % of the 100 m Zufall races
-and 0.5 % of the 15 m storms, but none in wind or rain on any course; it takes 200 s of rain to cost it an egg (3 %)
-and 200 s of storm costs it one in 74 % of the runs. So on the new courses the tighter bowl bites in thunderstorms,
-and in rain only over longer runs such as Endlos. Before changing a number here, rerun such a sweep;
-`PlayabilityTests` shows how to drive a run.
+sprinting (3.2 s) or not (5.2 s), nor on 100 m of wind, rain, Zufall or thunderstorm. Sprinting the 100 m in calm
+weather (20.2 s) it lost one egg in 2,000 runs, where a level phone loses one in more than nine runs of ten. Through
+200 s of full thunderstorm it lost one egg in 2 % of the runs, the first after 77 s at the earliest, which is what
+the old 600 m storm cost. A sloppier player (300 ms, corrections of 0.4 rad per unit and 0.2 rad per unit/s, a hand
+that drifts slowly by up to 3°) loses an egg in 20 % of the 100 m storms, 6 % of the 50 m storms, 5.5 % of the
+100 m Zufall races and 0.5 % of the 15 m storms, but none in wind or rain on any course; it takes 200 s of rain to
+cost it an egg (3 %) and 200 s of storm costs it one in 74 % of the runs. So on the new courses the tighter bowl
+bites in thunderstorms, and in rain only over longer runs such as Endlos. Before changing a number here, rerun such
+a sweep; `PlayabilityTests` shows how to drive a run.
 
 ## Playtesting
 

@@ -89,17 +89,20 @@ struct PlayabilityTests {
     }
 
     @Test func attentivePlayerCanSprintThroughCalmWeather() {
-        // Sprinting shakes the egg hard, but it can be held.
-        let engine = play(.timeTrial(.short), weather: .off, player: AttentivePlayer(), sprint: true)
+        // Sprinting shakes the egg hard, but it can be held, all 20 s of the long course. Held level, the egg lasts
+        // about 5 s at a sprint, longer than the short course takes, so that one would not show the corrections hold.
+        let engine = play(.timeTrial(.long), weather: .off, player: AttentivePlayer(), sprint: true)
         #expect(engine.phase == .finished)
         #expect(engine.eggsLost == 0)
         // At sprint speed all the way, but for the moment it takes to get going.
-        #expect(engine.elapsed < RaceDistance.short.meters / engine.config.sprintSpeed + 1)
+        #expect(engine.elapsed < RaceDistance.long.meters / engine.config.sprintSpeed + 1)
     }
 
     @Test(arguments: RaceDistance.allCases)
     func attentivePlayerKeepsAnEggThroughTheStorm(distance: RaceDistance) {
-        // Wind, a slippery bowl, puddles and lightning at full strength the whole way: the hardest race of each course.
+        // A thunderstorm at full strength the whole way: wind and a slippery bowl on every course, plus the strikes
+        // and puddles the course is long enough for (with this seed none on 15 m, one strike and no puddle on 50 m,
+        // two of each on 100 m). The hardest race of each course.
         let engine = play(.timeTrial(distance), weather: .fixed(.storm), player: AttentivePlayer())
         #expect(engine.phase == .finished)
         #expect(engine.eggsLeft >= 1)

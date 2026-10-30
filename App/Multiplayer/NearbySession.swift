@@ -31,6 +31,15 @@ final class NearbySession: Identifiable {
         case results(RaceResults)
         case failed(String)
 
+        /// The host's name while joining its room.
+        var connectingHost: String? {
+            if case let .connecting(host) = self {
+                host
+            } else {
+                nil
+            }
+        }
+
         /// In the room the players wait for each other: in the lobby, for the others to finish and over the results. A
         /// phone that locks meanwhile is suspended and drops out, and a host takes the room down for everybody.
         var keepsScreenAwake: Bool {
@@ -68,7 +77,7 @@ final class NearbySession: Identifiable {
     @ObservationIgnored private let services: AppServices
     @ObservationIgnored private let transport: any PeerTransport
     /// The nearby transport, for discovery and join requests; `nil` online.
-    @ObservationIgnored private let nearby: MultipeerTransport?
+    @ObservationIgnored private let nearby: (any NearbyTransport)?
     @ObservationIgnored private let codec = NetCodec()
     @ObservationIgnored private var referee = RaceReferee()
     @ObservationIgnored private var clock = ClockSync()
@@ -78,6 +87,13 @@ final class NearbySession: Identifiable {
     /// Joiner side: the phone that hosts the room, and the room we are joining.
     @ObservationIgnored private var hostPeer: RemotePeer?
     @ObservationIgnored private var joiningRoomID: String?
+    /// Nearby joiner: when the current join began, for the log.
+    @ObservationIgnored private var joinStartedAt: ContinuousClock.Instant?
+    /// Nearby joiner: how long the host may take to send the lobby once it has let us in. It sends it right away, so
+    /// this only ends a join that would otherwise wait on "Verbinde …" forever (the transport's invitation deadline is
+    /// over by then). Settable for tests.
+    @ObservationIgnored var lobbyTimeout: Duration = .seconds(10)
+    @ObservationIgnored private var lobbyDeadline: Task<Void, Never>?
     @ObservationIgnored private var listener: Task<Void, Never>?
     @ObservationIgnored private var pinger: Task<Void, Never>?
     /// Set by `leave()`. Messages that were already on their way can still change the stage afterwards.
@@ -85,7 +101,13 @@ final class NearbySession: Identifiable {
     @ObservationIgnored private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "nearby")
 
     /// - Parameter networking: `false` only for the staged App Store screenshot (no prompt, no radio).
-    init(role: Role, services: AppServices, networking: Bool = true) {
+    convenience init(role: Role, services: AppServices, networking: Bool = true) {
+        let multipeer = MultipeerTransport(displayName: services.settings.displayName)
+        self.init(role: role, services: services, nearby: multipeer, networking: networking)
+    }
+
+    /// A nearby room over `nearby`; the app passes MultipeerConnectivity, the tests a fake.
+    init(role: Role, services: AppServices, nearby multipeer: any NearbyTransport, networking: Bool = true) {
         self.role = role
         self.services = services
         me = PlayerInfo(
@@ -97,7 +119,6 @@ final class NearbySession: Identifiable {
             isConnected: true
         )
         lobby = LobbyState(host: me)
-        let multipeer = MultipeerTransport(displayName: services.settings.displayName)
         transport = multipeer
         nearby = multipeer
         stage = role == .host ? .lobby : .browsing
@@ -193,7 +214,17 @@ final class NearbySession: Identifiable {
         joinFailure = nil
         stage = .connecting(host: room.hostName)
         joiningRoomID = room.id
+        joinStartedAt = .now
         nearby?.join(room, context: context)
+    }
+
+    /// Shown with the room list when a join did not work out. The joiner cannot tell a host that turned it down (the
+    /// room filled up or started a race since it was listed) from a connection that could not be set up, which is
+    /// the more likely reason for a listed room, so the message covers both and says what helps.
+    static var joinFailedMessage: String {
+        String(
+            localized: "Beitreten hat nicht geklappt. Vielleicht ist der Raum gerade voll oder im Rennen, oder die Verbindung kam nicht zustande. Bleib in der Nähe des Hosts, lass WLAN und Bluetooth an und versuch es noch einmal."
+        )
     }
 
     /// Nearby joiner: stops waiting for the host and goes back to the room list.
@@ -215,13 +246,27 @@ final class NearbySession: Identifiable {
         joinFailure = reason
     }
 
+    /// Nearby joiner: the join did not work out. The player reads why it may have failed and what helps; the log keeps
+    /// the reason and how long it took, so the Xcode console (or Console.app) shows the cause.
+    private func failJoin(_ failure: JoinFailure) {
+        let host = stage.connectingHost ?? ""
+        let seconds = joinStartedAt.map { (ContinuousClock.now - $0).seconds } ?? 0
+        let reason = failure.logDescription
+        logger.notice(
+            "Join of \(host) failed after \(seconds, format: .fixed(precision: 1)) s: \(reason, privacy: .public)"
+        )
+        leaveRoom(Self.joinFailedMessage)
+    }
+
     /// Nearby joiner: looks for rooms again, with a fresh list. The clock round trips go too, because the next host's
     /// clock has a zero point of its own.
     private func returnToRoomList() {
         pinger?.cancel()
+        lobbyDeadline?.cancel()
         clock.reset()
         hostPeer = nil
         joiningRoomID = nil
+        joinStartedAt = nil
         stage = .browsing
         nearby?.startBrowsing()
     }
@@ -277,6 +322,7 @@ final class NearbySession: Identifiable {
     func leave() {
         hasLeft = true
         pinger?.cancel()
+        lobbyDeadline?.cancel()
         listener?.cancel()
         run?.stop()
         transport.close()
@@ -392,7 +438,8 @@ final class NearbySession: Identifiable {
         }
     }
 
-    private func handle(_ event: TransportEvent) {
+    /// Internal rather than private so the tests can feed a transport's events one at a time.
+    func handle(_ event: TransportEvent) {
         switch event {
         case let .connected(peer):
             peerConnected(peer)
@@ -405,9 +452,9 @@ final class NearbySession: Identifiable {
             } catch {
                 logger.error("Dropped a message: \(String(describing: error))")
             }
-        case .joinFailed:
+        case let .joinFailed(failure):
             guard case .connecting = stage else { return }
-            leaveRoom(String(localized: "Der Raum ist voll oder das Rennen läuft schon."))
+            failJoin(failure)
         case let .failed(message):
             stage = .failed(message)
         }
@@ -421,7 +468,11 @@ final class NearbySession: Identifiable {
                 // Nearby joiners announce themselves with their invitation.
                 guard let data = nearby.joinContext(for: peer),
                       let decoded = try? JSONDecoder().decode(JoinRequest.self, from: data)
-                else { return }
+                else {
+                    // The joiner waits for a lobby that never comes and gives up; this line on the host says why.
+                    logger.notice("Could not seat \(peer.displayName): no readable join request")
+                    return
+                }
                 request = decoded
             } else {
                 // Online players are known by their Game Center id and name.
@@ -442,6 +493,7 @@ final class NearbySession: Identifiable {
             )
             guard lobby.join(player) else {
                 // No seat left: a full lobby without the phone in it tells it so, and it leaves.
+                logger.notice("No seat for \(request.nickname): the lobby is full")
                 send(.lobbyState(lobby), to: [peer])
                 return
             }
@@ -453,6 +505,7 @@ final class NearbySession: Identifiable {
                 hostPeer = peer
                 nearby?.stopBrowsing()
                 startPinging()
+                awaitLobby()
             }
         }
     }
@@ -473,10 +526,25 @@ final class NearbySession: Identifiable {
                 broadcastLobby()
             }
         case .joiner:
-            if peer == hostPeer {
+            guard peer == hostPeer else { return }
+            if isNearby, case .connecting = stage {
+                // Not in the room yet: back to the list, where joining again is one tap away.
+                failJoin(.droppedWhileConnecting)
+            } else {
                 pinger?.cancel()
                 stage = .failed(String(localized: "Die Verbindung zum Raum ist abgebrochen."))
             }
+        }
+    }
+
+    /// Nearby joiner: the host let us in and is about to send the lobby. Without it the join is over after
+    /// `lobbyTimeout`: the host may not have understood our join request, or the lobby never got through.
+    private func awaitLobby() {
+        lobbyDeadline?.cancel()
+        lobbyDeadline = Task { [weak self, lobbyTimeout] in
+            try? await Task.sleep(for: lobbyTimeout)
+            guard !Task.isCancelled, let self, case .connecting = stage else { return }
+            failJoin(.noLobby)
         }
     }
 
@@ -492,6 +560,7 @@ final class NearbySession: Identifiable {
                 if case .connecting = stage, !state.isFull {
                     return
                 }
+                logger.notice("Left the room of \(state.host?.nickname ?? ""): its lobby has no seat for us")
                 leaveRoom(String(localized: "Der Raum ist voll."))
                 return
             }
@@ -500,6 +569,7 @@ final class NearbySession: Identifiable {
                 markOpponent(player.id) { $0.isConnected = player.isConnected }
             }
             if case .connecting = stage {
+                lobbyDeadline?.cancel()
                 stage = .lobby
             } else if case .results = stage {
                 run = nil

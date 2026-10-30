@@ -4,8 +4,18 @@
 
 ```bash
 make test       # EggscapeCore (swift test) + app unit tests on an iPhone simulator
-make test-ui    # UI tests: launch, and a complete 15 m time trial steered with a finger
+make test-ui    # UI tests: launch, the tutorial's name step, and a complete 15 m time trial steered with a finger
 ```
+
+Launch arguments for tests and manual checks (`App/Support/LaunchOptions.swift`), all with fresh, throwaway data that
+leaves the real data alone, without Game Center, and without picking up coin purchases that StoreKit still has to
+deliver (the next normal launch credits them):
+
+- `-ui-testing`: tutorial already seen, white background, fixed seeds.
+- `-first-launch`: like a new install: the tutorial with its name step, the default settings (camera background),
+  random seeds. Combined with `-ui-testing` only the seeds are fixed. `xcrun simctl launch <device>
+  de.juliusedel.eggscape -first-launch` shows it in the Simulator.
+- `--screenshot-mode <scene>`: the staged App Store scenes.
 
 CI (`.github/workflows/ci.yml`) runs `swift test` for EggscapeCore and an unsigned simulator build of the app.
 
@@ -17,7 +27,9 @@ sudo automationmodetool enable-automationmode-without-authentication
 ```
 
 The Simulator has no motion sensors, camera, haptics or Game Center account. There the game switches to finger
-steering (drag the egg), the camera mode falls back to the white background, and Game Center shows "not available".
+steering (drag the egg), the camera mode (the default background) falls back to the white background without asking
+for camera access, and Game Center shows "not available". UI tests and staged screenshots set the white background
+themselves (`EggscapeApp.makeServices`).
 Everything below therefore has to be checked on real iPhones before a release.
 
 ## Manual device checklist
@@ -28,10 +40,12 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 ### Motion and calibration
 - [ ] Calibrate holding the phone flat, then again tilted towards you (~40°): in both poses a level hold keeps the
       egg in the middle.
-- [ ] Slowly tilting sideways drops the egg at roughly 11°, forwards/backwards at roughly 15° (a quick tilt a little
-      earlier, about 9° and 12°).
+- [ ] At Empfindlichkeit 100 %, slowly tilting the phone sideways drops the egg at roughly 5°, forwards/backwards
+      at roughly 6.5° (a quick tilt a little earlier, about 4° and 5°): the base gain of 2.5 makes small turns of the
+      wrist enough (`docs/TUNING.md`).
 - [ ] A quick jerk drops it earlier (overshoot); small corrections feel forgiving.
-- [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart.
+- [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart. A value set in an
+      earlier build stays where it was on the slider.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
 - [ ] The screen never dims during calibration, countdown or a run, and dims normally in the menus.
 
@@ -44,7 +58,17 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       menu and in the settings mutes immediately.
 
 ### Camera mode
-- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once (German text in German, English in English).
+- [ ] Fresh install (or Daten zurücksetzen with camera access never asked): Einstellungen → Hintergrund shows
+      Kamera. The first single run or hot-seat run asks for camera access on its calibration screen (German text in
+      German, English in English); allowing it shows the camera right away.
+- [ ] Declining that prompt keeps the run on the white background, without a black screen or an error, and switches
+      Einstellungen → Hintergrund to Weiß; choosing Kamera there again explains how to allow it.
+- [ ] After declining the camera, Einstellungen → Daten zurücksetzen leaves Hintergrund on Weiß (iOS keeps the "no");
+      with camera access allowed or never asked it shows Kamera.
+- [ ] A fresh install whose first run is a nearby or online race shows no prompt during the countdown (the race runs
+      on white); the next single run asks.
+- [ ] A background chosen in an earlier build is kept after the update (Weiß stays Weiß).
+- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked.
 - [ ] The live rear camera fills the screen behind the spoon, upright, with no visible lag.
 - [ ] Declining access falls back to the white background and explains how to allow it.
 - [ ] Rain and storm darken the camera image; the broken egg appears on the "ground".
@@ -87,7 +111,22 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Largest Dynamic Type size: names, prices and the coin cards stay readable, the padlocks stay on the eggs.
 
 ### In-app purchases
-Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed.
+Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed and no paid
+developer program. `make test-app` loads the packs from the same file and buys one in a StoreKitTest session
+(`StoreServiceTests`). Notes for running from Xcode:
+
+- It works without the debugger (the Run scheme leaves "Debug executable" off): Xcode syncs the configuration to the
+  Simulator or iPhone as part of the run (the run's log in the Report navigator lists a "StoreKitTesting" step,
+  "StoreKit Configuration sync"), and StoreKit keeps it for the app.
+- The sync needs a run that launched. A run that failed to launch (Developer Mode off, developer certificate not yet
+  trusted in Settings → General → VPN & Device Management) synced nothing, and opening the app from the Home Screen
+  then asks the real App Store, which has no packs for this app yet: the Münzen page says they are not available.
+  Run it from Xcode again once the device is set up.
+- If the page says so anyway, check Edit Scheme → Run → Options → StoreKit Configuration ("Eggscape.storekit") and
+  tap "Erneut versuchen".
+- Real purchases always use the Apple Account the device uses for the App Store (a Sandbox Apple Account for
+  testing); the app has no sign-in of its own. StoreKit testing in Xcode needs no account at all.
+
 - [ ] Shop → Münzen lists the three packs as cards with 0,99 € / 2,99 € / 5,99 € (German storefront of the
       configuration); the 5.000 pack carries "Bestes Angebot".
 - [ ] Buying a pack credits its coins exactly once (the balance counts up); Debug → StoreKit → Manage Transactions
@@ -113,6 +152,17 @@ On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] Global and friends scopes load; without Game Center the tab still shows personal bests.
 
 ### Nearby multiplayer (two or more phones)
+Use two real iPhones. MultipeerConnectivity between the Simulator and an iPhone is unreliable: the Simulator has no
+Bluetooth or peer-to-peer Wi-Fi, only the Mac's network, so a room can be listed while joining it fails. If you try it
+anyway, both must be on the same Wi-Fi without client isolation or VPN, and the Mac must let the Simulator use the
+local network (System Settings → Privacy & Security → Local Network, and the firewall).
+
+Why a join failed is logged (subsystem `de.juliusedel.eggscape`, category `nearby`): the joiner logs the reason and how
+many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. Read it
+in Xcode's console (it shows the app's log also without the debugger, which the Run scheme leaves off), in Console.app
+with the iPhone selected, or for the Simulator with
+`xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
+
 - [ ] The Local Network prompt appears only when entering "In der Nähe", with the explanatory text.
 - [ ] Raum erstellen on phone A, Beitreten on phone B: B sees A's nickname and joins; A accepts automatically.
 - [ ] Lobby shows players, egg colors and ready states; only the host changes distance and weather.
@@ -120,12 +170,33 @@ On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] During the race every phone shows all players' markers; egg drops show a toast on the other phones.
 - [ ] Results list finish times and lost eggs; "Nochmal" returns to the lobby with the same players.
 - [ ] Turning off Wi-Fi/Bluetooth on one phone mid-race marks it "Verbindung verloren"; the race continues.
-- [ ] A fifth phone cannot join a full room.
+- [ ] A fifth phone cannot join a full room: the host stops listing it, and a phone that still lists it, or asks
+      for the last seat at the same moment as another phone, reads "Beitreten hat nicht geklappt …". "Der Raum ist
+      voll." is only a fallback for a lobby that has no seat once the joiner has connected; it should not normally
+      appear.
+- [ ] A join that does not work out (e.g. the host leaves while the joiner shows "Verbinde …") returns to the room
+      list with "Beitreten hat nicht geklappt …", which names the possible reasons and what helps; it never waits on
+      "Verbinde …" for more than about half a minute, and joining again from the list works.
 
 ### Lifecycle and power
 - [ ] Going to the home screen or receiving a call pauses the run; coming back shows the pause menu.
 - [ ] Low Power Mode: the game stays smooth (60 fps target) and haptics still work.
 - [ ] A 10-minute endless run does not heat the phone noticeably or leak memory (Instruments → Allocations).
+
+### Tutorial
+- [ ] First launch (or `-first-launch`): the tutorial opens; "Überspringen" is a clearly visible button of at least a
+      finger's size in its own bar above the pages, also at the largest Dynamic Type size, and never covers a page's
+      text.
+- [ ] "Überspringen" on any of the three pages, and "Weiter" on the third, lead to "Wie heißt du?"; that step has no
+      "Überspringen".
+- [ ] On a first launch the keyboard comes up by itself; the field, the hint under it and "Los geht’s" stay above the
+      keyboard on the smallest iPhone and at the largest text size (the text above them scrolls).
+- [ ] "Los geht’s" or the keyboard's Return key stores the name without leading or trailing spaces; Mehrspieler →
+      In der Nähe says "Du spielst als …" with it, and An einem Handy fills it in for Spieler 1. An empty name stays
+      allowed and shows as "Spieler".
+- [ ] Einstellungen → "Anleitung anzeigen" shows the tutorial again with the current name filled in (no keyboard);
+      "Los geht’s" keeps or changes it.
+- [ ] An online invitation accepted during the tutorial waits until it is finished.
 
 ### Accessibility and localization
 - [ ] VoiceOver reads every button in the menus and the HUD (pause, sprint, eggs left, weather).

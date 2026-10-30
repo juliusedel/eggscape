@@ -3,6 +3,7 @@
 public enum EggscapeCore {
     /// Bumped whenever the multiplayer wire format, the shared physics (`GameConfig`) or the course lengths change;
     /// peers with different versions cannot race together. 2: the smaller tipping point and the gentler wind and
-    /// lightning. 3: the time trials shortened from 150, 300 and 600 m to 15, 50 and 100 m.
+    /// lightning. 3: the time trials shortened from 150, 300 and 600 m to 15, 50 and 100 m. The tilt input numbers
+    /// (dead zone, gain, sensitivity, clamp) only map one phone's hand to its own egg and need no new version.
     public static let protocolVersion = 3
 }

@@ -9,9 +9,13 @@ struct EggscapeApp: App {
             RootView()
                 .environment(services)
                 .task {
-                    services.store.start()
-                    // UI tests and staged screenshots never touch GameKit, so their records never reach a leaderboard.
+                    // UI tests, staged screenshots and a simulated first launch never touch GameKit, so their records
+                    // never reach a leaderboard. Nor do they pick up StoreKit's unfinished or updated transactions:
+                    // these would be credited to a throwaway wallet and finished, so the real one would never get the
+                    // coins. StoreKit keeps them for the next normal launch; a pack bought inside such a session is
+                    // still credited by `purchase()`.
                     if !LaunchOptions.current.usesEphemeralData {
+                        services.store.start()
                         services.gameCenter.authenticate()
                     }
                 }
@@ -27,7 +31,11 @@ struct EggscapeApp: App {
             records: RecordsStore(defaults: defaults),
             wallet: WalletStore(defaults: defaults)
         )
+        // A new install is left as it is.
+        guard !options.simulatesFirstLaunch else { return services }
         services.settings.hasSeenTutorial = true
+        // The white studio surface: the Simulator has no camera, and the camera prompt would stop a UI test.
+        services.settings.background = .white
         return services
     }
 }

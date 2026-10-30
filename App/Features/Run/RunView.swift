@@ -37,7 +37,7 @@ struct RunView<Results: View>: View {
             // An accepted invitation waits until the run and its results are gone (see `RootView`).
             services.navigation.setBusy(true, for: session)
             if wantsCamera {
-                services.camera.start(for: session)
+                services.camera.start(for: session, mayAskForAccess: mayAskForCamera)
             }
             session.scene.showsCamera = showsCamera
         }
@@ -64,7 +64,7 @@ struct RunView<Results: View>: View {
             if newPhase == .paused {
                 services.camera.stop(for: session)
             } else if oldPhase == .paused, wantsCamera {
-                services.camera.start(for: session)
+                services.camera.start(for: session, mayAskForAccess: mayAskForCamera)
             }
         }
     }
@@ -72,6 +72,14 @@ struct RunView<Results: View>: View {
     /// The player chose the camera and it is not known to be unavailable.
     private var wantsCamera: Bool {
         session.background == .camera && services.camera.isUsable
+    }
+
+    /// A run that starts on its calibration screen may show the camera prompt there, which on a fresh install, where
+    /// the camera is the default, is the first moment the camera is needed. A race starts with the shared countdown
+    /// instead, which the prompt would cover while the others run on; it keeps the white surface, and the next single
+    /// or hot-seat run asks.
+    private var mayAskForCamera: Bool {
+        session.race == nil
     }
 
     /// The scene turns transparent only once the camera really delivers pictures; until then it stays white.

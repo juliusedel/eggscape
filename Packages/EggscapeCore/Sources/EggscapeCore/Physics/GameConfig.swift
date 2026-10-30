@@ -22,11 +22,18 @@ public struct GameConfig: Sendable, Equatable {
 
     // MARK: Tilt input
 
-    /// Calibrated tilt is clamped to ± this angle.
+    /// The tilt the egg feels is clamped to ± this angle (after the gain and the sensitivity setting).
     public var maxTiltDegrees = 30.0
-    /// Tilt below this angle counts as level.
+    /// A phone tilt below this angle counts as level. Measured on the phone, before the gain, so it swallows the same
+    /// hand tremor whatever the gain.
     public var deadZoneDegrees = 0.5
-    /// Allowed range of the sensitivity setting.
+    /// How much more strongly the egg feels the phone's tilt beyond the dead zone, before the sensitivity setting.
+    /// The owner found the egg too sluggish at 1: it took a big turn of the wrist to move it (2026-10-29). 2.5 makes
+    /// the setting's 100 % steer two and a half times as strongly, while the setting's range stays as it was. Local
+    /// input mapping like the dead zone and the clamp: the race only sees the resulting tilt, so changing it needs no
+    /// new `EggscapeCore.protocolVersion`.
+    public var tiltGain = 2.5
+    /// Allowed range of the sensitivity setting, a multiplier on top of `tiltGain`.
     public var sensitivityRange: ClosedRange<Double> = 0.7 ... 1.3
     /// Time constant of the low-pass filter on the sensor tilt, in seconds.
     public var tiltFilterTimeConstant = 0.05

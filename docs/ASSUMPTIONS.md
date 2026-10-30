@@ -51,7 +51,7 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   Spielen / Mehrspieler / Einstellungen / Anleitung. Settings and the tutorial open from a toolbar button.
 - **Camera mode** needs `NSCameraUsageDescription`. The camera image is only shown on screen, never recorded, stored
   or sent, so the privacy label stays "Data Not Collected". The prompt appears only when the player turns on camera
-  mode.
+  mode. (Since 2026-10-29 the camera is the default, see "Steering and camera by default" below.)
 
 ## Later decisions
 
@@ -142,3 +142,64 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   player's first one pays 75 with the personal best, enough for the brown egg or the quail egg after it (70), and
   first clean runs over 15 and 50 m pay 11 and 38. All 19 paid eggs (26,505 coins) take about four and a half hours
   of clean 100 m runs. Wallets keep their coins.
+- **Steering and camera by default (owner, 2026-10-29).** The owner found the egg too sluggish and asked for the default
+  sensitivity to be 2.5 times as strong, with the slider left as it is, and for the camera to be the default background.
+  So `TiltCalibration` applies a base gain (`GameConfig.tiltGain` = 2.5) in front of the setting: the slider keeps its
+  70–130 % and its 100 % default, a stored value keeps its place on it, and every value steers 2.5 times as strongly as
+  before (`docs/TUNING.md`). The dead zone (0.5° of the phone) and the 30° clamp stay. The gain is local input mapping,
+  so the protocol version stays 3; finger steering in the Simulator is not affected. Fresh installs and "Daten
+  zurücksetzen" start with the camera background. A background the player picked is stored and kept; installs that never
+  picked one had the white default implicitly (nothing was stored) and now get the camera too, since a stored choice is
+  the only way to tell a choice from the old default. The camera prompt appears on the calibration screen of the first
+  single or hot-seat run, the first moment the camera is needed, and not during a race's countdown, which it would cover
+  while the others run on. Without a rear camera (the Simulator) the app does not ask at all and shows the white
+  surface. Answering the prompt with "no" shows the white surface and sets the background to Weiß, so the settings show
+  what the player sees; choosing Kamera again explains how to allow it in the iOS settings. For the same reason "Daten
+  zurücksetzen" leaves the background on Weiß while iOS still denies the camera: resetting the data does not reset the
+  permission. UI tests and staged screenshots set the white background explicitly.
+- **Tutorial asks for the name (owner, 2026-10-29).** The owner asked for a bigger "Überspringen" button and for the
+  tutorial to end by asking for the player's name. "Überspringen" is now a bordered (Liquid Glass) button of at least
+  44 pt in a bar of its own above the pages, so it cannot cover their text at any text size. After the three steps
+  comes a fourth, "Wie heißt du?", with the current name filled in; "Überspringen" and "Weiter" on the third step lead
+  there instead of closing the tutorial, so every new player is asked once, and the step itself has nothing to skip.
+  "Los geht’s" (or Return) stores the name trimmed; empty stays allowed and keeps the "Spieler" fallback, as in the
+  settings. The name step is a screen of its own rather than a fourth page of the paged `TabView`, because resizing a
+  paged `TabView` for the keyboard is prone to layout glitches; its field and button sit below the scrolling text, so
+  the keyboard pushes both up and hides neither. The keyboard comes up by itself only while the name is empty. The
+  new `-first-launch` launch argument simulates a new install with throwaway data, for the tutorial's UI test and for
+  manual checks.
+- **Nearby join failures (owner, 2026-10-29).** Joining a listed room from the iPhone 18 Pro Simulator said "Der Raum
+  ist voll oder das Rennen läuft schon." although the room was neither. That text stood for every failed join, but the
+  host only advertises while it takes players, so for a listed room the likelier cause is a connection that could not be
+  set up, which MultipeerConnectivity between the Simulator and a device often fails at (the Simulator has no Bluetooth
+  or peer-to-peer Wi-Fi). The joiner cannot tell a declined invitation from a failed connection, so it now reads
+  "Beitreten hat nicht geklappt …", which names both and what helps; "Der Raum ist voll." stays for a lobby that really
+  has no seat. Three gaps in the join were closed: once the host had connected, the transport's invitation deadline was
+  over, so a lobby that never came left the joiner on "Verbinde …" for good (now it gives up after 10 s); a connection
+  that broke before the lobby came ended on the "Verbindung verloren" screen instead of the room list; and a retry could
+  be turned down for the last seat because the host still counted the same phone's earlier attempt
+  (MultipeerConnectivity keeps the peer id across attempts). Both sides log why a join failed: the joiner the reason and
+  how many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected.
+  Nothing pointed at the protocol or at the required encryption (both sides ask for it, with no identity), so both stay
+  as they were. `NearbySession` takes its nearby transport as a `NearbyTransport`, so its join logic is tested with a
+  fake.
+- **Coin shop and the Apple Account (owner, 2026-10-29).** The owner found that buying coins "does not work" and asked
+  whether buyers should sign in with their Apple Account so that a purchase is not lost. They need not: StoreKit always
+  buys with the Apple Account the device uses for the App Store, and the app never sees it. A purchase is not lost even
+  if the app dies before crediting it: the transaction stays unfinished, and StoreKit delivers it again at the next
+  launch (`Transaction.unfinished`, `Transaction.updates`), which the wallet credits once per transaction id. What is
+  lost is the coins themselves when the app is deleted: they live in `UserDefaults`, and coin packs are consumables,
+  which Apple does not restore. Keeping them would take a sync of the wallet, with the iCloud key-value store (small,
+  enough for a balance, owned eggs and the credited transaction ids) or CloudKit; both need the iCloud capability, which
+  a free Personal Team cannot use, so it waits for the paid Apple Developer Program, as do real purchases (the packs
+  must exist in App Store Connect). Not built now. No bug was found in `StoreService` or the coin page, the scheme's
+  StoreKit path resolves (Xcode reads it relative to `Eggscape.xcodeproj/project.xcworkspace`, hence `../../`), and the
+  configuration sells exactly the three packs as consumables. Xcode's own run logs on the build Mac show that the
+  configuration reached the iPhone 18 Pro Simulator in a run with the debugger off ("StoreKit Configuration sync"), and
+  the Simulator's log shows the app loading the three packs from it in that run, while both logged runs on the iPhone
+  failed to launch (Developer Mode off, then an untrusted developer certificate) and so synced nothing, which leaves an
+  app opened from the Home Screen asking the real App Store. So the Run scheme keeps running without the debugger, and
+  no second scheme was added. The storekit file is now also a resource of the unit tests, which buy a pack in a
+  StoreKitTest session. Launches with throwaway data (`-ui-testing`, `-first-launch`, staged screenshots) do not listen
+  for StoreKit's unfinished and updated transactions, so none of them is finished into a wallet that the next launch
+  wipes; StoreKit keeps them for the next normal launch.

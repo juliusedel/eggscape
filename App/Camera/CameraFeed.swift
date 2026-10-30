@@ -17,6 +17,9 @@ final class CameraFeed {
 
     private(set) var status = Status.idle
     @ObservationIgnored let controller = CaptureController()
+    /// Called when the player answers the system's camera prompt with "no"; `AppServices` then switches the background
+    /// to white, so the settings show what the player sees and choosing "Kamera" there explains how to allow it.
+    @ObservationIgnored var onDeclined: () -> Void = {}
     /// The runs that show the camera; on "Nochmal" the new one starts before the old one stops.
     @ObservationIgnored private var owners = Leases()
 
@@ -25,15 +28,25 @@ final class CameraFeed {
         status != .unavailable && status != .denied
     }
 
+    /// The player said "no" earlier, or camera access is restricted on this device: iOS will not ask again, so only
+    /// the iOS settings can allow it.
+    static var isDeniedBySystem: Bool {
+        [.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video))
+    }
+
     /// Asks for camera access if needed; returns whether the camera may be used.
     func requestAccess() async -> Bool {
-        let granted: Bool = switch AVCaptureDevice.authorizationStatus(for: .video) {
+        let granted: Bool
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            true
+            granted = true
         case .notDetermined:
-            await AVCaptureDevice.requestAccess(for: .video)
+            granted = await AVCaptureDevice.requestAccess(for: .video)
+            if !granted {
+                onDeclined()
+            }
         default:
-            false
+            granted = false
         }
         if !granted {
             status = .denied
@@ -44,14 +57,21 @@ final class CameraFeed {
         return granted
     }
 
-    /// Shows the camera for `owner` until the last owner has called `stop(for:)`. Asks for access first if the player
-    /// has never been asked, e.g. after resetting the privacy settings.
-    func start(for owner: AnyObject) {
+    /// Shows the camera for `owner` until the last owner has called `stop(for:)`. If the player has never been asked
+    /// for access (a fresh install, where the camera is the default, or after resetting the privacy settings), it asks
+    /// first when `mayAskForAccess` is set, and otherwise leaves the question to a later start. Without a rear camera,
+    /// as in the Simulator, it does not ask at all: there is nothing to allow.
+    func start(for owner: AnyObject, mayAskForAccess: Bool = true) {
         owners.acquire(owner)
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             startSession()
         case .notDetermined:
+            guard CaptureController.hasRearCamera else {
+                status = .unavailable
+                return
+            }
+            guard mayAskForAccess else { return }
             Task {
                 if await requestAccess(), owners.isHeld {
                     startSession()
@@ -114,8 +134,17 @@ final class CaptureController: @unchecked Sendable {
         }
     }
 
+    /// Finding the camera needs no permission, so this can be checked before asking for it.
+    static var hasRearCamera: Bool {
+        rearCamera != nil
+    }
+
+    private static var rearCamera: AVCaptureDevice? {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+
     private func configure() -> Bool {
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        guard let device = Self.rearCamera,
               let input = try? AVCaptureDeviceInput(device: device)
         else { return false }
         session.beginConfiguration()

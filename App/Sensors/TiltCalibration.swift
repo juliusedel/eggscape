@@ -2,7 +2,9 @@ import EggscapeCore
 import Foundation
 
 /// Turns the raw device tilt into the tilt the egg feels: relative to the pose the player calibrated, with a small
-/// dead zone, the sensitivity setting applied and limited to ±30°.
+/// dead zone, strengthened by the base gain (`GameConfig.tiltGain`, 2.5) times the sensitivity setting and limited to
+/// ±30°. Finger steering (`TouchSteering`) computes its tilt directly and never passes through here, so the gain does
+/// not make it stronger.
 struct TiltCalibration: Equatable, Sendable {
     /// Raw tilt captured when the player tapped "Kalibrieren"; it counts as level from then on.
     var zero: SIMD2<Double> = .zero
@@ -36,7 +38,7 @@ struct TiltCalibration: Equatable, Sendable {
         let magnitude = abs(angle)
         guard magnitude > deadZone else { return 0 }
         // Subtracting the dead zone keeps the response continuous at its edge.
-        let shaped = min((magnitude - deadZone) * sensitivity, limit)
+        let shaped = min((magnitude - deadZone) * config.tiltGain * sensitivity, limit)
         return angle < 0 ? -shaped : shaped
     }
 }

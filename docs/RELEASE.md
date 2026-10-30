@@ -52,8 +52,10 @@ Xcode 26 or later is required (the app uses the iOS 26 Liquid Glass styles when 
 
    Add German and English display names/descriptions (see `StoreKit/Eggscape.storekit`) and a review screenshot of
    the coin shop (Shop → Münzen) for each product. Submit them together with the first app version.
-3. For local testing Xcode uses `StoreKit/Eggscape.storekit` automatically (Run scheme). On a device, sign in to a
-   **Sandbox Apple Account** under Settings → Developer.
+3. For local testing, a Run from Xcode uses `StoreKit/Eggscape.storekit` (Run scheme) on the Simulator and on a
+   device, with no Apple Account and no paid program (see `docs/TESTING.md`). To test against the products in App
+   Store Connect instead (Run scheme → Options → StoreKit Configuration: None), sign in to a **Sandbox Apple Account**
+   under Settings → Developer.
 
 ## 5. Game Center leaderboards (Owner)
 

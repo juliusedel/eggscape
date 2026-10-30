@@ -30,6 +30,9 @@ final class SettingsStore {
     }
 
     static let maxNameLength = 16
+    /// The camera for fresh installs and after "Daten zurücksetzen" (owner, 2026-10-29): the see-through phone is the
+    /// game's look. Without a camera or camera access a run shows the white surface instead (`RunView`).
+    static let defaultBackground = BackgroundMode.camera
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -41,7 +44,8 @@ final class SettingsStore {
         didSet { defaults.set(isHapticsOn, forKey: Key.haptics) }
     }
 
-    /// Multiplier on the calibrated tilt, 0.7 ... 1.3.
+    /// Multiplier on the calibrated tilt, 0.7 ... 1.3, on top of the base gain (`GameConfig.tiltGain`): 100 % is the
+    /// recommended steering, so stored values keep meaning "this much stronger or weaker than recommended".
     var sensitivity: Double {
         didSet {
             let range = GameConfig.standard.sensitivityRange
@@ -64,6 +68,7 @@ final class SettingsStore {
         }
     }
 
+    /// A background the player chose is stored and kept, also when the default changes.
     var background: BackgroundMode {
         didSet { defaults.set(background.rawValue, forKey: Key.background) }
     }
@@ -89,11 +94,18 @@ final class SettingsStore {
         isHapticsOn = defaults.object(forKey: Key.haptics) as? Bool ?? true
         sensitivity = defaults.object(forKey: Key.sensitivity) as? Double ?? 1
         playerName = defaults.string(forKey: Key.playerName) ?? ""
-        background = defaults.string(forKey: Key.background).flatMap(BackgroundMode.init(rawValue:)) ?? .white
+        background = defaults.string(forKey: Key.background).flatMap(BackgroundMode.init(rawValue:))
+            ?? Self.defaultBackground
         hasSeenTutorial = defaults.bool(forKey: Key.tutorialSeen)
         calibrationZero = (defaults.array(forKey: Key.calibration) as? [Double]).flatMap { values in
             values.count == 2 ? SIMD2(values[0], values[1]) : nil
         }
+    }
+
+    /// Stores a name the player typed, e.g. in the tutorial's last step, without the spaces around it. A blank name is
+    /// stored empty, so `displayName` falls back to the generic one.
+    func savePlayerName(_ typed: String) {
+        playerName = typed.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// The name to show, falling back to a generic one.
@@ -109,7 +121,7 @@ final class SettingsStore {
         isHapticsOn = true
         sensitivity = 1
         playerName = ""
-        background = .white
+        background = Self.defaultBackground
         hasSeenTutorial = false
         calibrationZero = nil
     }

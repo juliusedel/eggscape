@@ -75,12 +75,16 @@ struct WeatherScheduleTests {
         }
     }
 
-    @Test(arguments: RaceDistance.allCases)
-    func randomWeatherEscalatesTowardsTheFinish(distance: RaceDistance) throws {
+    /// The default stretch length gives every course just two stretches of weather. Stretches of about 10 m cut the
+    /// 50 and 100 m into more, so the escalation over several stretches and a thunderstorm over several stay covered.
+    @Test(arguments: RaceDistance.allCases, [GameConfig.standard.randomStretchLength, 10])
+    func randomWeatherEscalatesTowardsTheFinish(distance: RaceDistance, stretchLength: Double) throws {
+        var config = GameConfig()
+        config.randomStretchLength = stretchLength
         var stormyFinishes = 0
         var kinds = Set<WeatherKind>()
         for seed in UInt64(1) ... 200 {
-            let schedule = WeatherSchedule(seed: seed, option: .random, course: .timeTrial(distance))
+            let schedule = WeatherSchedule(seed: seed, option: .random, course: .timeTrial(distance), config: config)
             let stretches = schedule.stretches(in: 0 ..< distance.meters)
             let calm = try #require(stretches.first)
             let finale = try #require(stretches.last)

@@ -421,22 +421,29 @@ struct WeatherSystemTests {
             }
         }) == 1)
 
-        // Zufall starts calm and announces every stretch in the step that enters it.
-        for distance in RaceDistance.allCases {
-            let schedule = WeatherSchedule(seed: 4, option: .random, course: .timeTrial(distance))
-            var runner = SteadyRunner(schedule)
-            var announced: [(meters: ClosedRange<Double>, conditions: WeatherConditions)] = []
-            while runner.meters < distance.meters {
-                let from = runner.meters
-                for case let .weatherChanged(conditions) in runner.step().events {
-                    announced.append((from ... runner.meters, conditions))
+        // Zufall starts calm and announces every stretch in the step that enters it, also when stretches of about 10 m
+        // cut the course into more than the two of the defaults.
+        for stretchLength in [GameConfig.standard.randomStretchLength, 10] {
+            var config = GameConfig()
+            config.randomStretchLength = stretchLength
+            for distance in RaceDistance.allCases {
+                let course = Course.timeTrial(distance)
+                let schedule = WeatherSchedule(seed: 4, option: .random, course: course, config: config)
+                var runner = SteadyRunner(schedule, config: config)
+                var announced: [(meters: ClosedRange<Double>, conditions: WeatherConditions)] = []
+                while runner.meters < distance.meters {
+                    let from = runner.meters
+                    for case let .weatherChanged(conditions) in runner.step().events {
+                        announced.append((from ... runner.meters, conditions))
+                    }
                 }
+                let stretches = schedule.stretches(in: 0 ..< distance.meters).dropFirst()
+                let label = "\(distance), stretches of \(stretchLength) m"
+                #expect(announced.map(\.conditions) == stretches.map(\.conditions), "\(label)")
+                #expect(zip(announced, stretches).allSatisfy {
+                    $0.meters.lowerBound < $1.meters.lowerBound && $1.meters.lowerBound <= $0.meters.upperBound
+                }, "\(label)")
             }
-            let stretches = schedule.stretches(in: 0 ..< distance.meters).dropFirst()
-            #expect(announced.map(\.conditions) == stretches.map(\.conditions), "\(distance)")
-            #expect(zip(announced, stretches).allSatisfy {
-                $0.meters.lowerBound < $1.meters.lowerBound && $1.meters.lowerBound <= $0.meters.upperBound
-            })
         }
     }
 

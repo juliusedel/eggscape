@@ -13,7 +13,7 @@ import os
     @diagnose(DeprecatedDeclaration, as: ignored)
 #endif
 @MainActor
-final class MultipeerTransport: PeerTransport {
+final class MultipeerTransport: NearbyTransport {
     static let serviceType = "eggscape"
     static let maxPlayers = 4
     /// Seconds MultipeerConnectivity waits for the host to answer an invitation.
@@ -42,12 +42,14 @@ final class MultipeerTransport: PeerTransport {
     private var peersByID: [String: MCPeerID] = [:]
     /// What each joiner sent with its invitation (host side), by peer id.
     private var joinContexts: [String: Data] = [:]
-    /// Host side: accepted invitations whose connection is still being set up, by peer id. They hold a seat, so phones
-    /// that ask at the same moment cannot overfill the room.
-    private var pendingPeers: Set<String> = []
+    /// Host side: accepted invitations whose connection is still being set up, by peer id, with when they were
+    /// accepted. They hold a seat, so phones that ask at the same moment cannot overfill the room.
+    private var pendingPeers: [String: ContinuousClock.Instant] = [:]
     private var foundPeers: [String: (peer: MCPeerID, room: DiscoveredRoom)] = [:]
     /// Joiner side: the host we asked to let us in, by peer id, until it connects or the invitation fails.
     private var invitedHost: String?
+    /// Joiner side: when the invitation went out, for the log.
+    private var invitedAt: ContinuousClock.Instant?
     private var invitationDeadline: Task<Void, Never>?
     private let logger = Logger(subsystem: "de.juliusedel.eggscape", category: "nearby")
 
@@ -114,16 +116,18 @@ final class MultipeerTransport: PeerTransport {
     func join(_ room: DiscoveredRoom, context: Data) {
         forgetInvitation()
         guard let browser, let host = foundPeers[room.id]?.peer else {
-            continuation.yield(.joinFailed)
+            continuation.yield(.joinFailed(.roomGone))
             return
         }
         invitedHost = room.id
+        invitedAt = .now
+        logger.info("Inviting ourselves to \(room.hostName)")
         browser.invitePeer(host, to: session, withContext: context, timeout: Self.invitationTimeout)
         // A turned-down or expired invitation shows up as `.notConnected` for the host; this covers it never coming.
         invitationDeadline = Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.invitationTimeout + 2))
             guard !Task.isCancelled else { return }
-            self?.joinFailed()
+            self?.joinFailed(.expired)
         }
     }
 
@@ -171,9 +175,16 @@ final class MultipeerTransport: PeerTransport {
             return
         }
         let remote = Self.remote(peer)
+        if remote.id == invitedHost {
+            let change = Self.describe(state)
+            let seconds = secondsSinceInvitation
+            logger.info(
+                "Host \(remote.displayName) \(change, privacy: .public) at \(seconds, format: .fixed(precision: 1)) s"
+            )
+        }
         switch state {
         case .connected:
-            pendingPeers.remove(remote.id)
+            pendingPeers[remote.id] = nil
             if remote.id == invitedHost {
                 forgetInvitation()
             }
@@ -183,14 +194,19 @@ final class MultipeerTransport: PeerTransport {
             }
             continuation.yield(.connected(remote))
         case .notConnected:
-            pendingPeers.remove(remote.id)
+            if let acceptedAt = pendingPeers.removeValue(forKey: remote.id) {
+                let seconds = (ContinuousClock.now - acceptedAt).seconds
+                logger.notice(
+                    "Joiner \(remote.displayName) failed to connect after \(seconds, format: .fixed(precision: 1)) s"
+                )
+            }
             let wasConnected = connectedPeers.contains(remote)
             connectedPeers.removeAll { $0 == remote }
             peersByID[remote.id] = nil
             if wasConnected {
                 continuation.yield(.disconnected(remote))
             } else if remote.id == invitedHost {
-                joinFailed()
+                joinFailed(.declinedOrFailed)
             }
         case .connecting:
             break
@@ -206,12 +222,20 @@ final class MultipeerTransport: PeerTransport {
 
     fileprivate func invitation(from peer: MCPeerID, context: Data?, reply: InvitationReply) {
         let id = Self.remote(peer).id
-        let accept = connectedPeers.count + pendingPeers.count + 1 < Self.maxPlayers && acceptsPlayers()
+        let hasSeat = connectedPeers.count + pendingPeers.count + 1 < Self.maxPlayers
+        let isOpen = acceptsPlayers()
+        let accept = hasSeat && isOpen
         if accept {
-            pendingPeers.insert(id)
+            pendingPeers[id] = .now
             if let context {
                 joinContexts[id] = context
             }
+            logger.info("Letting \(peer.displayName) in")
+        } else {
+            // The joiner only learns that it did not get in; this line on the host says why.
+            let room = isOpen ? "open" : "racing, showing results or full"
+            let seats = "\(connectedPeers.count) in, \(pendingPeers.count) joining"
+            logger.notice("Turned \(peer.displayName) down: room \(room, privacy: .public), \(seats, privacy: .public)")
         }
         reply.callback(accept, accept ? session : nil)
     }
@@ -241,17 +265,32 @@ final class MultipeerTransport: PeerTransport {
 
     // MARK: Helpers
 
-    /// The host turned the invitation down (racing, showing results or full), or it expired.
-    private func joinFailed() {
+    /// The host turned the invitation down (racing, showing results or full), the connection could not be set up, or
+    /// the invitation expired.
+    private func joinFailed(_ failure: JoinFailure) {
         guard invitedHost != nil else { return }
         cancelJoin()
-        continuation.yield(.joinFailed)
+        continuation.yield(.joinFailed(failure))
     }
 
     private func forgetInvitation() {
         invitedHost = nil
+        invitedAt = nil
         invitationDeadline?.cancel()
         invitationDeadline = nil
+    }
+
+    private var secondsSinceInvitation: Double {
+        invitedAt.map { (ContinuousClock.now - $0).seconds } ?? 0
+    }
+
+    private static func describe(_ state: MCSessionState) -> String {
+        switch state {
+        case .notConnected: "not connected"
+        case .connecting: "connecting"
+        case .connected: "connected"
+        @unknown default: "in an unknown state"
+        }
     }
 
     private static func remote(_ peer: MCPeerID) -> RemotePeer {

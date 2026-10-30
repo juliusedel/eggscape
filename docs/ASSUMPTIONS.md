@@ -167,3 +167,15 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   the keyboard pushes both up and hides neither. The keyboard comes up by itself only while the name is empty. The
   new `-first-launch` launch argument simulates a new install with throwaway data, for the tutorial's UI test and for
   manual checks.
+- **Nearby join failures (owner, 2026-10-29).** Joining a listed room from the iPhone 18 Pro Simulator said "Der Raum
+  ist voll oder das Rennen läuft schon." although the room was neither. That text stood for every failed join, but
+  the host only advertises while it takes players, so for a listed room the likelier cause is a connection that could
+  not be set up, which MultipeerConnectivity between the Simulator and a device often fails at (the Simulator has no
+  Bluetooth or peer-to-peer Wi-Fi). The joiner cannot tell a declined invitation from a failed connection, so it now
+  reads "Beitreten hat nicht geklappt …", which names both and what helps; "Der Raum ist voll." stays for a lobby that
+  really has no seat. Two gaps in the join were closed: once the host had connected, the transport's invitation
+  deadline was over, so a lobby that never came left the joiner on "Verbinde …" for good (now it gives up after
+  10 s), and a connection that broke before the lobby came ended on the "Verbindung verloren" screen instead of the
+  room list. Both sides log why a join failed and how long it took. Nothing pointed at the protocol or at the
+  required encryption (both sides ask for it, with no identity), so both stay as they were. `NearbySession` takes its
+  nearby transport as a `NearbyTransport`, so its join logic is tested with a fake.

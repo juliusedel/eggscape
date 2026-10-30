@@ -134,6 +134,17 @@ On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] Global and friends scopes load; without Game Center the tab still shows personal bests.
 
 ### Nearby multiplayer (two or more phones)
+Use two real iPhones. MultipeerConnectivity between the Simulator and an iPhone is unreliable: the Simulator has no
+Bluetooth or peer-to-peer Wi-Fi, only the Mac's network, so a room can be listed while joining it fails. If you try it
+anyway, both must be on the same Wi-Fi without client isolation or VPN, and the Mac must let the Simulator use the
+local network (System Settings → Privacy & Security → Local Network, and the firewall).
+
+Why a join failed is logged (subsystem `de.juliusedel.eggscape`, category `nearby`): the joiner logs the reason and how
+many seconds it took, the host why it turned an invitation down. Read it in Xcode's console (it shows the app's log
+also without the debugger, which the Run scheme leaves off), in Console.app with the iPhone selected, or for the
+Simulator with
+`xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
+
 - [ ] The Local Network prompt appears only when entering "In der Nähe", with the explanatory text.
 - [ ] Raum erstellen on phone A, Beitreten on phone B: B sees A's nickname and joins; A accepts automatically.
 - [ ] Lobby shows players, egg colors and ready states; only the host changes distance and weather.
@@ -141,7 +152,11 @@ On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] During the race every phone shows all players' markers; egg drops show a toast on the other phones.
 - [ ] Results list finish times and lost eggs; "Nochmal" returns to the lobby with the same players.
 - [ ] Turning off Wi-Fi/Bluetooth on one phone mid-race marks it "Verbindung verloren"; the race continues.
-- [ ] A fifth phone cannot join a full room.
+- [ ] A fifth phone cannot join a full room: the host stops listing it, and a phone that still lists it reads
+      "Beitreten hat nicht geklappt …". "Der Raum ist voll." only appears when two phones take the last seat at once.
+- [ ] A join that does not work out (e.g. the host leaves while the joiner shows "Verbinde …") returns to the room
+      list with "Beitreten hat nicht geklappt …", which names the possible reasons and what helps; it never waits on
+      "Verbinde …" for more than about half a minute, and joining again from the list works.
 
 ### Lifecycle and power
 - [ ] Going to the home screen or receiving a call pauses the run; coming back shows the pause menu.

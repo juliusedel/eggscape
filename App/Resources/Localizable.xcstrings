@@ -421,6 +421,16 @@
         }
       }
     },
+    "Beitreten hat nicht geklappt. Vielleicht ist der Raum gerade voll oder im Rennen, oder die Verbindung kam nicht zustande. Bleib in der Nähe des Hosts, lass WLAN und Bluetooth an und versuch es noch einmal." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t join. The room may be full or racing right now, or the connection didn’t come through. Stay close to the host, keep Wi-Fi and Bluetooth on and try again."
+          }
+        }
+      }
+    },
     "Bereit" : {
       "localizations" : {
         "en" : {
@@ -587,16 +597,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The purchase could not be verified."
-          }
-        }
-      }
-    },
-    "Der Raum ist voll oder das Rennen läuft schon." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The room is full or the race has already started."
           }
         }
       }

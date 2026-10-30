@@ -4,8 +4,17 @@
 
 ```bash
 make test       # EggscapeCore (swift test) + app unit tests on an iPhone simulator
-make test-ui    # UI tests: launch, and a complete 15 m time trial steered with a finger
+make test-ui    # UI tests: launch, the tutorial's name step, and a complete 15 m time trial steered with a finger
 ```
+
+Launch arguments for tests and manual checks (`App/Support/LaunchOptions.swift`), all with fresh, throwaway data that
+leaves the real data alone:
+
+- `-ui-testing`: tutorial already seen, white background, fixed seeds.
+- `-first-launch`: like a new install: the tutorial with its name step, the default settings (camera background).
+  Combined with `-ui-testing` only the seeds are fixed. `xcrun simctl launch <device> de.juliusedel.eggscape
+  -first-launch` shows it in the Simulator.
+- `--screenshot-mode <scene>`: the staged App Store scenes.
 
 CI (`.github/workflows/ci.yml`) runs `swift test` for EggscapeCore and an unsigned simulator build of the app.
 
@@ -138,6 +147,21 @@ On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] Going to the home screen or receiving a call pauses the run; coming back shows the pause menu.
 - [ ] Low Power Mode: the game stays smooth (60 fps target) and haptics still work.
 - [ ] A 10-minute endless run does not heat the phone noticeably or leak memory (Instruments → Allocations).
+
+### Tutorial
+- [ ] First launch (or `-first-launch`): the tutorial opens; "Überspringen" is a clearly visible button of at least a
+      finger's size in its own bar above the pages, also at the largest Dynamic Type size, and never covers a page's
+      text.
+- [ ] "Überspringen" on any of the three pages, and "Weiter" on the third, lead to "Wie heißt du?"; that step has no
+      "Überspringen".
+- [ ] On a first launch the keyboard comes up by itself; the field, the hint under it and "Los geht’s" stay above the
+      keyboard on the smallest iPhone and at the largest text size (the text above them scrolls).
+- [ ] "Los geht’s" or the keyboard's Return key stores the name without leading or trailing spaces; Mehrspieler →
+      In der Nähe says "Du spielst als …" with it, and An einem Handy fills it in for Spieler 1. An empty name stays
+      allowed and shows as "Spieler".
+- [ ] Einstellungen → "Anleitung anzeigen" shows the tutorial again with the current name filled in (no keyboard);
+      "Los geht’s" keeps or changes it.
+- [ ] An online invitation accepted during the tutorial waits until it is finished.
 
 ### Accessibility and localization
 - [ ] VoiceOver reads every button in the menus and the HUD (pause, sprint, eggs left, weather).

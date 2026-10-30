@@ -29,7 +29,8 @@ struct RootView: View {
             SettingsView()
         }
         .fullScreenCover(isPresented: $navigation.showsTutorial) {
-            TutorialView {
+            TutorialView(name: services.settings.playerName) { name in
+                services.settings.savePlayerName(name)
                 services.settings.hasSeenTutorial = true
                 navigation.showsTutorial = false
             }

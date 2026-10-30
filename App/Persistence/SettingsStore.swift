@@ -102,6 +102,12 @@ final class SettingsStore {
         }
     }
 
+    /// Stores a name the player typed, e.g. in the tutorial's last step, without the spaces around it. A blank name is
+    /// stored empty, so `displayName` falls back to the generic one.
+    func savePlayerName(_ typed: String) {
+        playerName = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// The name to show, falling back to a generic one.
     var displayName: String {
         let trimmed = playerName.trimmingCharacters(in: .whitespacesAndNewlines)

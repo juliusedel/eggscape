@@ -74,6 +74,17 @@ struct SettingsStoreTests {
         #expect(settings.displayName == "Mia")
     }
 
+    @Test func typedNameIsTrimmedAndLimited() {
+        let settings = SettingsStore(defaults: makeDefaults())
+        settings.savePlayerName("  Mia \n")
+        #expect(settings.playerName == "Mia")
+        settings.savePlayerName("   ")
+        #expect(settings.playerName.isEmpty)
+        #expect(settings.displayName == String(localized: "Spieler"))
+        settings.savePlayerName(" " + String(repeating: "x", count: 40))
+        #expect(settings.playerName == String(repeating: "x", count: SettingsStore.maxNameLength))
+    }
+
     @Test func resetRestoresDefaults() {
         let defaults = makeDefaults()
         let settings = SettingsStore(defaults: defaults)

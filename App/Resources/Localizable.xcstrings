@@ -331,6 +331,16 @@
         }
       }
     },
+    "Ändern kannst du ihn jederzeit in den Einstellungen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change it in Settings at any time."
+          }
+        }
+      }
+    },
     "Anleitung anzeigen" : {
       "localizations" : {
         "en" : {
@@ -637,6 +647,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The connection to the room was lost."
+          }
+        }
+      }
+    },
+    "Diesen Namen sehen die anderen, wenn ihr zusammen spielt. Ohne Namen heißt du „Spieler“." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Others see this name when you play together. Without a name, you’re “Player”."
           }
         }
       }
@@ -2244,6 +2264,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Weather"
+          }
+        }
+      }
+    },
+    "Wie heißt du?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What’s your name?"
           }
         }
       }

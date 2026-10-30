@@ -156,3 +156,14 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   app does not ask at all and shows the white surface. Answering the prompt with "no" shows the white surface and
   sets the background to Weiß, so the settings show what the player sees; choosing Kamera again explains how to allow
   it in the iOS settings. UI tests and staged screenshots set the white background explicitly.
+- **Tutorial asks for the name (owner, 2026-10-29).** The owner asked for a bigger "Überspringen" button and for the
+  tutorial to end by asking for the player's name. "Überspringen" is now a bordered (Liquid Glass) button of at least
+  44 pt in a bar of its own above the pages, so it cannot cover their text at any text size. After the three steps
+  comes a fourth, "Wie heißt du?", with the current name filled in; "Überspringen" and "Weiter" on the third step lead
+  there instead of closing the tutorial, so every new player is asked once, and the step itself has nothing to skip.
+  "Los geht’s" (or Return) stores the name trimmed; empty stays allowed and keeps the "Spieler" fallback, as in the
+  settings. The name step is a screen of its own rather than a fourth page of the paged `TabView`, because resizing a
+  paged `TabView` for the keyboard is prone to layout glitches; its field and button sit below the scrolling text, so
+  the keyboard pushes both up and hides neither. The keyboard comes up by itself only while the name is empty. The
+  new `-first-launch` launch argument simulates a new install with throwaway data, for the tutorial's UI test and for
+  manual checks.

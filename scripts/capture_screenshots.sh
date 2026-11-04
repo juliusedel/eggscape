@@ -22,7 +22,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BUNDLE_ID="de.juliusedel.eggscape"
+# The bundle ID of the app just built, read by build_app, so a new ID in project.yml needs no change here and a stale
+# app with the old ID on the simulator is never launched instead.
+BUNDLE_ID=""
 DERIVED=".build/DerivedData"
 APP="$DERIVED/Build/Products/Debug-iphonesimulator/Eggscape.app"
 HELPER=".build/tools/screen_drawn"
@@ -110,6 +112,7 @@ build_app() {
     xcodebuild -project Eggscape.xcodeproj -scheme Eggscape -configuration Debug -derivedDataPath "$DERIVED" \
         -destination "id=$1" CODE_SIGNING_ALLOWED=NO -quiet build
     [[ -d $APP ]] || fail "the build left no app at $APP"
+    BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
 }
 
 # The status bar fastlane snapshot sets with override_status_bar. An override sent while the simulator is still

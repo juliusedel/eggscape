@@ -6,8 +6,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BUNDLE_ID="de.juliusedel.eggscape"
 DERIVED=".build/DerivedData"
+APP="$DERIVED/Build/Products/Debug-iphonesimulator/Eggscape.app"
 
 udid() {
     local devices line=""
@@ -28,15 +28,18 @@ udid() {
 }
 
 run() {
-    local id
+    local id bundle_id
     id=$(udid)
     xcodebuild -project Eggscape.xcodeproj -scheme Eggscape -derivedDataPath "$DERIVED" \
         -destination "id=$id" CODE_SIGNING_ALLOWED=NO -quiet build
+    # The ID of the app just built, so a new bundle ID in project.yml needs no change here and a stale app with the
+    # old ID on the simulator is never launched instead.
+    bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
     xcrun simctl boot "$id" 2>/dev/null || true
     # Bring up the Simulator window when the app is installed; headless setups work without it.
     open -b com.apple.iphonesimulator --args -CurrentDeviceUDID "$id" 2>/dev/null || true
-    xcrun simctl install "$id" "$DERIVED/Build/Products/Debug-iphonesimulator/Eggscape.app"
-    xcrun simctl launch "$id" "$BUNDLE_ID" "$@"
+    xcrun simctl install "$id" "$APP"
+    xcrun simctl launch "$id" "$bundle_id" "$@"
 }
 
 case "${1:-}" in

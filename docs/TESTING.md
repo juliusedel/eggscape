@@ -126,6 +126,9 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       missing; unlocked eggs say "Freigeschaltet", the egg in use is announced as selected. The balance says what it
       opens; every coin pack reads its name, price, coins and, on one of them, "bestes Angebot".
 - [ ] Largest Dynamic Type size: names, prices and the coin cards stay readable, the padlocks stay on the eggs.
+- [ ] Münzen in German, from the smallest iPhone to the largest and at every text size: no coin count breaks inside
+      the number. Where "2.000 Münzen" does not fit on one line, "Münzen" moves under the number on all three cards
+      alike; prices stay on one line, and "Bestes Angebot" stays inside its badge.
 
 ### In-app purchases
 Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed and no paid

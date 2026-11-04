@@ -127,27 +127,17 @@ private struct CoinPackCard: View {
                 CoinPile(count: (CoinPack.all.firstIndex(of: pack) ?? 0) + 1, size: 34)
                 VStack(alignment: .leading, spacing: 4) {
                     if isBestValue {
-                        Text("Bestes Angebot")
-                            .font(.caption.bold())
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color(.accentFill), in: .capsule)
+                        bestValueBadge
                     }
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(pack.coins, format: .number)
-                            .font(.title.bold())
-                            .monospacedDigit()
-                        Text("Münzen")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                    }
+                    coinCount
+                    // Wraps instead of being cut off: App Store Connect allows names of up to 30 characters.
                     Text(product.displayName)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
                 }
-                Spacer(minLength: 8)
+                // The coins get all the room the pile and the price leave. A spacer here added the row's spacing on
+                // both of its sides, which left too little for "2.000 Münzen" on a 402 pt iPhone.
+                .frame(maxWidth: .infinity, alignment: .leading)
                 priceTag
             }
             .padding(18)
@@ -165,7 +155,57 @@ private struct CoinPackCard: View {
         .accessibilityIdentifier("shop.pack.\(product.id)")
     }
 
-    /// The App Store's localized price on the accent color, like the app's primary buttons.
+    /// A capsule on one line. Where it has to wrap, as "Bestes Angebot" does at large text sizes on a small phone, the
+    /// round ends of a capsule would cut into the text, so it gets rounded corners instead.
+    private var bestValueBadge: some View {
+        let label = Text("Bestes Angebot")
+            .font(.caption.bold())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+        return ViewThatFits(in: .horizontal) {
+            label.background(Color(.accentFill), in: .capsule)
+            label.background(Color(.accentFill), in: .rect(cornerRadius: 8))
+        }
+    }
+
+    /// "2.000 Münzen" on one line where it fits, otherwise "Münzen" under the number: squeezed into one line, SwiftUI
+    /// broke the number itself ("2.00" / "0"). The line counts as fitting only if the biggest pack's line would, so the
+    /// three cards always look alike.
+    private var coinCount: some View {
+        ViewThatFits(in: .horizontal) {
+            ZStack(alignment: .leading) {
+                countLine(CoinPack.all.map(\.coins).max() ?? pack.coins)
+                    .hidden()
+                countLine(pack.coins)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                coins(pack.coins)
+                coinUnit
+            }
+        }
+    }
+
+    private func countLine(_ count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            coins(count)
+            coinUnit
+        }
+    }
+
+    private func coins(_ count: Int) -> Text {
+        Text(count, format: .number)
+            .font(.title.bold())
+            .monospacedDigit()
+    }
+
+    private var coinUnit: Text {
+        Text("Münzen")
+            .font(.headline)
+            .foregroundStyle(.secondary)
+    }
+
+    /// The App Store's localized price on the accent color, like the app's primary buttons. It keeps its one line.
     private var priceTag: some View {
         ZStack {
             // Keeps the tag's width while the spinner shows.
@@ -182,6 +222,7 @@ private struct CoinPackCard: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(.accentFill), in: .capsule)
+        .fixedSize()
     }
 
     private var isPurchasing: Bool {

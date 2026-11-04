@@ -195,10 +195,11 @@ final class NearbySession: Identifiable {
         }
     }
 
-    /// A staged lobby for App Store screenshots: three friends, no networking.
+    /// A staged lobby for App Store screenshots: two friends who are ready, no networking. A third player made the
+    /// German lobby taller than the iPhone 18 Pro's screen, which then cut off the safety note's last line.
     static func screenshotLobby(services: AppServices) -> NearbySession {
         let session = NearbySession(role: .host, services: services, networking: false)
-        let friends = [("Mia", "sky-blue", true), ("Jonas", "polka-dots", true), ("Lea", "gold-metallic", false)]
+        let friends = [("Mia", "sky-blue", true), ("Jonas", "polka-dots", true)]
         for (name, skin, ready) in friends {
             _ = session.lobby.join(PlayerInfo(
                 id: PlayerID(name),

@@ -8,7 +8,8 @@
 # scene in German and English, shut down. For each scene it waits until the app has drawn more than its launch screen
 # (scripts/screen_drawn.swift), lets the scene settle and saves it as JPEG, which has no alpha channel (App Store
 # Connect refuses one): fastlane/screenshots/<language>/<simulator>-<nn>-<scene>.jpg, the names `make screenshots`
-# uses. en-US is then copied to en-GB, en-CA and en-AU, the English localizations of the other storefronts.
+# uses. A capture into which the Simulator drew the Dynamic Island, as it does now and then, is taken again. en-US is
+# then copied to en-GB, en-CA and en-AU, the English localizations of the other storefronts.
 #
 # The captures wait in .build/screenshots until every scene worked, so a failed run leaves the previous set alone. A
 # complete run then replaces every image named like its output, PNGs from `make screenshots` included; other images in
@@ -51,6 +52,9 @@ SCENES=(
 )
 # Seconds the app gets to draw its first frame. A cold start of the Debug app took up to 15 s on an 8 GB Mac.
 DRAW_TIMEOUT=60
+# How often a capture showing the Dynamic Island is taken again, a second apart. It showed in about every fourth
+# screenshot of a staged run, and right after a boot in up to seven in a row.
+ISLAND_RETAKES=20
 # What both screenshot pipelines write: "<simulator>-<nn>-<scene>.<png|jpg>", e.g. "iPhone 18 Pro-03-sunny.jpg".
 GENERATED='^.+-[0-9]{2}-[a-z]+\.([Pp][Nn][Gg]|[Jj][Pp][Ee]?[Gg])$'
 IMAGE='\.([Pp][Nn][Gg]|[Jj][Pp][Ee]?[Gg])$'
@@ -145,13 +149,23 @@ screenshot() {
     fi
 }
 
+# What scripts/screen_drawn.swift says about the screenshot $1: 0 drawn, 1 still flat, 2 drawn but with the Dynamic
+# Island, 66 unreadable.
+check_screen() {
+    local status=0
+    "$HELPER" "$1" >/dev/null || status=$?
+    return "$status"
+}
+
 # Launches scene $5 on simulator $1 (named $2) in language $3 and saves it as $WORK/$3/$2-$4.jpg after $6 seconds of
 # settling. The app counts as drawn when two screenshots a second apart show more than a flat color: right after the
-# launch the home screen can still be visible, and it is not flat either.
+# launch the home screen can still be visible, and it is not flat either. A screenshot from a real iPhone never shows
+# the Dynamic Island, so a capture with the island in it is taken again a second later; the scenes stand still, so a
+# later capture shows the same moment.
 capture_scene() {
     local udid=$1 device=$2 language=$3 name=$4 scene=$5 settle=$6
     local probe="$WORK/probe.jpg" target="$WORK/$3/$2-$4.jpg"
-    local attempt launched pid started hits
+    local attempt launched pid started hits status retakes
     for attempt in 1 2; do
         xcrun simctl terminate "$udid" "$BUNDLE_ID" >/dev/null 2>&1 || true
         sleep 1
@@ -164,7 +178,13 @@ capture_scene() {
         hits=0
         while ((hits < 2)); do
             sleep 1
-            if screenshot "$udid" "$probe" 2>/dev/null && "$HELPER" "$probe" >/dev/null; then
+            status=1
+            if screenshot "$udid" "$probe" 2>/dev/null; then
+                status=0
+                check_screen "$probe" || status=$?
+            fi
+            # The app has drawn its screen, with the Dynamic Island or without.
+            if ((status == 0 || status == 2)); then
                 hits=$((hits + 1))
             else
                 hits=0
@@ -173,12 +193,26 @@ capture_scene() {
             fi
         done
         sleep "$settle"
-        kill -0 "$pid" 2>/dev/null || fail "$device, $language, $name: the app quit before the capture"
-        screenshot "$udid" "$target" || fail "$device, $language, $name: simctl could not take the screenshot"
-        if "$HELPER" "$target" >/dev/null; then
-            echo "  $language $name after $((SECONDS - started)) s"
+        retakes=0
+        while true; do
+            kill -0 "$pid" 2>/dev/null || fail "$device, $language, $name: the app quit before the capture"
+            screenshot "$udid" "$target" || fail "$device, $language, $name: simctl could not take the screenshot"
+            status=0
+            check_screen "$target" || status=$?
+            ((status == 2 && retakes < ISLAND_RETAKES)) || break
+            retakes=$((retakes + 1))
+            sleep 1
+        done
+        if ((status == 0)); then
+            if ((retakes > 0)); then
+                echo "  $language $name after $((SECONDS - started)) s, taken again $retakes x for the Dynamic Island"
+            else
+                echo "  $language $name after $((SECONDS - started)) s"
+            fi
             return 0
         fi
+        ((status != 2)) ||
+            fail "$device, $language, $name: the Dynamic Island showed in $((ISLAND_RETAKES + 1)) captures in a row"
         echo "  $language $name showed the launch screen again (attempt $attempt)" >&2
     done
     fail "$device, $language, $name: every capture showed the launch screen"

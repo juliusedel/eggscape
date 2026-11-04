@@ -104,7 +104,9 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Nearby join data.** A joiner sends its player id, nickname and egg skin as the MultipeerConnectivity invitation
   context, so the message set of the spec needs no extra "hello" message.
 - **Race time in multiplayer** is measured on the wall clock from the shared start, so a phone that was briefly in
-  the background does not report a shorter time. The finish order is the arrival order at the host, as specified.
+  the background does not report a shorter time. A phone that was away for more than an hour reports an hour, the
+  longest race time the phones accept (see "Numbers from other phones are checked"), so a host back after a long call
+  still gets its results. The finish order is the arrival order at the host, as specified.
 - **Screenshots** are staged scenes (`--screenshot-mode start|calibration|run-sunny|run-rain|run-storm|lobby|results|
   shop`) with ephemeral data and fixed seeds; the nearby lobby is a demo without networking. Camera mode cannot be
   captured in the Simulator, so the screenshots use the white background.

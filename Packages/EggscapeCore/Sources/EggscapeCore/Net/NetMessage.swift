@@ -131,7 +131,9 @@ public enum NetMessage: Equatable, Sendable {
     /// run and keeps out numbers no phone can show (see `isPlausible(eggsPerRun:)`).
     public static let plausibleMeters = 0.0 ... 10000.0
 
-    /// The race times a message may carry, in seconds: an hour, where a real race takes well under a minute.
+    /// The race times a message may carry, in seconds: an hour, where a real race takes well under a minute. The race
+    /// clock runs on while a phone is in the background, so a phone that was away longer reports an hour
+    /// (`NearbySession.reportFinish(_:)` in the app).
     public static let plausibleSeconds = 0.0 ... 3600.0
 
     /// Whether every number in the message is one a real phone sends: distances within `plausibleMeters`, race times

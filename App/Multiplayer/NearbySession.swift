@@ -515,7 +515,10 @@ final class NearbySession: Identifiable {
     private func reportFinish(_ outcome: RunOutcome) {
         let report = FinishReport(
             completed: outcome.finished,
-            time: outcome.time,
+            // The race clock runs on while this phone is in the background (`RunSession.end()`). A phone that was away
+            // for over an hour reports the longest time every phone accepts: the referee would drop a longer report,
+            // and every joiner would drop results that carry it.
+            time: min(outcome.time, NetMessage.plausibleSeconds.upperBound),
             meters: outcome.meters,
             eggsLost: outcome.eggsLost
         )

@@ -476,4 +476,36 @@ struct NearbyNumbersTests {
         #expect(startAt >= before + .seconds(RaceReferee.startDelays.lowerBound))
         #expect(startAt <= .now + .seconds(RaceReferee.startDelays.upperBound))
     }
+
+    /// A host whose app was suspended mid-race for over an hour, during a call or with the phone locked: its race
+    /// clock ran on (`RunSession.end()`), and MultipeerConnectivity dropped the joiners meanwhile. Its own finish has
+    /// to count, or it waits for the others forever.
+    @Test func aHostBackAfterAnHourStillGetsTheResults() throws {
+        let fake = FakeNearbyTransport()
+        let jonas = RemotePeer(id: "peer-jonas", displayName: "Jonas")
+        let request = JoinRequest(playerID: "jonas", nickname: "Jonas", eggSkinID: SkinCatalog.defaultSkinID)
+        fake.joinContexts[jonas.id] = try JSONEncoder().encode(request)
+        let room = NearbySession(role: .host, services: makeServices(), nearby: fake)
+        defer { room.leave() }
+        room.handle(.connected(jonas))
+        try room.handle(.received(NetCodec().encode(.ready(true), from: PlayerID("jonas")), from: jonas))
+        room.startRace()
+        let run = try #require(room.run)
+
+        room.handle(.disconnected(jonas))
+        run.race?.onFinished(RunOutcome(
+            mode: run.setup.mode,
+            finished: true,
+            time: 3700,
+            meters: run.setup.course.length ?? 0,
+            eggsLost: 0,
+            isPersonalBest: false,
+            reward: nil
+        ))
+        guard case let .results(results) = room.stage else {
+            Issue.record("The host still waits for the others")
+            return
+        }
+        #expect(results.entry(for: room.me.id)?.status == .finished(time: NetMessage.plausibleSeconds.upperBound))
+    }
 }

@@ -158,7 +158,9 @@ at any time ([App information][app-information]). `fastlane/metadata` has German
 (en-US, en-GB, en-CA, en-AU), and every storefront lists German or one of these English variants
 ([App Store localizations][localizations]): the German texts appear where German is a storefront language (Germany,
 Austria, Switzerland, Luxembourg), English texts everywhere else. `make release` adds the localizations that App Store
-Connect does not have yet.
+Connect does not have yet. Without fastlane, add them yourself: in the language menu at the top right of the app's
+page, under Not Localized, pick English (U.S.), English (U.K.), English (Canada) and English (Australia) one after
+another. A language you add shows the German screenshots until you upload its own (step 22).
 
 ## 13. App Information (Owner)
 
@@ -234,7 +236,7 @@ Connect never lets you change or reuse one ([In-App Purchase information][iap-in
   it in the Simulator after a Run from Xcode, which uses the StoreKit configuration:
   `xcrun simctl io booted screenshot --type=jpeg coins.jpg`. It can be replaced later, not removed.
 - The first consumables are reviewed only together with an app version: on each pack, **Add for Review** into the
-  draft submission of version 1.0 (step 24, [submit an In-App Purchase][submit-iap]).
+  draft submission of version 1.0.0 (step 24, [submit an In-App Purchase][submit-iap]).
 
 ## 18. The four leaderboards (Owner)
 
@@ -255,7 +257,7 @@ In the app's Game Center section, create four **Classic** leaderboards. IDs, for
 - A leaderboard ID never changes, and a leaderboard cannot be deleted once it is live
   ([manage leaderboards][manage-leaderboards]).
 - Like the coin packs, the first leaderboards are reviewed with an app version: tick **Game Center** on the version
-  1.0 page and **Add for Review** each leaderboard into its draft submission (step 24,
+  1.0.0 page and **Add for Review** each leaderboard into its draft submission (step 24,
   [submit Game Center components][submit-game-center]).
 
 ## 19. API key for fastlane (Owner, once)
@@ -339,8 +341,10 @@ sort first, like `00-camera.jpg`. The pipelines replace only images named like t
 ones to the other English folders. With the eight scenes, two photos per size fit.
 
 `make release` uploads everything and replaces the screenshots in App Store Connect for each language it has images
-for, so anything added only in App Store Connect is gone after the next `make release`. Without fastlane, drag the
-JPEGs into App Store Connect.
+for, so anything added only in App Store Connect is gone after the next `make release`. Without fastlane, upload each
+folder's JPEGs to its own language on the version page, in file-name order: `iPhone 18 Pro-*` under iPhone with
+Dynamic Island (medium display), `iPhone 18 Pro Max-*` under the large display (View All Sizes in Media Manager).
+en-GB, en-CA and en-AU get the copies in their own folders.
 
 ## 23. App Review information (Owner)
 
@@ -354,11 +358,17 @@ On the version page under App Review Information ([platform version information]
   device and why there is no Restore button. `make release` uploads it; otherwise paste it. A short video of a nearby
   and an online race on two phones, linked in the notes, helps the reviewer.
 
-## 24. Submit version 1.0 (Owner)
+## 24. Submit version 1.0.0 (Owner)
 
 1. `make release` uploads a new build with the texts, URLs, categories, review notes and screenshots; it never
-   submits. Without fastlane, fill in the version page by hand.
-2. On the version page: pick the build, check texts, screenshots and App Review Information, tick Game Center.
+   submits. Without fastlane, fill in all five languages by hand from `fastlane/metadata/<language>/`. `name.txt` and
+   `subtitle.txt` go under App Information and `privacy_url.txt` under App Privacy (step 15). `description.txt`,
+   `keywords.txt`, `promotional_text.txt`, `support_url.txt` and `marketing_url.txt` go on the version page, and
+   `fastlane/metadata/copyright.txt` under Copyright. `release_notes.txt` waits for the first update, because the
+   first version has no What's New field.
+2. On the version page: without fastlane, first set the version number to 1.0.0, the build's version
+   (`MARKETING_VERSION` in project.yml); App Store Connect names the first version 1.0, and `make release` renames it
+   by itself. Then pick the build, check texts, screenshots and App Review Information, tick Game Center.
 3. **Add for Review** on the version, then on each coin pack and each leaderboard into the same draft submission
    (steps 17 and 18): the first consumables and leaderboards are only reviewed together with an app version.
 4. **Submit for Review** ([submit an app][submit-app]). App Review handles at least 50 % of submissions within 24 hours

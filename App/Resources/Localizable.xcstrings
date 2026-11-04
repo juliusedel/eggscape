@@ -781,6 +781,16 @@
         }
       }
     },
+    "Eggscape darf die Kamera nicht nutzen, darum spielst du auf Weiß. Erlauben kannst du sie in den iOS-Einstellungen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eggscape isn’t allowed to use the camera, so you play on the white background. You can allow it in the iOS Settings."
+          }
+        }
+      }
+    },
     "Ei" : {
       "localizations" : {
         "en" : {
@@ -897,16 +907,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Results"
-          }
-        }
-      }
-    },
-    "Erlaube Eggscape den Kamerazugriff in den iOS-Einstellungen, um den Kamera-Hintergrund zu nutzen." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allow Eggscape to use the camera in the iOS Settings to use the camera background."
           }
         }
       }
@@ -1041,6 +1041,16 @@
         }
       }
     },
+    "Gleich fragt iOS nach der Kamera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS is about to ask for the camera"
+          }
+        }
+      }
+    },
     "Gold" : {
       "localizations" : {
         "en" : {
@@ -1171,6 +1181,16 @@
         }
       }
     },
+    "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the game you run automatically, so you can also play standing still. If you walk or run along, only do it where there is room, and watch your surroundings."
+          }
+        }
+      }
+    },
     "Im Ziel nach %@" : {
       "localizations" : {
         "en" : {
@@ -1267,16 +1287,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No motion sensor found: drag the egg with your finger to keep it in the spoon."
-          }
-        }
-      }
-    },
-    "Kein Kamerazugriff" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Camera Access"
           }
         }
       }
@@ -1527,6 +1537,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "With “Camera” you look through your phone at the ground. The image is never saved."
+          }
+        }
+      }
+    },
+    "Mit ihr siehst du durch dein Handy hindurch auf den Boden. Ohne Kamera spielst du auf Weiß." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With it you look through your phone at the ground. Without it you play on the white background."
           }
         }
       }

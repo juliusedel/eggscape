@@ -35,7 +35,7 @@
 		<string>_eggscape._udp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Im Kamera-Modus siehst du durch dein Handy hindurch auf den Boden. Das Bild wird nur angezeigt, nie gespeichert oder gesendet.</string>
+	<string>Mit der Kamera siehst du beim Spielen durch dein Handy hindurch auf den Boden. Eggscape zeigt das Bild nur an und speichert oder sendet es nie.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Eggscape nutzt dein lokales Netzwerk nur, um mit Handys in deiner Nähe zu spielen.</string>
 	<key>UIApplicationSceneManifest</key>

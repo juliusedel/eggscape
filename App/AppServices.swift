@@ -48,9 +48,8 @@ final class AppServices {
     func resetAllData() {
         settings.reset()
         // Resetting the data does not reset the iOS camera permission. After an earlier "no" the default camera would
-        // show white in every run while the settings say Kamera, and tapping Kamera there, already selected, would
-        // never explain how to allow it.
-        if settings.background == .camera, CameraFeed.isDeniedBySystem {
+        // show white in every run, so the reset keeps the player's answer and picks Weiß, which is what the runs show.
+        if settings.background == .camera, camera.isDeniedBySystem {
             settings.background = .white
         }
         records.reset()

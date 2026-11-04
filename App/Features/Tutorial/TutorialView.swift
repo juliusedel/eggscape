@@ -23,13 +23,16 @@ struct TutorialView: View {
         let symbol: String
         let title: LocalizedStringKey
         let text: LocalizedStringKey
+        var showsSafetyNote = false
     }
 
     private let steps = [
         Step(
             symbol: "iphone",
             title: "Halten",
-            text: "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich laufen willst."
+            text: "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich laufen willst.",
+            // Where a new player first holds the phone.
+            showsSafetyNote: true
         ),
         Step(
             symbol: "arrow.left.and.right.circle",
@@ -79,8 +82,13 @@ struct TutorialView: View {
             TabView(selection: $page) {
                 ForEach(steps.indices, id: \.self) { index in
                     let step = steps[index]
-                    stepPage(symbol: step.symbol, title: step.title, text: step.text)
-                        .tag(index)
+                    stepPage(
+                        symbol: step.symbol,
+                        title: step.title,
+                        text: step.text,
+                        showsSafetyNote: step.showsSafetyNote
+                    )
+                    .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
@@ -165,7 +173,12 @@ struct TutorialView: View {
         }
     }
 
-    private func stepPage(symbol: String, title: LocalizedStringKey, text: LocalizedStringKey) -> some View {
+    private func stepPage(
+        symbol: String,
+        title: LocalizedStringKey,
+        text: LocalizedStringKey,
+        showsSafetyNote: Bool = false
+    ) -> some View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 24) {
@@ -186,6 +199,13 @@ struct TutorialView: View {
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 32)
+                    if showsSafetyNote {
+                        SafetyNote()
+                            .font(.callout)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 32)
+                    }
                 }
                 .padding(.vertical, pageInset)
                 // At least a page high, so a step that fits stays centered and only a longer one scrolls.

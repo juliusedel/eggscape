@@ -44,13 +44,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Im Kamera-Modus siehst du durch dein Handy hindurch auf den Boden. Das Bild wird nur angezeigt, nie gespeichert oder gesendet."
+            "value" : "Mit der Kamera siehst du beim Spielen durch dein Handy hindurch auf den Boden. Eggscape zeigt das Bild nur an und speichert oder sendet es nie."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In camera mode you look through your phone at the ground. The image is only shown, never saved or sent."
+            "value" : "With the camera you look through your phone at the ground while you play. Eggscape only shows the image and never saves or sends it."
           }
         }
       }

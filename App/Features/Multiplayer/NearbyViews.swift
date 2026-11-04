@@ -280,9 +280,13 @@ private struct LobbyView: View {
                     .accessibilityIdentifier("nearby.start")
                 }
             } footer: {
-                Text(
-                    "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade."
-                )
+                // Racers calibrate here instead of on the calibration screen, so the safety note comes along.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(
+                        "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade."
+                    )
+                    SafetyNote()
+                }
             }
         }
     }

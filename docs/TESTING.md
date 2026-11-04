@@ -47,6 +47,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart. A value set in an
       earlier build stays where it was on the slider.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
+- [ ] The safety note ("Im Spiel läufst du von selbst …") is on the tutorial's first page, on the calibration screen
+      and under the lobby's "Kalibrieren und bereit", in German and English, also at the largest text size.
 - [ ] The screen never dims during calibration, countdown or a run, and dims normally in the menus.
 
 ### Haptics and sound
@@ -59,18 +61,24 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 
 ### Camera mode
 - [ ] Fresh install (or Daten zurücksetzen with camera access never asked): Einstellungen → Hintergrund shows
-      Kamera. The first single run or hot-seat run asks for camera access on its calibration screen (German text in
-      German, English in English); allowing it shows the camera right away.
-- [ ] Declining that prompt keeps the run on the white background, without a black screen or an error, and switches
-      Einstellungen → Hintergrund to Weiß; choosing Kamera there again explains how to allow it.
+      Kamera. The first single run or hot-seat run opens its calibration screen with "Gleich fragt iOS nach der
+      Kamera", what the camera is for, and "Weiter" as its only button. "Weiter" brings up the prompt, whose text
+      needs no "Kamera-Modus" to make sense (German text in German, English in English); a quick second tap brings
+      up no second prompt. Allowing it goes on to the calibration with the camera behind it, now with "Abbrechen".
+- [ ] Declining that prompt goes on to the calibration on the white background, without a black screen or an error,
+      and switches Einstellungen → Hintergrund to Weiß.
+- [ ] Choosing Kamera in Einstellungen after that keeps Kamera, and right under the picker a row says that runs are
+      white without camera access, with "Einstellungen öffnen", which opens Eggscape's page in the iOS Settings.
+- [ ] Allow the camera, then turn it off in the iOS Settings (Eggscape → Kamera): runs show white, Einstellungen still
+      shows Kamera and the same row under the picker. Allowing it again there brings the camera back, and the row goes.
 - [ ] After declining the camera, Einstellungen → Daten zurücksetzen leaves Hintergrund on Weiß (iOS keeps the "no");
       with camera access allowed or never asked it shows Kamera.
 - [ ] A fresh install whose first run is a nearby or online race shows no prompt during the countdown (the race runs
-      on white); the next single run asks.
+      on white); the next single run shows the camera note first.
 - [ ] A background chosen in an earlier build is kept after the update (Weiß stays Weiß).
-- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked.
+- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked; declining it there
+      switches back to Weiß without a further message.
 - [ ] The live rear camera fills the screen behind the spoon, upright, with no visible lag.
-- [ ] Declining access falls back to the white background and explains how to allow it.
 - [ ] Rain and storm darken the camera image; the broken egg appears on the "ground".
 
 ### Weather

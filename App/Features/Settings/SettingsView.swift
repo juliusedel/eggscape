@@ -4,9 +4,12 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var confirmsReset = false
-    @State private var showsCameraDenied = false
     @State private var showsCalibration = false
+    /// iOS no longer asks for the camera and does not allow it (`CameraFeed.isDeniedBySystem`). Read again whenever
+    /// that may have changed: when the settings open, when the background changes, and back from the iOS settings.
+    @State private var isCameraDenied = false
 
     var body: some View {
         @Bindable var settings = services.settings
@@ -53,6 +56,19 @@ struct SettingsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    // The choice stays as the player made it, and runs show white until iOS allows the camera.
+                    if settings.background == .camera, isCameraDenied {
+                        Label(
+                            "Eggscape darf die Kamera nicht nutzen, darum spielst du auf Weiß. Erlauben kannst du sie in den iOS-Einstellungen.",
+                            systemImage: "video.slash"
+                        )
+                        Button("Einstellungen öffnen") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .accessibilityIdentifier("settings.cameraAccess")
+                    }
                 } header: {
                     Text("Hintergrund")
                 } footer: {
@@ -108,42 +124,39 @@ struct SettingsView: View {
             } message: {
                 Text("Auch gekaufte Münzen gehen verloren. Das kann nicht rückgängig gemacht werden.")
             }
-            .alert("Kein Kamerazugriff", isPresented: $showsCameraDenied) {
-                Button("Einstellungen öffnen") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(
-                    "Erlaube Eggscape den Kamerazugriff in den iOS-Einstellungen, um den Kamera-Hintergrund zu nutzen."
-                )
-            }
             .sheet(isPresented: $showsCalibration) {
                 CalibrationSheet()
             }
         }
+        .onAppear(perform: readCameraAccess)
+        .onChange(of: services.settings.background, readCameraAccess)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                readCameraAccess()
+            }
+        }
     }
 
-    /// Switching to the camera asks for permission first and falls back to white if it is declined.
+    /// Choosing the camera asks for permission the first time; "no" there chooses Weiß (`AppServices`). Once iOS no
+    /// longer asks, choosing the camera keeps it chosen, and the row under the picker says how to allow it.
     private var backgroundSelection: Binding<BackgroundMode> {
         Binding {
             services.settings.background
         } set: { mode in
-            guard mode == .camera else {
+            guard mode == .camera, !services.camera.isDeniedBySystem else {
                 services.settings.background = mode
                 return
             }
             Task {
                 if await services.camera.requestAccess() {
                     services.settings.background = .camera
-                } else {
-                    services.settings.background = .white
-                    showsCameraDenied = true
                 }
             }
         }
+    }
+
+    private func readCameraAccess() {
+        isCameraDenied = services.camera.isDeniedBySystem
     }
 
     private static var version: String {

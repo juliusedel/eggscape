@@ -94,7 +94,7 @@ struct CalibrationOverlay: View {
                 .multilineTextAlignment(.center)
         } else {
             Text(
-                "Halte es so, wie du gleich laufen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade."
+                "Halte es so, wie du gleich spielen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade."
             )
             .multilineTextAlignment(.center)
             SpiritLevelView(tilt: { session.rawTilt })

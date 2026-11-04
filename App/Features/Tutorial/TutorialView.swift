@@ -30,7 +30,7 @@ struct TutorialView: View {
         Step(
             symbol: "iphone",
             title: "Halten",
-            text: "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich laufen willst.",
+            text: "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich spielen willst.",
             // Where a new player first holds the phone.
             showsSafetyNote: true
         ),

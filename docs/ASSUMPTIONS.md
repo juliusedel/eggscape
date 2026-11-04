@@ -249,22 +249,24 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   whatever its clock estimate says (3 s when it gives no number), and `RaceFormat` shows any number without trapping.
   A real race covers at most 100 m in well under a minute, so legitimate messages always pass; the wire format and the
   protocol version stay as they are.
-- **Safety note and the camera question (2026-11-03).** The store texts and the calibration speak of running with the
+- **Safety note and the camera question (2026-11-03).** The store texts and the calibration spoke of running with the
   phone held flat, but the run moves by itself (no step detection), so nobody has to run while looking at the screen,
   and App Review guideline 1.4.5 asks apps not to invite risky use. Until the owner decides whether players should stand
-  or move, the app says both: "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du
-  mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung." (`SafetyNote`) on the tutorial's first page, on
-  the calibration screen and under the race lobby's ready button, where racers calibrate. The camera prompt of a fresh
-  install used to come the moment the first single or hot-seat run opened, before its calibration screen could say why.
-  Now that screen first reads "Gleich fragt iOS nach der Kamera" with what the camera is for and that without it the
-  game is white, and its "Weiter" brings up the prompt. It is still the first moment the camera is needed, and races
-  still never ask. Following Apple's guidance for a screen before a permission prompt, "Weiter" is its only button:
-  "Abbrechen" returns once the player has answered, either way, as it did when the prompt covered the screen. The
-  purpose string no longer speaks of a "Kamera-Modus" the player never chose. When iOS denies the camera after the
-  player chose it (a later "no" in the iOS settings, or a restricted device), the settings used to show Kamera with no
-  hint while every run was white, and tapping the selected segment did nothing. Now the choice stays and a row under
-  the picker says why the runs are white, with "Einstellungen öffnen"; the alert that switched back to Weiß is gone. A
-  "no" in the prompt itself still picks Weiß, and "Daten zurücksetzen" still picks Weiß while iOS denies the camera.
+  or move, the app says both: "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst,
+  dann nur, wo Platz ist, und achte auf deine Umgebung." (`SafetyNote`) on the tutorial's first page, on the calibration
+  screen and under the race lobby's ready button, where racers calibrate. The lines there that say how to hold the phone
+  speak of playing ("spielen"), no longer of running ("laufen"), which fits either answer and matches the store texts
+  and the support page. The camera prompt of a fresh install used to come the moment the first single or hot-seat run
+  opened, before its calibration screen could say why. Now that screen first reads "Gleich fragt iOS nach der Kamera"
+  with what the camera is for and that without it the game is white, and its "Weiter" brings up the prompt. It is still
+  the first moment the camera is needed, and races still never ask. Following Apple's guidance for a screen before a
+  permission prompt, "Weiter" is its only button: "Abbrechen" returns once the player has answered, either way, as it
+  did when the prompt covered the screen. The purpose string no longer speaks of a "Kamera-Modus" the player never
+  chose. When iOS denies the camera after the player chose it (a later "no" in the iOS settings, or a restricted
+  device), the settings used to show Kamera with no hint while every run was white, and tapping the selected segment did
+  nothing. Now the choice stays and a row under the picker says why the runs are white, with "Einstellungen öffnen"; the
+  alert that switched back to Weiß is gone. A "no" in the prompt itself still picks Weiß, and "Daten zurücksetzen" still
+  picks Weiß while iOS denies the camera.
 - **Purchases through SwiftUI's purchase action (2026-11-03).** The coin shop bought with `Product.purchase()`, which
   gives StoreKit no window to show its sheet over. Apple's documentation recommends `PurchaseAction` for SwiftUI apps
   (from iOS 17, the deployment target), and on iOS 18.2 `purchase()` was reported to fail with "Could not get

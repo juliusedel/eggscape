@@ -56,11 +56,13 @@ Germany most likely needs an Impressum ([§ 5 DDG][ddg]). `site/` holds the page
 1. Replace every `TODO(owner)` in `site/` with your street address, postcode and town, email address and phone
    number. They become public, like the trader details in step 9, so take an address you want to publish; a P.O. box
    does not do for the Impressum, a business address service may.
-2. `make site-check` lists the placeholders still left and checks the pages, the links and the page URLs in
+2. Have the privacy policy and the Impressum checked legally, by a lawyer or the IHK, before they go live.
+3. `make site-check` lists the placeholders still left and checks the pages, the links and the page URLs in
    `fastlane/metadata`; it passes once none is left.
-3. Push to `main`, then once on GitHub: Settings → Pages → Build and deployment → Source: **GitHub Actions**
-   ([GitHub docs][pages-source]). The Pages workflow publishes `site/` only once no placeholder is left.
-4. Have the privacy policy and the Impressum checked legally, by a lawyer or the IHK.
+4. Once on GitHub, before the push with the filled-in pages: Settings → Pages → Build and deployment → Source:
+   **GitHub Actions** ([GitHub docs][pages-source]); without it the workflow's deploy job fails. Then push to `main`.
+   The Pages workflow publishes `site/` only once no placeholder is left; Actions → Pages → Run workflow starts it
+   again by hand.
 
 The app links the pages under Einstellungen → Hilfe & Rechtliches, and `fastlane/metadata/<language>/privacy_url.txt`
 and `support_url.txt` hand them to App Store Connect with `make release`.

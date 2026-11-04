@@ -321,16 +321,6 @@
         }
       }
     },
-    "Andere Spieler sehen diesen Namen im Mehrspieler-Modus." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other players see this name in multiplayer."
-          }
-        }
-      }
-    },
     "Ändern kannst du ihn jederzeit in den Einstellungen." : {
       "localizations" : {
         "en" : {
@@ -571,12 +561,12 @@
         }
       }
     },
-    "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich laufen willst." : {
+    "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich spielen willst." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your phone is the spoon. Hold it flat in front of you, the way you want to run."
+            "value" : "Your phone is the spoon. Hold it flat in front of you, the way you want to play."
           }
         }
       }
@@ -1071,22 +1061,22 @@
         }
       }
     },
-    "Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“." : {
+    "Halte dein Handy so, wie du beim Spielen den Löffel halten willst, und tippe auf „Kalibrieren“." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold your phone the way you want to hold the spoon while running and tap “Calibrate”."
+            "value" : "Hold your phone the way you want to hold the spoon while playing and tap “Calibrate”."
           }
         }
       }
     },
-    "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade." : {
+    "Halte dein Handy so, wie du spielen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold your phone the way you want to run when you tap “Ready”: that pose counts as level."
+            "value" : "Hold your phone the way you want to play when you tap “Ready”: that pose counts as level."
           }
         }
       }
@@ -1101,12 +1091,12 @@
         }
       }
     },
-    "Halte es so, wie du gleich laufen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade." : {
+    "Halte es so, wie du gleich spielen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold it the way you want to run and tap “Calibrate”. That pose then counts as level."
+            "value" : "Hold it the way you want to play and tap “Calibrate”. That pose then counts as level."
           }
         }
       }

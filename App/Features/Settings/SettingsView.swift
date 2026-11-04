@@ -23,7 +23,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Spieler")
                 } footer: {
-                    Text("Andere Spieler sehen diesen Namen im Mehrspieler-Modus.")
+                    Text("Diesen Namen sehen die anderen, wenn ihr in der Nähe oder an einem Handy zusammen spielt.")
                 }
 
                 Section {
@@ -179,7 +179,7 @@ private struct CalibrationSheet: View {
             ScrollView {
                 VStack(spacing: 24) {
                     Text(
-                        "Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“."
+                        "Halte dein Handy so, wie du beim Spielen den Löffel halten willst, und tippe auf „Kalibrieren“."
                     )
                     .multilineTextAlignment(.center)
                     if services.motion.isAvailable {

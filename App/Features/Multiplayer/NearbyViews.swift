@@ -283,7 +283,7 @@ private struct LobbyView: View {
                 // Racers calibrate here instead of on the calibration screen, so the safety note comes along.
                 VStack(alignment: .leading, spacing: 8) {
                     Text(
-                        "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade."
+                        "Halte dein Handy so, wie du spielen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade."
                     )
                     SafetyNote()
                 }

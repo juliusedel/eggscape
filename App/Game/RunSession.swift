@@ -1,4 +1,5 @@
 import EggscapeCore
+import MediaAccessibility
 import Observation
 import UIKit
 
@@ -151,10 +152,12 @@ final class RunSession: Identifiable {
         )
         usesTouchSteering = !services.motion.isAvailable
         let engine = RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed)
+        // Read once per run, like the other settings; a change in the iOS settings applies from the next run on.
         scene = GameScene(
             engine: engine,
             appearance: services.wallet.equippedSkin.appearance,
-            reduceMotion: UIAccessibility.isReduceMotionEnabled
+            reduceMotion: UIAccessibility.isReduceMotionEnabled,
+            dimsFlashingLights: MADimFlashingLightsEnabled()
         )
         hud = scene.hudSnapshot
         scene.usesTouchSteering = usesTouchSteering

@@ -99,7 +99,8 @@ Portrait, full screen, SpriteKit scene of the view's size (`resizeFill`, origin 
   after two seconds. The `drop` preview sheet shows the fall frame by frame.
 - **Weather overlays.** Rain: drops landing on the spoon and screen, streaks slanting with the wind, cooler and darker
   grading, wetter reflections. Wind: leaves and dust blowing across, wind arrow in the HUD. Gewitter: dark grading,
-  warning flicker, bright flash. In camera mode the grading is a translucent overlay so it darkens the camera image.
+  warning flicker, bright flash; with Dim Flashing Lights a slow glow and a soft flash instead (`LightningFlash`). In
+  camera mode the grading is a translucent overlay so it darkens the camera image.
 - **HUD** (SwiftUI on top): meters, time, eggs left, weather icon with intensity and wind arrow, pause top right,
   sprint bottom right.
 

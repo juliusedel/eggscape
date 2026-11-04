@@ -12,7 +12,8 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(config: config, course: .endless, weather: .clear, localSeed: 7),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         var framesWhileRunning = 0
         var framesAfterTheEnd = 0
@@ -51,7 +52,8 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         scene.holdEgg(at: SIMD2(0.22, -0.08))
         scene.mode = .running
@@ -71,7 +73,8 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         scene.holdEgg(at: SIMD2(0.05, 0.05))
         scene.mode = .running

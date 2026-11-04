@@ -274,3 +274,12 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   unchanged. The unit tests buy through the same entry point with `Product.purchase()` in a StoreKitTest session, and
   play the other answers (pending, cancelled, errors) with a stand-in. The sheet itself can only be checked by hand,
   with TestFlight, ideally also on iOS 17 or 18.
+- **Dim Flashing Lights and Reduce Motion (2026-11-03).** A thunderstorm flickered twice and then turned the screen
+  90 % white, and the countdown and "Los!" zoomed in with springs, whatever the accessibility settings said; Reduce
+  Motion only stopped the camera from bobbing and shaking. With Dim Flashing Lights (`MADimFlashingLightsEnabled()`,
+  iOS 16.4 and later) the warning no longer flickers but slowly brightens the picture a little, so players still see a
+  strike coming (it is the only warning, and every phone of a race gets the same strikes), and the strike lifts it to
+  30 % white over 0.15 s and fades over 0.9 s instead of 0.35 s. Thunder, vibration and the push on the egg stay. With
+  Reduce Motion the countdown's numbers and "Los!" only fade. Both choices are small pure values (`LightningFlash`,
+  `CountdownMotion`) with unit tests. Like Reduce Motion, Dim Flashing Lights is read when a run starts; listening for
+  `kMADimFlashingLightsChangedNotification` would only matter for a setting changed while a run is paused.

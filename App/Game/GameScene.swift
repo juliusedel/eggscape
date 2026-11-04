@@ -55,6 +55,7 @@ final class GameScene: SKScene {
     private(set) var engine: RunEngine
     private let appearance: EggAppearance
     private let reduceMotion: Bool
+    private let lightning: LightningFlash
     private var timestep: FixedTimestep
     private var lastUpdate: TimeInterval?
     private var events: [RunEvent] = []
@@ -82,10 +83,14 @@ final class GameScene: SKScene {
     private let cameraNode = SKCameraNode()
     private var weather: WeatherOverlayNode?
 
-    init(engine: RunEngine, appearance: EggAppearance, reduceMotion: Bool) {
+    /// - Parameters:
+    ///   - reduceMotion: Reduce Motion is on: no bob and no shake.
+    ///   - dimsFlashingLights: Dim Flashing Lights is on: softer lightning (`LightningFlash`).
+    init(engine: RunEngine, appearance: EggAppearance, reduceMotion: Bool, dimsFlashingLights: Bool) {
         self.engine = engine
         self.appearance = appearance
         self.reduceMotion = reduceMotion
+        lightning = .forSetting(dimsFlashingLights: dimsFlashingLights)
         timestep = FixedTimestep(rate: engine.config.simulationRate)
         layout = SceneLayout(size: CGSize(width: 402, height: 874), config: engine.config)
         super.init(size: CGSize(width: 402, height: 874))
@@ -128,7 +133,7 @@ final class GameScene: SKScene {
         if artwork == nil {
             let artwork = GameArtwork.shared(screenScale: screenScale)
             self.artwork = artwork
-            let overlay = WeatherOverlayNode(artwork: artwork)
+            let overlay = WeatherOverlayNode(artwork: artwork, lightning: lightning)
             overlay.zPosition = 100
             overlay.isOverCamera = showsCamera
             cameraNode.addChild(overlay)

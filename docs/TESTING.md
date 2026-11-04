@@ -87,7 +87,11 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       three puddles, the first 25–60 m from the start; on 50 m only about seven races in ten have one, on 15 m none).
 - [ ] Gewitter: a short warning flicker, then a bright flash, thunder and a strong push (on 50 or 100 m: the first
       strike comes 8 s or more after the start, when a clean 15 m run is over).
-- [ ] Reduce Motion (iOS Settings → Accessibility) removes the camera shake.
+- [ ] Dim Flashing Lights (iOS Settings → Accessibility → Motion): in a Gewitter the picture brightens slowly a moment
+      before a strike instead of flickering, and the strike only lightens it to about a third and fades slowly; thunder
+      and push stay. Turned on during a paused run, it applies from the next run.
+- [ ] Reduce Motion (iOS Settings → Accessibility → Motion) removes the camera shake, and the countdown's numbers and
+      "Los!" fade in and out without zooming or bouncing.
 
 ### Modes and progress
 - [ ] Zeitrennen Kurz/Mittel/Lang with each weather, personal bests appear in Einzelspieler and Bestenliste.

@@ -42,8 +42,11 @@ struct CoinShopPage: View {
                 }
             }
             VStack(alignment: .leading, spacing: 10) {
+                // Hot-seat runs earn nothing (`RunRules.hotSeat`), so the note names the modes that do.
                 Label {
-                    Text("Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr.")
+                    Text(
+                        "Münzen verdienst du im Einzelspieler und bei Rennen in der Nähe oder online: je weiter, schneller und wetterfester, desto mehr."
+                    )
                 } icon: {
                     Image(systemName: "figure.run")
                 }

@@ -1591,12 +1591,12 @@
         }
       }
     },
-    "Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr." : {
+    "Münzen verdienst du im Einzelspieler und bei Rennen in der Nähe oder online: je weiter, schneller und wetterfester, desto mehr." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You earn coins with every run: the further, faster and stormier, the more."
+            "value" : "You earn coins in single player and in nearby or online races: the further, faster and stormier, the more."
           }
         }
       }

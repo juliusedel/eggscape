@@ -203,3 +203,9 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   StoreKitTest session. Launches with throwaway data (`-ui-testing`, `-first-launch`, staged screenshots) do not listen
   for StoreKit's unfinished and updated transactions, so none of them is finished into a wallet that the next launch
   wipes; StoreKit keeps them for the next normal launch.
+- **Help and legal links (2026-11-03).** App Review asks for a privacy policy link and a way to contact the developer
+  inside the app (guidelines 5.1.1(i) and 1.5), and § 5 DDG probably for a legal notice (Impressum) that is easy to
+  reach. So the settings end with "Hilfe & Rechtliches": "Datenschutz", "Support & Impressum" (support and the legal
+  notice share one page) and the version. The rows open the project's GitHub Pages site (`site/`) in Safari, the German
+  pages when the app runs in German and the English ones otherwise, so the pages speak the app's language. The
+  addresses live in `WebPages` (`SettingsView.swift`), are the ones App Store Connect gets, and a unit test pins them.

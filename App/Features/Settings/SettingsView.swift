@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sound, vibration, sensitivity, calibration, player name, background and data reset.
+/// Sound, vibration, sensitivity, calibration, player name, background, data reset, and the help and legal pages.
 struct SettingsView: View {
     @Environment(AppServices.self) private var services
     @Environment(\.dismiss) private var dismiss
@@ -76,8 +76,20 @@ struct SettingsView: View {
                     Text("Löscht Einstellungen, Bestzeiten, Münzen und gekaufte Eier auf diesem Gerät.")
                 }
 
+                // App Review asks for the privacy policy and a way to contact the developer inside the app (guidelines
+                // 5.1.1 and 1.5), and German law for a legal notice that is easy to reach (§ 5 DDG).
                 Section {
+                    if let url = WebPages.url(of: .privacyPolicy) {
+                        Link("Datenschutz", destination: url)
+                            .accessibilityIdentifier("settings.privacy")
+                    }
+                    if let url = WebPages.url(of: .support) {
+                        Link("Support & Impressum", destination: url)
+                            .accessibilityIdentifier("settings.support")
+                    }
                     LabeledContent("Version", value: Self.version)
+                } header: {
+                    Text("Hilfe & Rechtliches")
                 }
             }
             .navigationTitle("Einstellungen")
@@ -186,5 +198,46 @@ private struct CalibrationSheet: View {
         }
         // Large text needs more than half the screen.
         .presentationDetents([.medium, .large])
+    }
+}
+
+/// The app's pages on the web, published with GitHub Pages from the repository's `site/` folder: the privacy policy,
+/// and support with the legal notice (Impressum). Each page exists in German and in English. App Store Connect and the
+/// store metadata name the same addresses.
+enum WebPages {
+    enum Page: CaseIterable {
+        case privacyPolicy
+        /// Contact, help and the legal notice.
+        case support
+    }
+
+    enum Language: CaseIterable {
+        case german
+        case english
+
+        /// The German pages for an app that runs in German, the English ones for any other language.
+        init(appLanguage: String?) {
+            let code = appLanguage.flatMap { Locale.Language(identifier: $0).languageCode }
+            self = code == .german ? .german : .english
+        }
+
+        /// The language the app runs in: the localization iOS picked from the player's preferred languages.
+        static var current: Language {
+            Language(appLanguage: Bundle.main.preferredLocalizations.first)
+        }
+    }
+
+    static func address(of page: Page, in language: Language) -> String {
+        switch (page, language) {
+        case (.privacyPolicy, .german): "https://juliusedel.github.io/eggscape/de/datenschutz/"
+        case (.privacyPolicy, .english): "https://juliusedel.github.io/eggscape/en/privacy/"
+        case (.support, .german): "https://juliusedel.github.io/eggscape/de/support/"
+        case (.support, .english): "https://juliusedel.github.io/eggscape/en/support/"
+        }
+    }
+
+    /// `nil` only for an address that is not a URL, which the unit tests rule out.
+    static func url(of page: Page, in language: Language = .current) -> URL? {
+        URL(string: address(of: page, in: language))
     }
 }

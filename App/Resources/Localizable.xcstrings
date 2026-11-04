@@ -541,6 +541,16 @@
         }
       }
     },
+    "Datenschutz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        }
+      }
+    },
     "Dein Ei" : {
       "localizations" : {
         "en" : {
@@ -1087,6 +1097,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hold"
+          }
+        }
+      }
+    },
+    "Hilfe & Rechtliches" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help & Legal"
           }
         }
       }
@@ -2084,6 +2104,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Looking for rooms nearby …"
+          }
+        }
+      }
+    },
+    "Support & Impressum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support & Legal Notice"
           }
         }
       }

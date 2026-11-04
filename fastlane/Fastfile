@@ -7,27 +7,48 @@ require "open3"
 #   ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (path to the .p8 file)
 def api_key
   app_store_connect_api_key(
-    key_id: ENV.fetch("ASC_KEY_ID"),
-    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
-    key_filepath: ENV.fetch("ASC_KEY_PATH")
+    key_id: required_env("ASC_KEY_ID"),
+    issuer_id: required_env("ASC_ISSUER_ID"),
+    key_filepath: required_env("ASC_KEY_PATH")
   )
 end
 
-# Regenerates the Xcode project and sets the next build number with agvtool.
+# The 10-character Team ID of the paid Apple Developer Program team (developer.apple.com > Membership) from
+# EGGSCAPE_TEAM_ID. The build gets it as DEVELOPMENT_TEAM, so a release depends neither on project.yml's <TEAM_ID>
+# placeholder nor on a team picked in Xcode, which `make gen` drops again.
+def development_team
+  team = required_env("EGGSCAPE_TEAM_ID")
+  return team if team.match?(/\A[A-Z0-9]{10}\z/)
+
+  UI.user_error!("EGGSCAPE_TEAM_ID must be the 10-character Team ID from developer.apple.com > Membership, " \
+                 "not \"#{team}\", see docs/RELEASE.md")
+end
+
+def required_env(name)
+  value = ENV[name].to_s.strip
+  UI.user_error!("#{name} is not set, see docs/RELEASE.md") if value.empty?
+  value
+end
+
+# Regenerates the Xcode project and sets the next build number in it. skip_info_plist keeps agvtool in the generated,
+# git-ignored project: App/Info.plist keeps $(CURRENT_PROJECT_VERSION) and gets the number from there.
 def prepare_build(key)
   sh("make", "-C", "..", "gen")
   latest = latest_testflight_build_number(api_key: key, initial_build_number: 0)
-  increment_build_number(xcodeproj: "Eggscape.xcodeproj", build_number: latest + 1)
+  increment_build_number(xcodeproj: "Eggscape.xcodeproj", build_number: latest + 1, skip_info_plist: true)
 end
 
-def build(key)
+# A signed App Store build. Automatic signing creates the distribution profile through -allowProvisioningUpdates,
+# which needs the paid team's Apple Account in Xcode > Settings > Accounts.
+def build(team)
   build_app(
     project: "Eggscape.xcodeproj",
     scheme: "Eggscape",
     configuration: "Release",
     export_method: "app-store",
+    export_team_id: team,
     output_directory: "build",
-    xcargs: "-allowProvisioningUpdates"
+    xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team}"
   )
 end
 
@@ -102,14 +123,16 @@ end
 platform :ios do
   desc "Build a release and upload it to TestFlight"
   lane :beta do
+    team = development_team
     key = api_key
     prepare_build(key)
-    build(key)
+    build(team)
     upload_to_testflight(api_key: key, skip_waiting_for_build_processing: true)
   end
 
   desc "Build a release and upload it together with the App Store metadata (does not submit for review)"
   lane :release do
+    team = development_team
     key = api_key
     has_screenshots = !screenshot_images.empty?
     if has_screenshots
@@ -117,7 +140,7 @@ platform :ios do
       verify_screenshots
     end
     prepare_build(key)
-    build(key)
+    build(team)
     upload_to_app_store(
       api_key: key,
       force: true,

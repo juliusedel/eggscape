@@ -98,8 +98,11 @@ details); it is not your Personal Team's. In Xcode → Settings → Accounts, st
 lanes let Xcode create the App Store signing profile through it (`-allowProvisioningUpdates`).
 
 project.yml keeps its `<TEAM_ID>` placeholder. `make beta` and `make release` take the team from `EGGSCAPE_TEAM_ID`
-(step 19) and hand it to the build. For a Run on your iPhone or an archive in Xcode, pick the paid team under Signing &
-Capabilities; every `make gen`, also the lanes' own, resets that choice.
+(step 19) and hand it to the build. For a Run on your iPhone (step 20 needs one before the first archive) or an archive
+in Xcode, pick the paid team under Signing & Capabilities. Every `make gen` resets that choice, and so does every
+target that runs it first: `make build`, `make test`, `make test-app`, `make test-ui`, `make run`, `make strings`,
+`make screenshots-sim` and the lanes behind `make beta`, `make release` and `make screenshots`. Pick the team again
+before the next archive, or run those targets in a separate checkout such as a git worktree.
 
 ## 8. Agreements, bank account, tax form and DAC7 (Owner, Account Holder)
 
@@ -257,10 +260,17 @@ Only needed for `make beta` and `make release` ([App Store Connect API][api]):
 
 ## 20. Upload the first build (Owner)
 
-In Xcode with the paid team selected (step 7): Product → Archive, then in the Organizer **Validate App**, which
-checks signing, team, App ID and the app record before anything is uploaded, and **Distribute App** → App Store
-Connect ([distributing your app][distribute]). Every upload needs a higher build number than the one before; Xcode's
-distribution options can manage it ("Manage Version and Build Number").
+Once, before the first archive, register your iPhone with the paid team: connect it, choose it as the run destination,
+select the paid team under Signing & Capabilities and run the app (Product → Run, or Register Device if Xcode offers
+it). Automatic signing signs an archive with a development profile first, and Xcode creates one only for a team with at
+least one registered device. The iPhone you used with the Personal Team is not registered in the paid team. Without a
+device, Product → Archive and `make beta` stop with "Your team has no devices from which to generate a provisioning
+profile". Adding the iPhone's UDID under Certificates, Identifiers & Profiles → Devices works too.
+
+In Xcode with the paid team selected and your iPhone registered with it: Product → Archive, then in the Organizer
+**Validate App**, which checks signing, team, App ID and the app record before anything is uploaded, and **Distribute
+App** → App Store Connect ([distributing your app][distribute]). Every upload needs a higher build number than the one
+before; Xcode's distribution options can manage it ("Manage Version and Build Number").
 
 Or **Repo**: `make beta` regenerates the project, sets the build number to the latest TestFlight build + 1 (only in
 the generated project; App/Info.plist stays untouched), builds a signed Release archive with `EGGSCAPE_TEAM_ID` and

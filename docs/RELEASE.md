@@ -165,6 +165,10 @@ Connect does not have yet.
 - Category **Games**, subcategories **Family** and **Sports** (also in `fastlane/metadata`).
 - Content Rights: the app contains no third-party content.
 - App Store Regulations and Permits → Digital Services Act: the trader status for this app (step 9).
+- Digital Goods and Services in Your Apps, if the section is there: **Get Started** → Yes, customers can consume
+  digital goods (the coin packs and the eggs they unlock) → **Apple In-App Purchase exclusively** for every country or
+  region → check the Confirmation page → Save. The EU answers then stay locked for 12 months
+  ([digital goods questionnaire][digital-goods]).
 
 ## 14. Age rating (Owner)
 
@@ -190,6 +194,10 @@ in-app purchases. For Eggscape as it is:
 - Privacy Policy URL: the pages from step 4 (`make release` sets them per language from `fastlane/metadata`).
 - Data collection: **Data Not Collected**. The app has no server of its own, no analytics and no ads, and data that
   Apple collects for Game Center and purchases is not yours to disclose ([app privacy details][privacy-details]).
+  Nearby sends the player name, egg and race data only to the other phones in the room, which keep nothing, so
+  neither you nor a third-party partner can access it; online matching and leaderboards are Game Center, Apple's own
+  service. That is why Apple's hint to declare Gameplay Content for multiplayer matching does not apply here. Change
+  this answer before the app gets a server of its own, an SDK or analytics.
 
 ## 16. Pricing and Availability (Owner)
 
@@ -216,8 +224,12 @@ Connect never lets you change or reuse one ([In-App Purchase information][iap-in
 - Price: Germany as the base country, from which Apple derives the other storefronts' prices
   ([set an In-App Purchase price][iap-price]). The amounts and the shop's "Bestes Angebot" badge are explained in
   `docs/ASSUMPTIONS.md`.
-- Localizations: the German and English display names and descriptions from `StoreKit/Eggscape.storekit`; they fit
-  Apple's limits of 30 and 45 characters.
+- Localizations: German, and the same English display name and description under English (U.S.), English (U.K.),
+  English (Canada) and English (Australia), from `StoreKit/Eggscape.storekit`; they fit Apple's limits of 30 and 45
+  characters. The storefront, not the phone's language, decides which language a pack's name shows in, and most
+  storefronts list English only as English (U.K.), (Canada) or (Australia), so without those a pack may show its
+  German name there. If you can, look at Shop → Münzen after the release on a phone whose App Store account is from
+  the UK; the sandbox has been seen to show only a product's primary language, so TestFlight cannot prove it.
 - App Review screenshot: Shop → Münzen with the three packs. The staged shop screenshot shows the egg page, so take
   it in the Simulator after a Run from Xcode, which uses the StoreKit configuration:
   `xcrun simctl io booted screenshot --type=jpeg coins.jpg`. It can be replaced later, not removed.
@@ -403,6 +415,7 @@ On the version page under App Review Information ([platform version information]
 [dac7]: https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-information-for-directive-on-administrative-cooperation-7th-amendment
 [ddg]: https://www.gesetze-im-internet.de/ddg/__5.html
 [declared-age-range]: https://developer.apple.com/documentation/declaredagerange
+[digital-goods]: https://developer.apple.com/help/app-store-connect/manage-app-information/complete-the-digital-goods-and-services-questionnaire
 [distribute]: https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases
 [dpma]: https://register.dpma.de/
 [dsa]: https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements

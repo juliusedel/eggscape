@@ -345,7 +345,8 @@ ones to the other English folders. With the eight scenes, two photos per size fi
 for, so anything added only in App Store Connect is gone after the next `make release`. Without fastlane, upload each
 folder's JPEGs to its own language on the version page, in file-name order: `iPhone 18 Pro-*` under iPhone with
 Dynamic Island (medium display), `iPhone 18 Pro Max-*` under the large display (View All Sizes in Media Manager).
-en-GB, en-CA and en-AU get the copies in their own folders.
+A camera photo such as `00-camera.jpg` goes first, under the display size its pixel size belongs to
+([screenshot specifications][screenshot-specs]). en-GB, en-CA and en-AU get the copies in their own folders.
 
 ## 23. App Review information (Owner)
 

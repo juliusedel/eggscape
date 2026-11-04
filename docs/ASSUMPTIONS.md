@@ -226,3 +226,17 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   Info.plist and link tests pass with the test language set to de, en and fr. Setting the key back to
   `$(DEVELOPMENT_LANGUAGE)` restores the German fallback. The App Store page's language is chosen in App Store Connect
   (Primary Language) and is not affected.
+- **Nearby help and a fresh search (2026-11-03).** A joiner without a room waited on "Suche Räume in der Nähe …" and
+  a host alone in its room saw a disabled "Rennen starten", neither with a reason. iOS has no API that tells an app
+  whether it may use the local network, and it may turn down the first advertising or browsing while its Local Network
+  prompt is still up, leaving it to the app to try again (TN3179), so on two fresh installs, as App Review tests, a
+  room could stay invisible until the player left and came back. Now the phone starts over when the app is active again (the
+  prompt makes it inactive) if it has found nobody yet: the search while the room list is empty, the advertising while
+  the host is alone. A list with rooms or a room with players is left alone. When MultipeerConnectivity reports that
+  advertising or browsing did not start, the phone tries again after 2 s, then 4, 8 and 16 s and every 30 s after
+  that, so a phone without Local Network access does not try every moment; before, it ended on "Verbindung verloren"
+  with the raw error. After 10 s with nobody, the room list or the lobby names "Lokales Netzwerk" as the likely cause
+  (the app cannot ask iOS) with "Einstellungen öffnen" for Eggscape's page in the iOS Settings, and the host alone
+  reads "Warte auf Mitspieler …" with "Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten." The texts say
+  "Handy" like the rest of the app, not "iPhone". The existing footer of the room list already asks for "Raum
+  erstellen", so the joiner's hint adds only Local Network. Not yet checked on two fresh devices.

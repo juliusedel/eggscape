@@ -381,6 +381,16 @@
         }
       }
     },
+    "Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the other phones: Multiplayer → Nearby → Join."
+          }
+        }
+      }
+    },
     "Aus" : {
       "localizations" : {
         "en" : {
@@ -1271,6 +1281,16 @@
         }
       }
     },
+    "Kein Raum zu sehen? Dann erlaube auf beiden Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No room showing up? Then allow “Local Network” for Eggscape in the iOS Settings on both phones."
+          }
+        }
+      }
+    },
     "Kein Wetter" : {
       "localizations" : {
         "en" : {
@@ -1944,6 +1964,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close"
+          }
+        }
+      }
+    },
+    "Sehen die anderen deinen Raum nicht? Dann erlaube auf allen Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The others can’t see your room? Then allow “Local Network” for Eggscape in the iOS Settings on every phone."
           }
         }
       }

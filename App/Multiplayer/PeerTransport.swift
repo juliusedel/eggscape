@@ -51,7 +51,11 @@ enum TransportEvent: Sendable {
     case received(Data, from: RemotePeer)
     /// Joiner: the host did not let us in, see `JoinFailure`.
     case joinFailed(JoinFailure)
-    /// The room could not be joined or the host stopped hosting.
+    /// Nearby: iOS did not let this phone advertise its room (host) or look for rooms (joiner), for example while its
+    /// Local Network prompt was still up. Nothing is wrong with the room, so `NearbySession` tries again. The text is
+    /// for the log.
+    case discoveryFailed(String)
+    /// Online: the Game Center match failed, which ends the room.
     case failed(String)
 }
 
@@ -74,9 +78,11 @@ protocol NearbyTransport: PeerTransport {
     var onRoomsChanged: ([DiscoveredRoom]) -> Void { get set }
     /// Host: whether the room takes another player right now.
     var acceptsPlayers: () -> Bool { get set }
+    /// Host: opens the room. Called again, it advertises the room anew, for when iOS turned the last attempt down.
     func startHosting()
     /// Host: call after anything `acceptsPlayers` depends on changed.
     func updateAdvertising()
+    /// Joiner: lists rooms nearby. Called again, it starts over with a fresh list.
     func startBrowsing()
     func stopBrowsing()
     /// Joiner: asks the host to let us in. Ends with `.connected` for the host, or with `.joinFailed`.

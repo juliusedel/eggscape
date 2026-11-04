@@ -163,12 +163,23 @@ anyway, both must be on the same Wi-Fi without client isolation or VPN, and the 
 local network (System Settings → Privacy & Security → Local Network, and the firewall).
 
 Why a join failed is logged (subsystem `de.juliusedel.eggscape`, category `nearby`): the joiner logs the reason and how
-many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. Read it
-in Xcode's console (it shows the app's log also without the debugger, which the Run scheme leaves off), in Console.app
-with the iPhone selected, or for the Simulator with
-`xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
+many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. When
+iOS turns down advertising the room or looking for rooms, the phone logs "Could not advertise the room" or "Could not
+look for rooms" with the error, and when it tries again. Read it in Xcode's console (it shows the app's log also
+without the debugger, which the Run scheme leaves off), in Console.app with the iPhone selected, or for the Simulator
+with `xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
 
-- [ ] The Local Network prompt appears only when entering "In der Nähe", with the explanatory text.
+- [ ] The Local Network prompt appears only once Raum erstellen or Beitreten is tapped, with the explanatory text.
+- [ ] Two fresh installs that both see the prompt for the first time (the App Review setup): Raum erstellen on A,
+      Beitreten on B, "Erlauben" on both. B lists A's room within a few seconds, without leaving the screen. iOS may
+      turn down the first search while its prompt is up; the app looks again once it is active.
+- [ ] Host alone in its room: below the host, "Warte auf Mitspieler …" and "Auf den anderen Handys: Mehrspieler →
+      In der Nähe → Beitreten."; after about 10 s alone, a hint on "Lokales Netzwerk" with "Einstellungen öffnen",
+      which opens Eggscape's page in the iOS Settings. Both go once a player joins.
+- [ ] Joiner with no room for about 10 s (no host yet): the room list adds the hint on "Lokales Netzwerk" with
+      "Einstellungen öffnen"; it goes as soon as a room is listed.
+- [ ] "Nicht erlauben" on one phone: neither phone sees the other, and both show the hint after about 10 s. Allowing
+      "Lokales Netzwerk" in the settings and coming back to the app brings the room up, without leaving the screen.
 - [ ] Raum erstellen on phone A, Beitreten on phone B: B sees A's nickname and joins; A accepts automatically.
 - [ ] Lobby shows players, egg colors and ready states; only the host changes distance and weather.
 - [ ] The 3-2-1 countdown starts at the same moment on all phones (film both screens to compare).

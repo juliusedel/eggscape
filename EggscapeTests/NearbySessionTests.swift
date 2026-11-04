@@ -60,6 +60,7 @@ private final class FakeNearbyTransport: NearbyTransport {
     var joinContexts: [String: Data] = [:]
     private(set) var joinedRooms: [DiscoveredRoom] = []
     private(set) var cancelledJoins = 0
+    private(set) var hostingStarts = 0
     private(set) var browsingStarts = 0
     private(set) var sent: [NetMessage] = []
 
@@ -77,7 +78,10 @@ private final class FakeNearbyTransport: NearbyTransport {
         continuation.finish()
     }
 
-    func startHosting() {}
+    func startHosting() {
+        hostingStarts += 1
+    }
+
     func updateAdvertising() {}
 
     func startBrowsing() {
@@ -236,5 +240,151 @@ struct NearbyJoinTests {
             }
         }
         #expect(lobbies.last?.player(PlayerID("jonas")) != nil)
+    }
+}
+
+/// Finding each other nearby: the help after a while without a room or a player, and a fresh search when iOS turned
+/// one down, for example while its Local Network prompt was up. Only joiners wait in these tests: a host's room keeps
+/// the screen awake (see `NearbyJoinTests`), so its wait is ended by hand.
+@MainActor
+struct NearbyDiscoveryTests {
+    private let mia = DiscoveredRoom(id: "peer-mia", hostName: "Mia", playerCount: nil)
+    private let jonas = RemotePeer(id: "peer-jonas", displayName: "Jonas")
+
+    private func makeServices() -> AppServices {
+        let suite = "eggscape.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite) ?? .standard
+        defaults.removePersistentDomain(forName: suite)
+        return AppServices(
+            settings: SettingsStore(defaults: defaults),
+            records: RecordsStore(defaults: defaults),
+            wallet: WalletStore(defaults: defaults)
+        )
+    }
+
+    /// A host room with nobody in it yet; `fake` lets Jonas in once he connects.
+    private func makeHost(_ fake: FakeNearbyTransport) throws -> NearbySession {
+        let request = JoinRequest(playerID: "jonas", nickname: "Jonas", eggSkinID: SkinCatalog.defaultSkinID)
+        fake.joinContexts[jonas.id] = try JSONEncoder().encode(request)
+        return NearbySession(role: .host, services: makeServices(), nearby: fake)
+    }
+
+    /// Waits up to five seconds for `condition`.
+    private func wait(until condition: () -> Bool) async {
+        let deadline = ContinuousClock.now + .seconds(5)
+        while !condition(), ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
+    @Test func aJoinerWithoutRoomsGetsHelpAfterAWhile() async {
+        let fake = FakeNearbyTransport()
+        let joiner = NearbySession(role: .joiner, services: makeServices(), nearby: fake)
+        defer { joiner.leave() }
+        joiner.helpDelay = .milliseconds(50)
+        #expect(joiner.isWaitingForOthers)
+        #expect(!joiner.isWaitingLong)
+
+        await wait { joiner.isWaitingLong }
+        #expect(joiner.isWaitingLong)
+
+        // A room turns up: the list shows it, and the help goes.
+        fake.onRoomsChanged([mia])
+        #expect(!joiner.isWaitingForOthers)
+        #expect(!joiner.isWaitingLong)
+    }
+
+    @Test func aListWithARoomNeedsNoHelp() async {
+        let fake = FakeNearbyTransport()
+        let joiner = NearbySession(role: .joiner, services: makeServices(), nearby: fake)
+        defer { joiner.leave() }
+        fake.onRoomsChanged([mia])
+        joiner.helpDelay = .milliseconds(20)
+        try? await Task.sleep(for: .milliseconds(200))
+        #expect(!joiner.isWaitingLong)
+    }
+
+    @Test func aHostAloneWaitsForPlayersAndGetsHelp() throws {
+        let fake = FakeNearbyTransport()
+        let room = try makeHost(fake)
+        defer { room.leave() }
+        // "Warte auf Mitspieler …", and the help once the wait is over.
+        #expect(room.isWaitingForOthers)
+        #expect(!room.isWaitingLong)
+        room.helpDelayElapsed()
+        #expect(room.isWaitingLong)
+
+        room.handle(.connected(jonas))
+        #expect(!room.isWaitingForOthers)
+        #expect(!room.isWaitingLong)
+        room.helpDelayElapsed()
+        #expect(!room.isWaitingLong, "a room with a player needs no help")
+
+        // Alone again: the help takes its time anew.
+        room.handle(.disconnected(jonas))
+        #expect(room.isWaitingForOthers)
+        #expect(!room.isWaitingLong)
+    }
+
+    @Test func aSearchIOSTurnedDownStartsOverInsteadOfEndingTheRoom() async {
+        let fake = FakeNearbyTransport()
+        let joiner = NearbySession(role: .joiner, services: makeServices(), nearby: fake)
+        defer { joiner.leave() }
+        joiner.discoveryRetryDelay = .milliseconds(20)
+        #expect(fake.browsingStarts == 1)
+
+        joiner.handle(.discoveryFailed("denied while the prompt was up"))
+        // Not the dead end of "Verbindung verloren".
+        #expect(joiner.stage == .browsing)
+        #expect(joiner.joinFailure == nil)
+        await wait { fake.browsingStarts == 2 }
+        #expect(fake.browsingStarts == 2)
+    }
+
+    @Test func aRoomIOSTurnedDownStaysOpenAndIsAdvertisedAnew() throws {
+        let fake = FakeNearbyTransport()
+        let room = try makeHost(fake)
+        defer { room.leave() }
+        room.handle(.connected(jonas))
+        #expect(fake.hostingStarts == 1)
+
+        room.handle(.discoveryFailed("denied while the prompt was up"))
+        #expect(room.stage == .lobby)
+        #expect(room.lobby.player(PlayerID("jonas")) != nil)
+        // Back from the prompt the room does not wait out the pause, although it has a player.
+        room.appBecameActive()
+        #expect(fake.hostingStarts == 2)
+        room.appBecameActive()
+        #expect(fake.hostingStarts == 2, "nothing was due anymore")
+    }
+
+    @Test func comingBackStartsOverWhatFoundNobody() throws {
+        let fake = FakeNearbyTransport()
+        let joiner = NearbySession(role: .joiner, services: makeServices(), nearby: fake)
+        defer { joiner.leave() }
+        joiner.appBecameActive()
+        #expect(fake.browsingStarts == 2, "an empty list looks again")
+        fake.onRoomsChanged([mia])
+        joiner.appBecameActive()
+        #expect(fake.browsingStarts == 2, "a list with rooms works")
+        joiner.join(mia)
+        fake.onRoomsChanged([])
+        joiner.appBecameActive()
+        #expect(fake.browsingStarts == 2, "a joiner on its way into a room does not look again")
+
+        let hostFake = FakeNearbyTransport()
+        let room = try makeHost(hostFake)
+        defer { room.leave() }
+        room.appBecameActive()
+        #expect(hostFake.hostingStarts == 2, "a room nobody found is advertised anew")
+        room.handle(.connected(jonas))
+        room.appBecameActive()
+        #expect(hostFake.hostingStarts == 2, "a room with a player works")
+    }
+
+    @Test func retriesWaitLongerAfterEveryFailure() {
+        let delays = (1 ... 6).map { NearbySession.retryDelay(afterFailures: $0, first: .seconds(2)) }
+        #expect(delays == [.seconds(2), .seconds(4), .seconds(8), .seconds(16), .seconds(30), .seconds(30)])
+        #expect(NearbySession.retryDelay(afterFailures: 1000, first: .seconds(2)) == .seconds(30))
     }
 }

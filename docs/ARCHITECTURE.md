@@ -174,7 +174,9 @@ keeps its eggs in any weather and after any retuning of `GameConfig`.
 `results`, `ping`, `pong`, encoded as JSON. The host is the referee (`RaceReferee`): clock sync via ping/pong
 (`ClockSync`), start time = host time + 3 s, finish order by arrival of `finished`. A `PeerTransport` protocol in the
 app hides MultipeerConnectivity (Nearby) and GameKit (`GKMatch`, Online); `NearbyTransport` adds hosting, browsing
-and joining for nearby rooms, so `NearbySession`'s join logic can be tested with a fake.
+and joining for nearby rooms, so `NearbySession`'s join and discovery logic can be tested with a fake. Advertising or
+browsing that iOS turned down arrives as `TransportEvent.discoveryFailed`, which `NearbySession` tries again rather
+than ending the room.
 
 ## Economy contract
 

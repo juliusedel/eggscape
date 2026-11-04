@@ -26,6 +26,9 @@ final class GameScene: SKScene {
         /// The egg already reacts to the tilt, but the run has not started (countdown).
         case warmUp
         case running
+        /// App Store screenshots: the run stands still at the moment it skipped to while the weather goes on, so a
+        /// capture shows that moment however late it comes (`RunSession.stageForScreenshot(skipping:egg:)`).
+        case staged
         case paused
         case ended
     }
@@ -248,6 +251,9 @@ final class GameScene: SKScene {
                 hudCountdown = 0.1
                 onHUD(hudSnapshot)
             }
+            updateCamera(dt: frameDuration)
+        case .staged:
+            weather?.update(weather: engine.weather, dt: frameDuration)
             updateCamera(dt: frameDuration)
         }
         render()

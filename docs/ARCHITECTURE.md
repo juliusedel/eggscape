@@ -166,7 +166,9 @@ into a run through `RaceHooks` (shared start instant, progress, drops, finish). 
 room on top of `MultipeerTransport`; `GameKitTransport` carries the same messages over a Game Center match.
 `--screenshot-mode <scene>` stages deterministic scenes for the App Store (`ScreenshotStage`). A staged run holds the
 egg at a chosen physics position with feedback (`GameScene.holdEgg(at:)`), like a quick and attentive player, so it
-keeps its eggs in any weather and after any retuning of `GameConfig`.
+keeps its eggs in any weather and after any retuning of `GameConfig`. It skips ahead before its screen appears, so the
+screen never shows the calibration, however slowly the app launches, and then stands still at that moment while the
+weather goes on (`GameScene.Mode.staged`), so a capture shows the same moment however late it comes.
 
 ## Multiplayer contract
 

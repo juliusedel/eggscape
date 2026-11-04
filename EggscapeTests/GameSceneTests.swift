@@ -57,8 +57,8 @@ struct GameSceneTests {
         )
         scene.holdEgg(at: SIMD2(0.22, -0.08))
         scene.mode = .running
-        // The 14 seconds it skips, and the moments until the capture, still well short of the 100 m.
-        scene.fastForward(seconds: 22)
+        // The 19.5 seconds it skips, through the strike at 12.9 s, still well short of the 100 m.
+        scene.fastForward(seconds: 19.5)
         #expect(scene.engine.eggsLost == 0)
         #expect(scene.engine.phase == .running)
     }

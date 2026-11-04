@@ -332,8 +332,8 @@ Both render the eight staged scenes (`--screenshot-mode`) in German and English 
 time, and save them as JPEG without alpha channel to `fastlane/screenshots/<language>/<simulator>-<nn>-<scene>.jpg`
 (git-ignored). They stay in the checkout that captured them, so run `make screenshots-sim` and `make release` in the
 same one and keep it until the upload. They copy en-US to en-GB, en-CA and en-AU and list every image with its size
-and alpha channel. Look at each one; a scene that came out wrong, for example a run still showing its calibration
-card, can be captured again on its own with `SCREENSHOT_SCENES=05-storm make screenshots-sim`.
+and alpha channel. Look at each one; a scene that came out wrong, for example rain captured before many drops had
+landed, can be captured again on its own with `SCREENSHOT_SCENES=04-rain make screenshots-sim`.
 
 The staged scenes use the white surface, because the Simulator has no camera. Add one or two photos of the camera
 look, the default background, from a real iPhone in one of Apple's sizes: as JPEG

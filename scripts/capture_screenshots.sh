@@ -36,8 +36,9 @@ WORK=".build/screenshots"
 LANGUAGES=(de-DE en-US)
 ENGLISH_COPIES=(en-GB en-CA en-AU)
 # <file name> <scene> <seconds to settle once the app has drawn>, in App Store order. Names and order follow
-# EggscapeUITests/ScreenshotTests.swift; the times were measured on an 8 GB Mac. A staged run jumps into the race a
-# second after its screen opens and needs a few more for weather and wobble, and the results appear after the finish.
+# EggscapeUITests/ScreenshotTests.swift; the times were measured on an 8 GB Mac. A staged run opens on its moment of
+# the race and stands still there (App/Support/ScreenshotStage.swift), so a late capture shows the same; it needs a few
+# seconds for rain, drops and leaves to build up. The results appear 1.2 s after the finish it skips past.
 SCENES=(
     "01-start start 1.5"
     "02-calibration calibration 2"

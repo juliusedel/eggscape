@@ -47,7 +47,7 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart. A value set in an
       earlier build stays where it was on the slider.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
-- [ ] The safety note ("Im Spiel läufst du von selbst …") is on the tutorial's first page, on the calibration screen
+- [ ] The safety note ("Die Strecke läuft von selbst …") is on the tutorial's first page, on the calibration screen
       and under the lobby's "Kalibrieren und bereit", in German and English, also at the largest text size.
 - [ ] The screen never dims during calibration, countdown or a run, and dims normally in the menus.
 

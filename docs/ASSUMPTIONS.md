@@ -255,7 +255,7 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Safety note and the camera question (2026-11-03).** The store texts and the calibration spoke of running with the
   phone held flat, but the run moves by itself (no step detection), so nobody has to run while looking at the screen,
   and App Review guideline 1.4.5 asks apps not to invite risky use. Until the owner decides whether players should stand
-  or move, the app says both: "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst,
+  or move, the app says both: "Die Strecke läuft von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst,
   dann nur, wo Platz ist, und achte auf deine Umgebung." (`SafetyNote`) on the tutorial's first page, on the calibration
   screen and under the race lobby's ready button, where racers calibrate. The lines there that say how to hold the phone
   speak of playing ("spielen"), no longer of running ("laufen"), which fits either answer and matches the store texts

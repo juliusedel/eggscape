@@ -123,7 +123,7 @@ struct CalibrationOverlay: View {
 struct SafetyNote: View {
     var body: some View {
         Text(
-            "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung."
+            "Die Strecke läuft von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung."
         )
     }
 }

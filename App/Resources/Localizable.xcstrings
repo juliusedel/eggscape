@@ -651,6 +651,16 @@
         }
       }
     },
+    "Die Strecke läuft von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the game you run automatically, so you can also play standing still. If you walk or run along, only do it where there is room, and watch your surroundings."
+          }
+        }
+      }
+    },
     "Die Verbindung zum Raum ist abgebrochen." : {
       "localizations" : {
         "en" : {
@@ -1167,16 +1177,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I’m Ready"
-          }
-        }
-      }
-    },
-    "Im Spiel läufst du von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In the game you run automatically, so you can also play standing still. If you walk or run along, only do it where there is room, and watch your surroundings."
           }
         }
       }

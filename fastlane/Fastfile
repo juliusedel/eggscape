@@ -138,6 +138,9 @@ platform :ios do
     if has_screenshots
       copy_english_screenshots
       verify_screenshots
+    else
+      UI.important("fastlane/screenshots in this checkout holds no images (they are git-ignored), so App Store " \
+                   "Connect keeps the screenshots it has. To upload new ones, run make screenshots-sim here first.")
     end
     prepare_build(key)
     build(team)

@@ -17,7 +17,9 @@
 #
 # Environment:
 #   SCREENSHOT_DEVICES  simulators, comma-separated (default "iPhone 18 Pro Max,iPhone 18 Pro": the 6.9" size and the
-#                       required 6.3" one)
+#                       required 6.3" one). Without SCREENSHOT_SCENES the run is complete and also deletes the images
+#                       of every simulator it does not list; to redo one size only, also set SCREENSHOT_SCENES to all
+#                       eight scenes: 01-start,02-calibration,03-sunny,04-rain,05-storm,06-lobby,07-results,08-shop
 #   SCREENSHOT_SCENES   only these scenes, comma-separated, e.g. "05-storm"; all other images stay as they are
 set -euo pipefail
 cd "$(dirname "$0")/.."

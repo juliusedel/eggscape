@@ -55,9 +55,14 @@ Germany most likely needs an Impressum ([§ 5 DDG][ddg]). `site/` holds the page
 
 1. Replace every `TODO(owner)` in `site/` with your street address, postcode and town, email address and phone
    number, and in the privacy policy with the name and seat of your email provider; if it sits outside the EU and the
-   EEA, add there on what basis the emails go to it, as section 10 does for GitHub. They become public, like the
-   trader details in step 9, so take an address you want to publish; a P.O. box does not do for the Impressum, a
-   business address service may.
+   EEA, add there on what basis the emails go to it, as section 10 does for GitHub. If you have a USt-IdNr. or a
+   Wirtschafts-Identifikationsnummer (the BZSt assigns it without an application once the Finanzamt has you on record
+   as economically active; ask in step 5), enter it in both Impressum sections in the row "USt-IdNr. / W-IdNr."
+   ("VAT ID / Business ID" in English) and keep only the matching label; if you have neither, delete that row. The
+   Steuernummer never goes there. All of this becomes public, like the trader details in step 9, so take an address
+   you want to publish; a P.O. box does not do for the Impressum, a business address service may. Git keeps every
+   committed version: an address or phone number you replace later stays readable in the public history of
+   github.com/juliusedel/eggscape, even after the website shows the new one.
 2. Have the privacy policy and the Impressum checked legally, by a lawyer or the IHK, before they go live.
 3. `make site-check` lists the placeholders still left and checks the pages, the links and the page URLs in
    `fastlane/metadata`; it passes once none is left.

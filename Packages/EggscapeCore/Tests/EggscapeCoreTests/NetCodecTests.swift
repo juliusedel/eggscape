@@ -131,6 +131,38 @@ private let malformedMessages = [
     """#,
 ]
 
+/// A results message with one entry for Anna.
+private func results(place: Int = 1, status: RaceResultEntry.Status, eggsLost: Int = 0) -> NetMessage {
+    .results(RaceResults(entries: [
+        RaceResultEntry(place: place, playerID: "anna", nickname: "Anna", status: status, eggsLost: eggsLost),
+    ]))
+}
+
+/// Numbers no real phone sends, each in a message JSON can carry: a modified client could send any of them.
+private let implausibleMessages: [NetMessage] = [
+    .progress(meters: 1e300, eggsLeft: 2),
+    .progress(meters: -1, eggsLeft: 2),
+    .progress(meters: 10000.5, eggsLeft: 2),
+    .progress(meters: 12.5, eggsLeft: -1),
+    .progress(meters: 12.5, eggsLeft: 4),
+    .eggDropped(eggsLeft: -1),
+    .eggDropped(eggsLeft: 4),
+    .finished(FinishReport(completed: true, time: 1e300, meters: 100, eggsLost: 0)),
+    .finished(FinishReport(completed: true, time: -1, meters: 100, eggsLost: 0)),
+    .finished(FinishReport(completed: true, time: 3600.5, meters: 100, eggsLost: 0)),
+    .finished(FinishReport(completed: false, time: 30, meters: 1e300, eggsLost: 3)),
+    .finished(FinishReport(completed: false, time: 30, meters: -1, eggsLost: 3)),
+    .finished(FinishReport(completed: false, time: 30, meters: 80, eggsLost: 4)),
+    .finished(FinishReport(completed: false, time: 30, meters: 80, eggsLost: -1)),
+    results(status: .finished(time: 1e300)),
+    results(status: .finished(time: -1)),
+    results(status: .outOfEggs(meters: 1e300)),
+    results(status: .disconnected(meters: -1)),
+    results(status: .finished(time: 35.8), eggsLost: 4),
+    results(place: 0, status: .finished(time: 35.8)),
+    results(place: 5, status: .finished(time: 35.8)),
+]
+
 struct NetCodecTests {
     private let codec = NetCodec()
 
@@ -314,6 +346,66 @@ struct NetCodecTests {
                 Issue.record("expected unencodable, got \(String(describing: error))")
             }
         }
+    }
+
+    @Test(arguments: everyMessage + documentedExamples.map(\.message))
+    func realMessagesArePlausible(_ message: NetMessage) {
+        #expect(message.isPlausible())
+    }
+
+    @Test(arguments: implausibleMessages)
+    func carriesNumbersNoPhoneSendsButFlagsThem(_ message: NetMessage) throws {
+        // The format takes them, so the codec does; `isPlausible` is what keeps them out of a race.
+        let decoded = try codec.decode(codec.encode(message, from: "anna")).message
+        #expect(decoded == message)
+        #expect(!decoded.isPlausible())
+    }
+
+    @Test func aHandWrittenHugeDistanceArrivesFlagged() throws {
+        let decoded = try codec.decode(envelope(#"{"type":"progress","meters":1e300,"eggsLeft":2}"#))
+        #expect(decoded.message == .progress(meters: 1e300, eggsLeft: 2))
+        #expect(!decoded.message.isPlausible())
+    }
+
+    @Test func numbersJSONCannotHoldNeverArrive() {
+        for number in ["NaN", "Infinity", "-Infinity", "1e999", "-1e999"] {
+            expectInvalidData(envelope(#"{"type":"progress","meters":\#(number),"eggsLeft":2}"#))
+        }
+    }
+
+    @Test func numbersThatAreNoNumbersAreImplausible() {
+        // Only a message built in memory can hold them, but the check must not depend on that.
+        let messages: [NetMessage] = [
+            .startRace(seed: 7, startAt: .nan),
+            .progress(meters: .infinity, eggsLeft: 2),
+            .progress(meters: .nan, eggsLeft: 2),
+            .ping(id: 1, sentAt: -.infinity),
+            .pong(id: 1, pingSentAt: .nan, hostTime: 5000),
+            .pong(id: 1, pingSentAt: 102.5, hostTime: .infinity),
+            .finished(FinishReport(completed: true, time: .nan, meters: 100, eggsLost: 0)),
+            results(status: .disconnected(meters: .infinity)),
+        ]
+        for message in messages {
+            #expect(!message.isPlausible(), "\(message)")
+        }
+    }
+
+    @Test func theEdgesOfEveryRangeArePlausible() {
+        let messages: [NetMessage] = [
+            .progress(meters: 0, eggsLeft: 0),
+            .progress(meters: 10000, eggsLeft: 3),
+            .finished(FinishReport(completed: true, time: 3600, meters: 10000, eggsLost: 3)),
+            .finished(FinishReport(completed: false, time: 0, meters: 0, eggsLost: 0)),
+            results(place: 4, status: .finished(time: 3600), eggsLost: 3),
+            // The clock readings only need to be numbers.
+            .startRace(seed: 7, startAt: -1e300),
+            .pong(id: 1, pingSentAt: 1e300, hostTime: -1e300),
+        ]
+        for message in messages {
+            #expect(message.isPlausible(), "\(message)")
+        }
+        // A run with more eggs may report more.
+        #expect(NetMessage.eggDropped(eggsLeft: 4).isPlausible(eggsPerRun: 5))
     }
 
     @Test func streamsGoUnreliable() {

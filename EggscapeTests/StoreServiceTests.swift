@@ -53,7 +53,8 @@ struct StoreServiceTests {
         await store.loadProducts()
         let small = try #require(store.products.first { $0.id == CoinPack.small.productID })
 
-        await store.purchase(small)
+        // The app buys through SwiftUI's purchase action; its answer goes the same way.
+        await store.purchase(small, with: { try await $0.purchase() })
         #expect(store.purchaseState == .idle)
         #expect(credited.count == 1)
         #expect(wallet.coins == CoinPack.small.coins)
@@ -68,5 +69,33 @@ struct StoreServiceTests {
             unfinished += 1
         }
         #expect(unfinished == 0)
+    }
+
+    /// The App Store's other answers, and errors on the way: nothing is credited, and the page shows the outcome.
+    @Test func theStateFollowsTheAnswer() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        var credited = 0
+        let store = StoreService(productIDs: CoinPack.productIDs) { _, _ in credited += 1 }
+        await store.loadProducts()
+        let small = try #require(store.products.first { $0.id == CoinPack.small.productID })
+
+        await store.purchase(small, with: { product in
+            #expect(store.purchaseState == .purchasing(productID: product.id))
+            return .pending
+        })
+        #expect(store.purchaseState == .pending)
+
+        await store.purchase(small, with: { _ in .userCancelled })
+        #expect(store.purchaseState == .idle)
+
+        await store.purchase(small, with: { _ in throw StoreKitError.userCancelled })
+        #expect(store.purchaseState == .idle)
+
+        let failure = StoreKitError.notAvailableInStorefront
+        await store.purchase(small, with: { _ in throw failure })
+        #expect(store.purchaseState == .failed(failure.localizedDescription))
+
+        #expect(credited == 0)
     }
 }

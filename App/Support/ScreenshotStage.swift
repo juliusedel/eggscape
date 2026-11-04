@@ -50,21 +50,23 @@ enum ScreenshotStage {
             services.navigation.showsScreenshotLobby = true
         case .calibration:
             services.launcher.start(.timeTrial(.short, .off))
-        // The capture follows a few seconds after the jump, well before the finish (16.9 s over 50 m, 33.6 s over
-        // 100 m). The storm is captured between the lightning strikes at 12.9 and 23.1 s of the fixed seed, so no
-        // flash washes it out; the results run jumps past its finish at 33.6 s.
+        // Each staged run stands still at its moment, those of the first captures: well before the finish (16.9 s over
+        // 50 m, 33.6 s over 100 m), and for the storm in a gust that blows leaves. The results run jumps past its
+        // finish at 33.6 s.
         case .sunnyRun:
-            stageRun(.timeTrial(.medium, .off), skipping: 4, egg: SIMD2(0.16, 0.1), services: services)
+            stageRun(.timeTrial(.medium, .off), skipping: 9.7, egg: SIMD2(0.16, 0.1), services: services)
         case .rainRun:
-            stageRun(.timeTrial(.medium, .fixed(.rain)), skipping: 7, egg: SIMD2(-0.14, 0.18), services: services)
+            stageRun(.timeTrial(.medium, .fixed(.rain)), skipping: 12.2, egg: SIMD2(-0.14, 0.18), services: services)
         case .stormRun:
-            stageRun(.timeTrial(.long, .fixed(.storm)), skipping: 14, egg: SIMD2(0.22, -0.08), services: services)
+            stageRun(.timeTrial(.long, .fixed(.storm)), skipping: 19.5, egg: SIMD2(0.22, -0.08), services: services)
         case .results:
             stageRun(.timeTrial(.long, .off), skipping: 40, egg: SIMD2(0.05, 0.05), services: services)
         }
     }
 
-    /// Starts a run and, once its screen is up, jumps into it.
+    /// Starts a run that is already underway. The jump comes as soon as the session exists, before its screen does,
+    /// so the screen opens straight into the race however slowly a Debug build launches: a jump a fixed second later
+    /// sometimes came after the capture, which then showed the calibration card.
     private static func stageRun(
         _ mode: RunMode,
         skipping seconds: Double,
@@ -72,11 +74,8 @@ enum ScreenshotStage {
         services: AppServices
     ) {
         services.launcher.start(mode)
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            if case let .single(flow) = services.launcher.flow {
-                flow.session.stageForScreenshot(skipping: seconds, egg: egg)
-            }
+        if case let .single(flow) = services.launcher.flow {
+            flow.session.stageForScreenshot(skipping: seconds, egg: egg)
         }
     }
 }

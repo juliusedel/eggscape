@@ -68,7 +68,8 @@ App/                              iOS app target "Eggscape"
   No force unwraps outside tests. No `print`; use `os.Logger` if logging is needed.
 - **Strings.** German is the base language (du-form, generic masculine). UI code uses German literals
   (`Text("Spielen")`, `String(localized: "…")`), which the String Catalog translates to English. Every key needs an
-  English translation in `App/Resources/Localizable.xcstrings`.
+  English translation in `App/Resources/Localizable.xcstrings`. Phones in any other language get English
+  (`CFBundleDevelopmentRegion` is `en`).
 
 ## Screen composition (game)
 
@@ -98,7 +99,8 @@ Portrait, full screen, SpriteKit scene of the view's size (`resizeFill`, origin 
   after two seconds. The `drop` preview sheet shows the fall frame by frame.
 - **Weather overlays.** Rain: drops landing on the spoon and screen, streaks slanting with the wind, cooler and darker
   grading, wetter reflections. Wind: leaves and dust blowing across, wind arrow in the HUD. Gewitter: dark grading,
-  warning flicker, bright flash. In camera mode the grading is a translucent overlay so it darkens the camera image.
+  warning flicker, bright flash; with Dim Flashing Lights a slow glow and a soft flash instead (`LightningFlash`). In
+  camera mode the grading is a translucent overlay so it darkens the camera image.
 - **HUD** (SwiftUI on top): meters, time, eggs left, weather icon with intensity and wind arrow, pause top right,
   sprint bottom right.
 
@@ -164,7 +166,9 @@ into a run through `RaceHooks` (shared start instant, progress, drops, finish). 
 room on top of `MultipeerTransport`; `GameKitTransport` carries the same messages over a Game Center match.
 `--screenshot-mode <scene>` stages deterministic scenes for the App Store (`ScreenshotStage`). A staged run holds the
 egg at a chosen physics position with feedback (`GameScene.holdEgg(at:)`), like a quick and attentive player, so it
-keeps its eggs in any weather and after any retuning of `GameConfig`.
+keeps its eggs in any weather and after any retuning of `GameConfig`. It skips ahead before its screen appears, so the
+screen never shows the calibration, however slowly the app launches, and then stands still at that moment while the
+weather goes on (`GameScene.Mode.staged`), so a capture shows the same moment however late it comes.
 
 ## Multiplayer contract
 
@@ -173,7 +177,11 @@ keeps its eggs in any weather and after any retuning of `GameConfig`.
 `results`, `ping`, `pong`, encoded as JSON. The host is the referee (`RaceReferee`): clock sync via ping/pong
 (`ClockSync`), start time = host time + 3 s, finish order by arrival of `finished`. A `PeerTransport` protocol in the
 app hides MultipeerConnectivity (Nearby) and GameKit (`GKMatch`, Online); `NearbyTransport` adds hosting, browsing
-and joining for nearby rooms, so `NearbySession`'s join logic can be tested with a fake.
+and joining for nearby rooms, so `NearbySession`'s join and discovery logic can be tested with a fake. Advertising or
+browsing that iOS turned down arrives as `TransportEvent.discoveryFailed`, which `NearbySession` tries again rather
+than ending the room. Receivers drop messages with numbers no real phone sends (`NetMessage.isPlausible(eggsPerRun:)`),
+the referee ignores such reports, and a joiner clamps its wait for the start signal
+(`RaceReferee.startDelay(clamping:)`), so a modified client cannot crash the others.
 
 ## Economy contract
 

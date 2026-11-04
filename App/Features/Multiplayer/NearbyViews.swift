@@ -4,6 +4,7 @@ import SwiftUI
 /// "In der Nähe": create a room or join one. The Local Network prompt appears only once a choice is made.
 struct NearbyView: View {
     @Environment(AppServices.self) private var services
+    @Environment(\.scenePhase) private var scenePhase
     @State private var session: NearbySession?
 
     init(initialSession: NearbySession? = nil) {
@@ -24,6 +25,12 @@ struct NearbyView: View {
         .toolbar(session == nil ? .automatic : .hidden, for: .tabBar)
         .holdsBackInvitations(inRoom: session != nil, showsRun: session?.showsRun ?? false, leaveRoom: leave)
         .onDisappear(perform: leave)
+        // The Local Network prompt makes the app inactive, and iOS may turn down the room's first search meanwhile.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                session?.appBecameActive()
+            }
+        }
     }
 
     private func leave() {
@@ -166,6 +173,29 @@ private struct RoomList: View {
             } footer: {
                 Text("Bitte den Host, auf „Raum erstellen“ zu tippen, und bleib in seiner Nähe.")
             }
+            if session.isWaitingLong {
+                LocalNetworkHelp(
+                    text: "Kein Raum zu sehen? Dann erlaube auf beiden Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape."
+                )
+            }
+        }
+    }
+}
+
+/// Shown after a while without a room or a player. Without Local Network access the phones cannot see each other, and
+/// the app cannot ask iOS whether it has it (TN3179), so the hint names it and opens the app's page in the settings.
+private struct LocalNetworkHelp: View {
+    let text: LocalizedStringKey
+
+    var body: some View {
+        Section {
+            Label(text, systemImage: "questionmark.circle")
+            Button("Einstellungen öffnen") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .accessibilityIdentifier("nearby.settings")
         }
     }
 }
@@ -180,8 +210,25 @@ private struct LobbyView: View {
                 ForEach(session.lobby.players) { player in
                     PlayerRow(player: player, isMe: player.id == session.me.id)
                 }
+                if session.isWaitingForOthers {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Warte auf Mitspieler …")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             } header: {
                 Text("Spieler (\(session.lobby.connectedPlayers.count) von 4)")
+            } footer: {
+                // A host alone in its room: what the others do to join it.
+                if session.isWaitingForOthers {
+                    Text("Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten.")
+                }
+            }
+            if session.isWaitingLong {
+                LocalNetworkHelp(
+                    text: "Sehen die anderen deinen Raum nicht? Dann erlaube auf allen Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape."
+                )
             }
 
             Section {
@@ -233,9 +280,13 @@ private struct LobbyView: View {
                     .accessibilityIdentifier("nearby.start")
                 }
             } footer: {
-                Text(
-                    "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade."
-                )
+                // Racers calibrate here instead of on the calibration screen, so the safety note comes along.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(
+                        "Halte dein Handy so, wie du spielen willst, wenn du auf „Kalibrieren und bereit“ tippst: Diese Haltung gilt als gerade."
+                    )
+                    SafetyNote()
+                }
             }
         }
     }

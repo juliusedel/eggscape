@@ -63,9 +63,11 @@ final class MultipeerTransport: NearbyTransport {
 
     // MARK: Hosting
 
-    /// "Raum erstellen": makes this phone visible to others nearby.
+    /// "Raum erstellen": makes this phone visible to others nearby. Called again, it advertises anew: iOS may have
+    /// turned the last attempt down, for example while its Local Network prompt was up.
     func startHosting() {
         isHosting = true
+        dropAdvertiser()
         updateAdvertising()
     }
 
@@ -87,10 +89,14 @@ final class MultipeerTransport: NearbyTransport {
             advertiser.delegate = delegate
             advertiser.startAdvertisingPeer()
             self.advertiser = advertiser
-        } else if !advertises, let advertiser {
-            advertiser.stopAdvertisingPeer()
-            self.advertiser = nil
+        } else if !advertises {
+            dropAdvertiser()
         }
+    }
+
+    private func dropAdvertiser() {
+        advertiser?.stopAdvertisingPeer()
+        advertiser = nil
     }
 
     // MARK: Joining
@@ -270,8 +276,11 @@ final class MultipeerTransport: NearbyTransport {
         rooms = foundPeers.values.map(\.room).sorted { $0.hostName < $1.hostName }
     }
 
-    fileprivate func failed(_ message: String) {
-        continuation.yield(.failed(message))
+    /// iOS did not let the advertiser or the browser start. One that was replaced meanwhile no longer matters; for the
+    /// current one, `NearbySession` tries again rather than ending the room.
+    fileprivate func discoveryFailed(_ source: AnyObject, reason: String) {
+        guard source === advertiser || source === browser else { return }
+        continuation.yield(.discoveryFailed(reason))
     }
 
     // MARK: Helpers
@@ -325,20 +334,32 @@ final class MultipeerTransport: NearbyTransport {
         return name.isEmpty ? "Eggscape" : name
     }
 
-    /// Reuses the same MCPeerID per name across sessions, as Apple recommends, to avoid ghost peers.
-    private static func peerID(for displayName: String) -> MCPeerID {
+    /// Where `peerID(for:in:)` keeps a peer id, followed by the player name it belongs to.
+    private static let peerIDKeyPrefix = "nearby.peerID."
+
+    /// Reuses the same MCPeerID per name across sessions, as Apple recommends, to avoid ghost peers. Each name played
+    /// under keeps its own, until `resetStoredPeerIDs(in:)`.
+    static func peerID(for displayName: String, in defaults: UserDefaults = .standard) -> MCPeerID {
         let name = peerName(for: displayName)
-        let key = "nearby.peerID.\(name)"
-        if let data = UserDefaults.standard.data(forKey: key),
+        let key = peerIDKeyPrefix + name
+        if let data = defaults.data(forKey: key),
            let stored = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data)
         {
             return stored
         }
         let peer = MCPeerID(displayName: name)
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: peer, requiringSecureCoding: true) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         }
         return peer
+    }
+
+    /// "Daten zurücksetzen": forgets the peer id of every name played under, so no earlier name stays on the device.
+    /// The next room makes a new one.
+    static func resetStoredPeerIDs(in defaults: UserDefaults = .standard) {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(peerIDKeyPrefix) {
+            defaults.removeObject(forKey: key)
+        }
     }
 }
 
@@ -350,6 +371,11 @@ private struct PeerBox: @unchecked Sendable {
 /// The session a callback came from; the main actor only checks whether it is the current one, or disconnects it.
 private struct SessionBox: @unchecked Sendable {
     let session: MCSession
+}
+
+/// The advertiser or browser a callback came from; the main actor only checks whether it is the current one.
+private struct DiscoveryBox: @unchecked Sendable {
+    let object: AnyObject
 }
 
 /// MultipeerConnectivity's reply block for an invitation; called once, on the main actor.
@@ -413,9 +439,10 @@ private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServ
         }
     }
 
-    func advertiser(_: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: any Error) {
-        let message = error.localizedDescription
-        Task { @MainActor in transport?.failed(message) }
+    func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: any Error) {
+        let source = DiscoveryBox(object: advertiser)
+        let reason = String(describing: error)
+        Task { @MainActor in transport?.discoveryFailed(source.object, reason: reason) }
     }
 
     func browser(_: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
@@ -428,8 +455,9 @@ private final class MultipeerDelegate: NSObject, MCSessionDelegate, MCNearbyServ
         Task { @MainActor in transport?.lost(box.peer) }
     }
 
-    func browser(_: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: any Error) {
-        let message = error.localizedDescription
-        Task { @MainActor in transport?.failed(message) }
+    func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: any Error) {
+        let source = DiscoveryBox(object: browser)
+        let reason = String(describing: error)
+        Task { @MainActor in transport?.discoveryFailed(source.object, reason: reason) }
     }
 }

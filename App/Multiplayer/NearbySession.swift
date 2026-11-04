@@ -57,16 +57,27 @@ final class NearbySession: Identifiable {
         didSet {
             nearby?.updateAdvertising()
             updateIdleTimer()
+            updateWaitingHelp()
         }
     }
 
     /// The host's lobby; joiners mirror the last `lobbyState` they received.
     private(set) var lobby: LobbyState {
-        didSet { nearby?.updateAdvertising() }
+        didSet {
+            nearby?.updateAdvertising()
+            updateWaitingHelp()
+        }
     }
 
     /// Rooms found nearby while browsing.
-    private(set) var rooms: [DiscoveredRoom] = []
+    private(set) var rooms: [DiscoveredRoom] = [] {
+        didSet { updateWaitingHelp() }
+    }
+
+    /// Nearby: the phone has waited `helpDelay` for others (see `isWaitingForOthers`), long enough that the other phone
+    /// may not have done its part yet, or that iOS keeps Eggscape off the local network. The app cannot ask iOS which
+    /// (TN3179), so the screen explains both and offers the settings.
+    private(set) var isWaitingLong = false
     /// Joiner: why the last room could not be joined, shown with the room list until the next attempt.
     private(set) var joinFailure: String?
     /// The run of the current race.
@@ -94,6 +105,23 @@ final class NearbySession: Identifiable {
     /// over by then). Settable for tests.
     @ObservationIgnored var lobbyTimeout: Duration = .seconds(10)
     @ObservationIgnored private var lobbyDeadline: Task<Void, Never>?
+    /// Nearby: how long a phone waits for others before the screen explains what else may be needed
+    /// (`isWaitingLong`). Settable for tests; a wait that is under way starts over.
+    @ObservationIgnored var helpDelay: Duration = .seconds(10) {
+        didSet {
+            helpTimer?.cancel()
+            helpTimer = nil
+            updateWaitingHelp()
+        }
+    }
+
+    @ObservationIgnored private var helpTimer: Task<Void, Never>?
+    /// Nearby: the first pause before advertising or browsing again when iOS turned it down (see
+    /// `retryDiscovery(after:)`). Settable for tests.
+    @ObservationIgnored var discoveryRetryDelay: Duration = .seconds(2)
+    /// Turned-down attempts in a row since the app was last active again.
+    @ObservationIgnored private var discoveryFailures = 0
+    @ObservationIgnored private var discoveryRetry: Task<Void, Never>?
     @ObservationIgnored private var listener: Task<Void, Never>?
     @ObservationIgnored private var pinger: Task<Void, Never>?
     /// Set by `leave()`. Messages that were already on their way can still change the stage afterwards.
@@ -131,6 +159,8 @@ final class NearbySession: Identifiable {
         updateIdleTimer()
         guard networking else { return }
         listen()
+        // Likewise: either side starts out waiting for the others.
+        updateWaitingHelp()
         switch role {
         case .host:
             multipeer.startHosting()
@@ -165,10 +195,11 @@ final class NearbySession: Identifiable {
         }
     }
 
-    /// A staged lobby for App Store screenshots: three friends, no networking.
+    /// A staged lobby for App Store screenshots: two friends who are ready, no networking. A third player made the
+    /// German lobby taller than the iPhone 18 Pro's screen, which then cut off the safety note's last line.
     static func screenshotLobby(services: AppServices) -> NearbySession {
         let session = NearbySession(role: .host, services: services, networking: false)
-        let friends = [("Mia", "sky-blue", true), ("Jonas", "polka-dots", true), ("Lea", "gold-metallic", false)]
+        let friends = [("Mia", "sky-blue", true), ("Jonas", "polka-dots", true)]
         for (name, skin, ready) in friends {
             _ = session.lobby.join(PlayerInfo(
                 id: PlayerID(name),
@@ -323,10 +354,12 @@ final class NearbySession: Identifiable {
         hasLeft = true
         pinger?.cancel()
         lobbyDeadline?.cancel()
+        discoveryRetry?.cancel()
         listener?.cancel()
         run?.stop()
         transport.close()
         updateIdleTimer()
+        updateWaitingHelp()
     }
 
     /// Keeps the screen awake while the player is in the room, never after `leave()`. `IdleTimer` only recomputes when
@@ -335,13 +368,110 @@ final class NearbySession: Identifiable {
         IdleTimer.setDisabled(stage.keepsScreenAwake && !hasLeft, for: self)
     }
 
+    // MARK: Finding each other
+
+    /// Nearby: nobody to race with yet. The joiner's room list is empty, or the host is alone in its room, which is why
+    /// "Rennen starten" stays disabled.
+    var isWaitingForOthers: Bool {
+        guard isNearby else { return false }
+        switch role {
+        case .host:
+            return stage == .lobby && lobby.connectedPlayers.count < LobbyState.minPlayers
+        case .joiner:
+            return stage == .browsing && rooms.isEmpty
+        }
+    }
+
+    /// Nearby: the app is active again, for example after the Local Network prompt or the Settings app. iOS may have
+    /// turned down advertising or browsing while its prompt was up, and leaves trying again to the app (TN3179), so
+    /// what has found nobody yet starts over at once: the search while the room list is empty, the advertising while
+    /// the host is alone, and an attempt that is due to be tried again anyway. A list with rooms or a room with
+    /// players works, and stays as it is.
+    func appBecameActive() {
+        guard isNearby, !hasLeft else { return }
+        discoveryFailures = 0
+        if isWaitingForOthers || discoveryRetry != nil {
+            restartDiscovery()
+        }
+    }
+
+    /// Nearby: iOS turned down advertising the room or looking for rooms. It may do so while its Local Network prompt
+    /// is up, and leaves trying again to the app (TN3179), so this ends neither the room nor the search: the phone
+    /// tries again after a pause that grows with every failure in a row, so that a phone without Local Network access
+    /// does not keep trying every moment. `appBecameActive()` tries again at once.
+    private func retryDiscovery(after reason: String) {
+        guard isNearby, !hasLeft else { return }
+        discoveryFailures += 1
+        let delay = Self.retryDelay(afterFailures: discoveryFailures, first: discoveryRetryDelay)
+        let attempt = isHost ? "advertise the room" : "look for rooms"
+        let pause = delay.seconds
+        logger.notice("Could not \(attempt, privacy: .public): \(reason, privacy: .public)")
+        logger.notice("Trying to \(attempt, privacy: .public) again in \(pause, format: .fixed(precision: 1)) s")
+        discoveryRetry?.cancel()
+        discoveryRetry = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.restartDiscovery()
+        }
+    }
+
+    /// The pause before trying again after `failures` turned-down attempts in a row: `first` after one, twice as long
+    /// after every further one, and never more than half a minute.
+    static func retryDelay(afterFailures failures: Int, first: Duration) -> Duration {
+        let doublings = min(max(failures - 1, 0), 10)
+        return min(first * (1 << doublings), .seconds(30))
+    }
+
+    /// Advertises the room anew (host), or looks for rooms anew while the joiner has not picked one.
+    private func restartDiscovery() {
+        discoveryRetry?.cancel()
+        discoveryRetry = nil
+        guard let nearby, !hasLeft else { return }
+        switch role {
+        case .host:
+            nearby.startHosting()
+        case .joiner:
+            if stage == .browsing {
+                nearby.startBrowsing()
+            }
+        }
+    }
+
+    /// Starts the wait for help when the phone begins to wait for others, and ends it, together with the help, once a
+    /// room or a player turns up.
+    private func updateWaitingHelp() {
+        guard isWaitingForOthers, !hasLeft else {
+            helpTimer?.cancel()
+            helpTimer = nil
+            if isWaitingLong {
+                isWaitingLong = false
+            }
+            return
+        }
+        guard helpTimer == nil, !isWaitingLong else { return }
+        helpTimer = Task { [weak self, helpDelay] in
+            try? await Task.sleep(for: helpDelay)
+            guard !Task.isCancelled else { return }
+            self?.helpDelayElapsed()
+        }
+    }
+
+    /// The phone has waited `helpDelay` for others. Internal rather than private so the tests can end a host's wait
+    /// without waiting, which they must not do while its room keeps the screen awake (see `NearbyJoinTests`).
+    func helpDelayElapsed() {
+        helpTimer?.cancel()
+        helpTimer = nil
+        guard isWaitingForOthers, !hasLeft else { return }
+        isWaitingLong = true
+    }
+
     // MARK: Race
 
     private func beginRace(seed: UInt64, startsIn seconds: Double) {
         let settings = lobby.settings
         let setup = RunSetup(mode: .timeTrial(settings.distance, settings.weather), raceSeed: seed)
         let hooks = RaceHooks(
-            startAt: .now + .seconds(max(seconds, 0.5)),
+            startAt: .now + .seconds(RaceReferee.startDelay(clamping: seconds)),
             isReferee: isHost,
             onProgress: { [weak self] meters, eggsLeft in
                 self?.reportProgress(meters: meters, eggsLeft: eggsLeft)
@@ -386,7 +516,10 @@ final class NearbySession: Identifiable {
     private func reportFinish(_ outcome: RunOutcome) {
         let report = FinishReport(
             completed: outcome.finished,
-            time: outcome.time,
+            // The race clock runs on while this phone is in the background (`RunSession.end()`). A phone that was away
+            // for over an hour reports the longest time every phone accepts: the referee would drop a longer report,
+            // and every joiner would drop results that carry it.
+            time: min(outcome.time, NetMessage.plausibleSeconds.upperBound),
             meters: outcome.meters,
             eggsLost: outcome.eggsLost
         )
@@ -448,6 +581,13 @@ final class NearbySession: Identifiable {
         case let .received(data, peer):
             do {
                 let envelope = try codec.decode(data)
+                // JSON carries numbers like 1e300 meters, which would crash this phone as it shows them; a real phone
+                // never sends them.
+                guard envelope.message.isPlausible(eggsPerRun: GameConfig.standard.eggsPerRun) else {
+                    let kind = envelope.message.kind.rawValue
+                    logger.error("Dropped a \(kind, privacy: .public) message with numbers no race can produce")
+                    return
+                }
                 receive(envelope.message, from: envelope.sender, peer: peer)
             } catch {
                 logger.error("Dropped a message: \(String(describing: error))")
@@ -455,6 +595,8 @@ final class NearbySession: Identifiable {
         case let .joinFailed(failure):
             guard case .connecting = stage else { return }
             failJoin(failure)
+        case let .discoveryFailed(reason):
+            retryDiscovery(after: reason)
         case let .failed(message):
             stage = .failed(message)
         }

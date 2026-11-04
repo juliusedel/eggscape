@@ -61,29 +61,39 @@ final class StoreService {
         }
     }
 
-    func purchase(_ product: Product) async {
+    /// Buys `product` with `buy` and credits it. The coin shop buys through SwiftUI's `PurchaseAction`
+    /// (`CoinPackCard`), as Apple advises for SwiftUI apps: it shows the App Store's sheet over the scene of the button
+    /// that was tapped, while `Product.purchase()` has no scene to go by. The unit tests buy with `Product.purchase()`
+    /// in a StoreKitTest session, which needs no sheet.
+    func purchase(_ product: Product, with buy: @MainActor (Product) async throws -> Product.PurchaseResult) async {
         purchaseState = .purchasing(productID: product.id)
         do {
-            switch try await product.purchase() {
-            case let .success(.verified(transaction)):
-                await deliver(transaction)
-                purchaseState = .idle
-            case .success(.unverified):
-                // Nothing is credited and the transaction stays unfinished, but the player may have paid: say so.
-                logger.error("Ignoring an unverified purchase")
-                purchaseState = .failed(String(localized: "Der Kauf konnte nicht bestätigt werden."))
-            case .pending:
-                purchaseState = .pending
-            case .userCancelled:
-                purchaseState = .idle
-            @unknown default:
-                purchaseState = .idle
-            }
+            let result = try await buy(product)
+            await handle(result)
         } catch StoreKitError.userCancelled {
             purchaseState = .idle
         } catch {
             logger.error("Purchase failed: \(error.localizedDescription)")
             purchaseState = .failed(error.localizedDescription)
+        }
+    }
+
+    /// The App Store's answer to a purchase.
+    private func handle(_ result: Product.PurchaseResult) async {
+        switch result {
+        case let .success(.verified(transaction)):
+            await deliver(transaction)
+            purchaseState = .idle
+        case .success(.unverified):
+            // Nothing is credited and the transaction stays unfinished, but the player may have paid: say so.
+            logger.error("Ignoring an unverified purchase")
+            purchaseState = .failed(String(localized: "Der Kauf konnte nicht bestätigt werden."))
+        case .pending:
+            purchaseState = .pending
+        case .userCancelled:
+            purchaseState = .idle
+        @unknown default:
+            purchaseState = .idle
         }
     }
 

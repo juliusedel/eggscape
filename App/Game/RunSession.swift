@@ -1,4 +1,5 @@
 import EggscapeCore
+import MediaAccessibility
 import Observation
 import UIKit
 
@@ -151,10 +152,12 @@ final class RunSession: Identifiable {
         )
         usesTouchSteering = !services.motion.isAvailable
         let engine = RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed)
+        // Read once per run, like the other settings; a change in the iOS settings applies from the next run on.
         scene = GameScene(
             engine: engine,
             appearance: services.wallet.equippedSkin.appearance,
-            reduceMotion: UIAccessibility.isReduceMotionEnabled
+            reduceMotion: UIAccessibility.isReduceMotionEnabled,
+            dimsFlashingLights: MADimFlashingLightsEnabled()
         )
         hud = scene.hudSnapshot
         scene.usesTouchSteering = usesTouchSteering
@@ -265,15 +268,18 @@ final class RunSession: Identifiable {
         scene.mode = .paused
     }
 
-    /// App Store screenshots: skips calibration and countdown, jumps `seconds` into the run and keeps running with
-    /// the egg held at `egg`, a physics position: `GameConfig.bowlRadiusX` × `bowlRadiusY` is the tipping point, and
-    /// `SceneLayout` draws it closer to the middle. Running until the end shows the results.
+    /// App Store screenshots: skips calibration and countdown and jumps `seconds` into the run with the egg held at
+    /// `egg`, a physics position: `GameConfig.bowlRadiusX` × `bowlRadiusY` is the tipping point, and `SceneLayout`
+    /// draws it closer to the middle. The run then stands still at that moment while the weather goes on: on a busy
+    /// Mac the capture can come many seconds later, when a run going on would have met a lightning strike or the
+    /// finish. Skipping past the finish shows the results. It needs no screen yet.
     func stageForScreenshot(skipping seconds: Double, egg: SIMD2<Double>) {
         countdownTask?.cancel()
         scene.holdEgg(at: egg)
         isUnderway = true
         phase = .running
-        scene.mode = .running
+        // A finish during the jump ends the run (`end()`), which sets the scene's mode again.
+        scene.mode = .staged
         scene.fastForward(seconds: seconds)
     }
 

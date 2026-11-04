@@ -12,7 +12,8 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(config: config, course: .endless, weather: .clear, localSeed: 7),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         var framesWhileRunning = 0
         var framesAfterTheEnd = 0
@@ -51,12 +52,13 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         scene.holdEgg(at: SIMD2(0.22, -0.08))
         scene.mode = .running
-        // The 14 seconds it skips, and the moments until the capture, still well short of the 100 m.
-        scene.fastForward(seconds: 22)
+        // The 19.5 seconds it skips, through the strike at 12.9 s, still well short of the 100 m.
+        scene.fastForward(seconds: 19.5)
         #expect(scene.engine.eggsLost == 0)
         #expect(scene.engine.phase == .running)
     }
@@ -71,7 +73,8 @@ struct GameSceneTests {
         let scene = GameScene(
             engine: RunEngine(course: setup.course, weather: setup.weatherSchedule, localSeed: setup.localSeed),
             appearance: EggAppearance(base: .init(hex: 0xF2E6D4)),
-            reduceMotion: true
+            reduceMotion: true,
+            dimsFlashingLights: false
         )
         scene.holdEgg(at: SIMD2(0.05, 0.05))
         scene.mode = .running

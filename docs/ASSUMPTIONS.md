@@ -5,7 +5,7 @@ revisited deliberately.
 
 ## Environment and tooling
 
-- **Toolchain.** Built and tested with Xcode 27.1 (Swift 6.4, iOS 27.1 SDK) on macOS 27. The deployment target stays
+- **Toolchain.** Built and tested with Xcode 27.2 (Swift 6.4, iOS 27.2 SDK) on macOS 27. The deployment target stays
   at iOS 17.0 as specified; APIs newer than iOS 17 are used only behind `#available` checks.
 - **No Homebrew on the build Mac.** `brew install xcodegen` was not possible, so `scripts/bootstrap.sh` builds pinned
   versions of XcodeGen (2.46.0) and SwiftFormat (0.64.4) from source into `.tools/` (git-ignored). The Makefile
@@ -14,7 +14,8 @@ revisited deliberately.
   started in a local repository whose first commit mirrored the GitHub "Initial commit". That history was later
   replayed onto GitHub's initial commit and merged into `main`.
 - **fastlane is not installed on the build Mac** (system Ruby 2.6 is too old for current fastlane). The lanes are
-  written and syntax-checked but could not be executed; they need `brew install fastlane` (or `bundle install`).
+  written and syntax-checked but could not be executed; they need `brew install fastlane`, or Ruby 3.2 or later
+  (rbenv, mise) and `bundle install` (docs/RELEASE.md step 6).
 - **Swift 6 language mode** everywhere, with strict concurrency checking.
 - **Tests** use Swift Testing for `EggscapeCore` and the app unit tests, and XCTest for the UI tests (Swift Testing has
   no UI testing support).
@@ -104,7 +105,9 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
 - **Nearby join data.** A joiner sends its player id, nickname and egg skin as the MultipeerConnectivity invitation
   context, so the message set of the spec needs no extra "hello" message.
 - **Race time in multiplayer** is measured on the wall clock from the shared start, so a phone that was briefly in
-  the background does not report a shorter time. The finish order is the arrival order at the host, as specified.
+  the background does not report a shorter time. A phone that was away for more than an hour reports an hour, the
+  longest race time the phones accept (see "Numbers from other phones are checked"), so a host back after a long call
+  still gets its results. The finish order is the arrival order at the host, as specified.
 - **Screenshots** are staged scenes (`--screenshot-mode start|calibration|run-sunny|run-rain|run-storm|lobby|results|
   shop`) with ephemeral data and fixed seeds; the nearby lobby is a demo without networking. Camera mode cannot be
   captured in the Simulator, so the screenshots use the white background.
@@ -203,3 +206,85 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   StoreKitTest session. Launches with throwaway data (`-ui-testing`, `-first-launch`, staged screenshots) do not listen
   for StoreKit's unfinished and updated transactions, so none of them is finished into a wallet that the next launch
   wipes; StoreKit keeps them for the next normal launch.
+- **Help and legal links (2026-11-03).** App Review asks for a privacy policy link and a way to contact the developer
+  inside the app (guidelines 5.1.1(i) and 1.5), and § 5 DDG probably for a legal notice (Impressum) that is easy to
+  reach. So the settings end with "Hilfe & Rechtliches": "Datenschutz", "Support & Impressum" (support and the legal
+  notice share one page) and the version. The rows open the project's GitHub Pages site (`site/`) in Safari, the German
+  pages when the app runs in German and the English ones otherwise, so the pages speak the app's language. The
+  addresses live in `WebPages` (`SettingsView.swift`), are the ones App Store Connect gets, and a unit test pins them.
+- **Coins live on this device, and the app says so (2026-11-03).** Coins and eggs stay in `UserDefaults` without a
+  cloud copy (see "Coin shop and the Apple Account"), and the App Store does not restore coin packs, so deleting the app
+  or "Daten zurücksetzen" also deletes coins that were bought. The Münzen page says so under the packs, and the footer
+  and the question of "Daten zurücksetzen" name bought coins. The reset now also forgets the nearby peer ids, which are
+  stored per player name (`nearby.peerID.<Name>`), so no earlier name stays on the device.
+- **English for every other language (2026-11-03).** iOS shows an app in the first of the player's languages it has,
+  and otherwise in the language `CFBundleDevelopmentRegion` names. That was German (`$(DEVELOPMENT_LANGUAGE)`), so a
+  phone set to, say, only French showed the German app. For a worldwide release English is the better guess, so the key
+  is now `en` in `App/Info.plist`. German stays the source language of the String Catalogs (`developmentLanguage: de`
+  in project.yml): the German texts are the keys, and German and English phones get their own language as before. One
+  catch: a German phone looks for the permission texts in the German `InfoPlist.strings` and, without one, takes the
+  English one of the fallback language. The build writes the German table only because the German entries of
+  `InfoPlist.xcstrings` are marked translated, and `InfoPlistTests` fail if it goes missing. Checked in the Simulator:
+  launched with `-AppleLanguages (fr)` the app is English, with `(de)` German and with `(en)` English, and the
+  Info.plist and link tests pass with the test language set to de, en and fr. Setting the key back to
+  `$(DEVELOPMENT_LANGUAGE)` restores the German fallback. The App Store page's language is chosen in App Store Connect
+  (Primary Language) and is not affected.
+- **Nearby help and a fresh search (2026-11-03).** A joiner without a room waited on "Suche Räume in der Nähe …" and
+  a host alone in its room saw a disabled "Rennen starten", neither with a reason. iOS has no API that tells an app
+  whether it may use the local network, and it may turn down the first advertising or browsing while its Local Network
+  prompt is still up, leaving it to the app to try again (TN3179), so on two fresh installs, as App Review tests, a
+  room could stay invisible until the player left and came back. Now the phone starts over when the app is active again (the
+  prompt makes it inactive) if it has found nobody yet: the search while the room list is empty, the advertising while
+  the host is alone. A list with rooms or a room with players is left alone. When MultipeerConnectivity reports that
+  advertising or browsing did not start, the phone tries again after 2 s, then 4, 8 and 16 s and every 30 s after
+  that, so a phone without Local Network access does not try every moment; before, it ended on "Verbindung verloren"
+  with the raw error. After 10 s with nobody, the room list or the lobby names "Lokales Netzwerk" as the likely cause
+  (the app cannot ask iOS) with "Einstellungen öffnen" for Eggscape's page in the iOS Settings, and the host alone
+  reads "Warte auf Mitspieler …" with "Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten." The texts say
+  "Handy" like the rest of the app, not "iPhone". The existing footer of the room list already asks for "Raum
+  erstellen", so the joiner's hint adds only Local Network. Not yet checked on two fresh devices.
+- **Numbers from other phones are checked (2026-11-03).** JSON carries no NaN or infinity, but it does carry 1e300,
+  and converting such a distance or time to `Int` for the HUD or the results traps, as does waiting for a start that
+  far away, so a modified client could crash every other phone in a race (online matches include strangers). Now a
+  receiver drops a message with numbers no real phone sends (`NetMessage.isPlausible(eggsPerRun:)`): distances from 0
+  to 10 000 m, race times from 0 to 3 600 s, egg counts from 0 to the eggs of a run, places from 1 to 4, and finite
+  clock readings. The referee ignores reports outside the same bounds, a joiner waits 0.5 to 10 s for the start signal
+  whatever its clock estimate says (3 s when it gives no number), and `RaceFormat` shows any number without trapping.
+  A real race covers at most 100 m in well under a minute, so legitimate messages always pass; the wire format and the
+  protocol version stay as they are.
+- **Safety note and the camera question (2026-11-03).** The store texts and the calibration spoke of running with the
+  phone held flat, but the run moves by itself (no step detection), so nobody has to run while looking at the screen,
+  and App Review guideline 1.4.5 asks apps not to invite risky use. Until the owner decides whether players should stand
+  or move, the app says both: "Die Strecke läuft von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst,
+  dann nur, wo Platz ist, und achte auf deine Umgebung." (`SafetyNote`) on the tutorial's first page, on the calibration
+  screen and under the race lobby's ready button, where racers calibrate. The lines there that say how to hold the phone
+  speak of playing ("spielen"), no longer of running ("laufen"), which fits either answer and matches the store texts
+  and the support page. The camera prompt of a fresh install used to come the moment the first single or hot-seat run
+  opened, before its calibration screen could say why. Now that screen first reads "Gleich fragt iOS nach der Kamera"
+  with what the camera is for and that without it the game is white, and its "Weiter" brings up the prompt. It is still
+  the first moment the camera is needed, and races still never ask. Following Apple's guidance for a screen before a
+  permission prompt, "Weiter" is its only button: "Abbrechen" returns once the player has answered, either way, as it
+  did when the prompt covered the screen. The purpose string no longer speaks of a "Kamera-Modus" the player never
+  chose. When iOS denies the camera after the player chose it (a later "no" in the iOS settings, or a restricted
+  device), the settings used to show Kamera with no hint while every run was white, and tapping the selected segment did
+  nothing. Now the choice stays and a row under the picker says why the runs are white, with "Einstellungen öffnen"; the
+  alert that switched back to Weiß is gone. A "no" in the prompt itself still picks Weiß, and "Daten zurücksetzen" still
+  picks Weiß while iOS denies the camera.
+- **Purchases through SwiftUI's purchase action (2026-11-03).** The coin shop bought with `Product.purchase()`, which
+  gives StoreKit no window to show its sheet over. Apple's documentation recommends `PurchaseAction` for SwiftUI apps
+  (from iOS 17, the deployment target), and on iOS 18.2 `purchase()` was reported to fail with "Could not get
+  confirmation scene ID" when other windows were up, as Game Center's can be. So a coin card now buys through the
+  `purchase` action of its environment and hands the answer to `StoreService.purchase(_:with:)`, which verifies,
+  credits, finishes and reports errors as before; `Transaction.updates` and the unfinished transactions at launch are
+  unchanged. The unit tests buy through the same entry point with `Product.purchase()` in a StoreKitTest session, and
+  play the other answers (pending, cancelled, errors) with a stand-in. The sheet itself can only be checked by hand,
+  with TestFlight, ideally also on iOS 17 or 18.
+- **Dim Flashing Lights and Reduce Motion (2026-11-03).** A thunderstorm flickered twice and then turned the screen
+  90 % white, and the countdown and "Los!" zoomed in with springs, whatever the accessibility settings said; Reduce
+  Motion only stopped the camera from bobbing and shaking. With Dim Flashing Lights (`MADimFlashingLightsEnabled()`,
+  iOS 16.4 and later) the warning no longer flickers but slowly brightens the picture a little, so players still see a
+  strike coming (it is the only warning, and every phone of a race gets the same strikes), and the strike lifts it to
+  30 % white over 0.15 s and fades over 0.9 s instead of 0.35 s. Thunder, vibration and the push on the egg stay. With
+  Reduce Motion the countdown's numbers and "Los!" only fade. Both choices are small pure values (`LightningFlash`,
+  `CountdownMotion`) with unit tests. Like Reduce Motion, Dim Flashing Lights is read when a run starts; listening for
+  `kMADimFlashingLightsChangedNotification` would only matter for a setting changed while a run is paused.

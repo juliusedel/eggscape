@@ -1,61 +1,174 @@
 default_platform(:ios)
 
+require "fileutils"
+require "open3"
+
 # App Store Connect API key, see docs/RELEASE.md:
 #   ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (path to the .p8 file)
 def api_key
   app_store_connect_api_key(
-    key_id: ENV.fetch("ASC_KEY_ID"),
-    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
-    key_filepath: ENV.fetch("ASC_KEY_PATH")
+    key_id: required_env("ASC_KEY_ID"),
+    issuer_id: required_env("ASC_ISSUER_ID"),
+    key_filepath: required_env("ASC_KEY_PATH")
   )
 end
 
-# Regenerates the Xcode project and sets the next build number with agvtool.
+# The 10-character Team ID of the paid Apple Developer Program team (developer.apple.com > Membership) from
+# EGGSCAPE_TEAM_ID. The build gets it as DEVELOPMENT_TEAM, so a release depends neither on project.yml's <TEAM_ID>
+# placeholder nor on a team picked in Xcode, which `make gen` drops again.
+def development_team
+  team = required_env("EGGSCAPE_TEAM_ID")
+  return team if team.match?(/\A[A-Z0-9]{10}\z/)
+
+  UI.user_error!("EGGSCAPE_TEAM_ID must be the 10-character Team ID from developer.apple.com > Membership, " \
+                 "not \"#{team}\", see docs/RELEASE.md")
+end
+
+def required_env(name)
+  value = ENV[name].to_s.strip
+  UI.user_error!("#{name} is not set, see docs/RELEASE.md") if value.empty?
+  value
+end
+
+# Regenerates the Xcode project and sets the next build number in it. skip_info_plist keeps agvtool in the generated,
+# git-ignored project: App/Info.plist keeps $(CURRENT_PROJECT_VERSION) and gets the number from there.
 def prepare_build(key)
   sh("make", "-C", "..", "gen")
   latest = latest_testflight_build_number(api_key: key, initial_build_number: 0)
-  increment_build_number(xcodeproj: "Eggscape.xcodeproj", build_number: latest + 1)
+  increment_build_number(xcodeproj: "Eggscape.xcodeproj", build_number: latest + 1, skip_info_plist: true)
 end
 
-def build(key)
+# A signed App Store build. Automatic signing creates the distribution profile through -allowProvisioningUpdates,
+# which needs the paid team's Apple Account in Xcode > Settings > Accounts.
+def build(team)
   build_app(
     project: "Eggscape.xcodeproj",
     scheme: "Eggscape",
     configuration: "Release",
     export_method: "app-store",
+    export_team_id: team,
     output_directory: "build",
-    xcargs: "-allowProvisioningUpdates"
+    xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team}"
   )
+end
+
+# Runs a command and returns its output without listing it in the lane summary, as `sh` would.
+def command_output(*command)
+  output, status = Open3.capture2e(*command)
+  UI.user_error!("#{command.join(" ")} failed:\n#{output}") unless status.success?
+  output
+end
+
+# The images in fastlane/screenshots/<language>/ (git-ignored); lane code runs in the fastlane folder.
+def screenshot_images(language = "*")
+  Dir.glob(File.join("screenshots", language, "*.{png,jpg,jpeg}"), File::FNM_CASEFOLD).sort
+end
+
+# Both screenshot pipelines name their images "<simulator>-<nn>-<scene>.<png|jpg>", e.g. "iPhone 18 Pro-03-sunny.jpg"
+# (see scripts/capture_screenshots.sh). Only these are ever replaced; photos from a real iPhone stay.
+def generated_screenshot?(path)
+  File.basename(path).match?(/\A.+-\d{2}-[a-z]+\.(png|jpe?g)\z/i)
+end
+
+# App Store Connect refuses screenshots with an alpha channel. A JPEG cannot carry one, whatever PNG a simulator or
+# Xcode version hands XCUITest, and sips keeps the pixel size.
+def convert_to_jpeg(folder)
+  Dir.glob(File.join(folder, "*", "*.png")).each do |png|
+    jpeg = png.sub(/\.png\z/, ".jpg")
+    command_output("sips", "-s", "format", "jpeg", "-s", "formatOptions", "90", png, "--out", jpeg)
+    File.delete(png)
+  end
+end
+
+# Moves the captures from `folder`/<language>/ into fastlane/screenshots. Every image named like them in those
+# languages goes first, so no PNG or JPEG of an earlier capture, also of a simulator no longer in the Snapfile, stays.
+def replace_generated_screenshots(folder)
+  captures = Dir.glob(File.join(folder, "*", "*.jpg")).group_by { |path| File.basename(File.dirname(path)) }
+  captures.each do |language, images|
+    target = File.join("screenshots", language)
+    FileUtils.mkdir_p(target)
+    FileUtils.rm_f(screenshot_images(language).select { |path| generated_screenshot?(path) })
+    FileUtils.mv(images, target)
+  end
+end
+
+# Gives en-GB, en-CA and en-AU the en-US images, photos from a real iPhone included: almost every App Store country
+# lists English (U.K.), Canada and Australia also their own English, and the app has one English interface.
+def copy_english_screenshots
+  english = screenshot_images("en-US")
+  return if english.empty?
+
+  %w[en-GB en-CA en-AU].each do |language|
+    target = File.join("screenshots", language)
+    FileUtils.mkdir_p(target)
+    FileUtils.rm_f(screenshot_images(language))
+    FileUtils.cp(english, target, preserve: true)
+  end
+end
+
+# Lists every screenshot with its pixel size and fails if one has an alpha channel, which App Store Connect refuses.
+def verify_screenshots
+  with_alpha = screenshot_images.reject do |path|
+    info = command_output("sips", "-g", "pixelWidth", "-g", "pixelHeight", "-g", "hasAlpha", path)
+    width, height, alpha = %w[pixelWidth pixelHeight hasAlpha].map { |key| info[/#{key}: (\S+)/, 1] }
+    UI.message("#{path.delete_prefix("screenshots/")}: #{width}x#{height}, hasAlpha: #{alpha}")
+    alpha == "no"
+  end
+  return if with_alpha.empty?
+
+  UI.user_error!("App Store Connect refuses images with an alpha channel; capture these again or save them as JPEG: " +
+                 with_alpha.join(", "))
 end
 
 platform :ios do
   desc "Build a release and upload it to TestFlight"
   lane :beta do
+    team = development_team
     key = api_key
     prepare_build(key)
-    build(key)
+    build(team)
     upload_to_testflight(api_key: key, skip_waiting_for_build_processing: true)
   end
 
   desc "Build a release and upload it together with the App Store metadata (does not submit for review)"
   lane :release do
+    team = development_team
     key = api_key
+    has_screenshots = !screenshot_images.empty?
+    if has_screenshots
+      copy_english_screenshots
+      verify_screenshots
+    else
+      UI.important("fastlane/screenshots in this checkout holds no images (they are git-ignored), so App Store " \
+                   "Connect keeps the screenshots it has. To upload new ones, run make screenshots-sim here first.")
+    end
     prepare_build(key)
-    build(key)
+    build(team)
     upload_to_app_store(
       api_key: key,
       force: true,
       submit_for_review: false,
       automatic_release: false,
-      skip_screenshots: !Dir.exist?("screenshots/de-DE"),
+      skip_screenshots: !has_screenshots,
+      # Replaces the screenshots in App Store Connect instead of adding to them: deliver first deletes every screenshot
+      # set, of all sizes, in each language it has images for. Photos from a real iPhone and anything else added by
+      # hand must therefore also be in fastlane/screenshots/<language>/, or this upload removes them.
+      overwrite_screenshots: true,
       precheck_include_in_app_purchases: false,
       run_precheck_before_submit: false
     )
   end
 
-  desc "Capture App Store screenshots from staged scenes (--screenshot-mode)"
+  desc "Capture App Store screenshots of the staged scenes (--screenshot-mode) with fastlane snapshot, as JPEG"
   lane :screenshots do
     sh("make", "-C", "..", "gen")
-    capture_screenshots
+    # snapshot renders into .build/snapshot (also set in the Snapfile), so a failed run leaves the previous set alone.
+    staging = File.expand_path("../.build/snapshot")
+    FileUtils.rm_rf(staging)
+    capture_screenshots(output_directory: staging)
+    convert_to_jpeg(staging)
+    replace_generated_screenshots(staging)
+    copy_english_screenshots
+    verify_screenshots
   end
 end

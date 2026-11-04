@@ -1,0 +1,76 @@
+# Publishes site/ (privacy policy, support and Impressum) on GitHub Pages: https://juliusedel.github.io/eggscape/
+#
+# The pages still carry TODO(owner) placeholders for the owner's details. While any is left, the check job reports
+# them with a warning and the deploy job is skipped, so the run stays green and nothing half-filled goes public.
+# Broken pages or links fail the run. One-time setup: Settings → Pages → Build and deployment → Source: GitHub
+# Actions.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/check_site.sh"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check pages, links and placeholders
+        id: check
+        # scripts/check_site.sh exits 0 when the site is ready, 1 when only placeholders are left and 2 when a page
+        # or link is broken.
+        run: |
+          status=0
+          scripts/check_site.sh || status=$?
+          case "$status" in
+            0)
+              echo "deploy=true" >> "$GITHUB_OUTPUT"
+              ;;
+            1)
+              message="TODO(owner) placeholders are left in site/, see this step's log. Fill them in and push again."
+              echo "::warning title=Site not deployed::$message"
+              echo "deploy=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              exit "$status"
+              ;;
+          esac
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: check
+    if: needs.check.outputs.deploy == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # One deployment at a time; a newer run waits instead of cancelling one that is publishing.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

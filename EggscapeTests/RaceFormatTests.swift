@@ -28,4 +28,20 @@ struct RaceFormatTests {
     @Test func minutesGoOnPastAnHour() {
         #expect(RaceFormat.time(3725, locale: english) == "62:05.0")
     }
+
+    /// A modified phone could send such numbers, and converting them to `Int` would trap.
+    @Test func numbersNoRunReachesShowWithoutCrashing() {
+        let largest = RaceFormat.time(1_000_000, locale: german)
+        #expect(RaceFormat.time(1e300, locale: german) == largest)
+        #expect(RaceFormat.time(.infinity, locale: german) == largest)
+        for nothing in [-1, -1e300, -Double.infinity, .nan] {
+            #expect(RaceFormat.time(nothing, locale: german) == "0:00,0", "\(nothing)")
+        }
+        #expect(RaceFormat.meters(1e300) == 1_000_000)
+        #expect(RaceFormat.meters(.infinity) == 1_000_000)
+        for nothing in [-1, -1e300, -Double.infinity, .nan] {
+            #expect(RaceFormat.meters(nothing) == 0, "\(nothing)")
+        }
+        #expect(RaceFormat.meters(128.9) == 128)
+    }
 }

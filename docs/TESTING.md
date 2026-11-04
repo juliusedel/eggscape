@@ -47,6 +47,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 - [ ] Empfindlichkeit 70 % vs 130 % makes a clear difference; the value survives an app restart. A value set in an
       earlier build stays where it was on the slider.
 - [ ] Pause → "Neu kalibrieren" works mid-run; Einstellungen → "Neu kalibrieren" stores a new level pose.
+- [ ] The safety note ("Die Strecke läuft von selbst …") is on the tutorial's first page, on the calibration screen
+      and under the lobby's "Kalibrieren und bereit", in German and English, also at the largest text size.
 - [ ] The screen never dims during calibration, countdown or a run, and dims normally in the menus.
 
 ### Haptics and sound
@@ -59,18 +61,24 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
 
 ### Camera mode
 - [ ] Fresh install (or Daten zurücksetzen with camera access never asked): Einstellungen → Hintergrund shows
-      Kamera. The first single run or hot-seat run asks for camera access on its calibration screen (German text in
-      German, English in English); allowing it shows the camera right away.
-- [ ] Declining that prompt keeps the run on the white background, without a black screen or an error, and switches
-      Einstellungen → Hintergrund to Weiß; choosing Kamera there again explains how to allow it.
+      Kamera. The first single run or hot-seat run opens its calibration screen with "Gleich fragt iOS nach der
+      Kamera", what the camera is for, and "Weiter" as its only button. "Weiter" brings up the prompt, whose text
+      needs no "Kamera-Modus" to make sense (German text in German, English in English); a quick second tap brings
+      up no second prompt. Allowing it goes on to the calibration with the camera behind it, now with "Abbrechen".
+- [ ] Declining that prompt goes on to the calibration on the white background, without a black screen or an error,
+      and switches Einstellungen → Hintergrund to Weiß.
+- [ ] Choosing Kamera in Einstellungen after that keeps Kamera, and right under the picker a row says that runs are
+      white without camera access, with "Einstellungen öffnen", which opens Eggscape's page in the iOS Settings.
+- [ ] Allow the camera, then turn it off in the iOS Settings (Eggscape → Kamera): runs show white, Einstellungen still
+      shows Kamera and the same row under the picker. Allowing it again there brings the camera back, and the row goes.
 - [ ] After declining the camera, Einstellungen → Daten zurücksetzen leaves Hintergrund on Weiß (iOS keeps the "no");
       with camera access allowed or never asked it shows Kamera.
 - [ ] A fresh install whose first run is a nearby or online race shows no prompt during the countdown (the race runs
-      on white); the next single run asks.
+      on white); the next single run shows the camera note first.
 - [ ] A background chosen in an earlier build is kept after the update (Weiß stays Weiß).
-- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked.
+- [ ] Einstellungen → Hintergrund → Kamera asks for camera access once if it was never asked; declining it there
+      switches back to Weiß without a further message.
 - [ ] The live rear camera fills the screen behind the spoon, upright, with no visible lag.
-- [ ] Declining access falls back to the white background and explains how to allow it.
 - [ ] Rain and storm darken the camera image; the broken egg appears on the "ground".
 
 ### Weather
@@ -79,7 +87,11 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       three puddles, the first 25–60 m from the start; on 50 m only about seven races in ten have one, on 15 m none).
 - [ ] Gewitter: a short warning flicker, then a bright flash, thunder and a strong push (on 50 or 100 m: the first
       strike comes 8 s or more after the start, when a clean 15 m run is over).
-- [ ] Reduce Motion (iOS Settings → Accessibility) removes the camera shake.
+- [ ] Dim Flashing Lights (iOS Settings → Accessibility → Motion): in a Gewitter the picture brightens slowly a moment
+      before a strike instead of flickering, and the strike only lightens it to about a third and fades slowly; thunder
+      and push stay. Turned on during a paused run, it applies from the next run.
+- [ ] Reduce Motion (iOS Settings → Accessibility → Motion) removes the camera shake, and the countdown's numbers and
+      "Los!" fade in and out without zooming or bouncing.
 
 ### Modes and progress
 - [ ] Zeitrennen Kurz/Mittel/Lang with each weather, personal bests appear in Einzelspieler and Bestenliste.
@@ -87,9 +99,13 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       Endlos record is still there.
 - [ ] Endlos: the weather gets rougher every 100 m; the record is kept.
 - [ ] Gemeinsam an einem Handy: 2–4 players, pass-the-phone screens, final standings, "Nochmal".
+- [ ] An einem Handy with four named players: type in the third row, swipe it away while the keyboard is up, then
+      delete the second and start: no crash, the deleted row slides out (not the last one), the other names stay in
+      their rows and the race hands the phone to them in that order. With two players no row offers a delete.
 - [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works. A clean
       run in calm weather that sets no new best shows "+8 Münzen" over 15 m, "+28" over 50 m and "+55" over 100 m.
-- [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins.
+- [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins; its footer and its question say
+      that bought coins go too.
 
 ### Shop
 - [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
@@ -105,10 +121,18 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       its top, also when the egg was at the bottom of the grid; "Abbrechen" stays on the Eier page.
 - [ ] Tapping an unlocked egg puts it on without asking; the next run shows it in the spoon.
 - [ ] Tapping the coin balance (with the plus) on the Eier page opens the Münzen page; the picker switches back.
+- [ ] The Münzen page says under the packs that coins, bought ones too, are stored only on this device.
 - [ ] VoiceOver on an egg: name, then "Gesperrt" and its price, then "Schaltet das Ei frei." or how many coins are
       missing; unlocked eggs say "Freigeschaltet", the egg in use is announced as selected. The balance says what it
       opens; every coin pack reads its name, price, coins and, on one of them, "bestes Angebot".
 - [ ] Largest Dynamic Type size: names, prices and the coin cards stay readable, the padlocks stay on the eggs.
+- [ ] Münzen in German, from the smallest iPhone to the largest and at every text size, also with Display Zoom →
+      Larger Text on an iPhone SE or mini (320 points wide) and with Swiss prices (Default Storefront Switzerland in
+      the StoreKit configuration: open `StoreKit/Eggscape.storekit`, Editor menu; set it back to Germany
+      afterwards): no coin count breaks inside the number. Where "2.000 Münzen" does not fit on one line, "Münzen"
+      moves under the number on all three cards alike; where even the number does not fit beside the price, all
+      three cards stack the pile, the coins and the price as at accessibility sizes. Prices stay on one line, and
+      "Bestes Angebot" stays inside its badge.
 
 ### In-app purchases
 Locally, run from Xcode: the Run scheme uses `StoreKit/Eggscape.storekit`, no Apple account needed and no paid
@@ -139,6 +163,9 @@ developer program. `make test-app` loads the packs from the same file and buys o
 
 On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] The three coin packs load with localized prices.
+- [ ] Buying shows the App Store's sheet over the app (the shop buys through SwiftUI's purchase action), with
+      TestFlight on iOS 17 or 18 as well if a device has it; iOS 18.2 was reported to fail `Product.purchase()` without
+      a scene.
 - [ ] Buying a pack credits the coins exactly once, also after force-quitting the app during the purchase.
 - [ ] "Ask to Buy" (Family Sharing child account) says once that the purchase waits for approval, and credits the
       coins after approval; cancelling the App Store sheet shows no message.
@@ -158,12 +185,23 @@ anyway, both must be on the same Wi-Fi without client isolation or VPN, and the 
 local network (System Settings → Privacy & Security → Local Network, and the firewall).
 
 Why a join failed is logged (subsystem `de.juliusedel.eggscape`, category `nearby`): the joiner logs the reason and how
-many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. Read it
-in Xcode's console (it shows the app's log also without the debugger, which the Run scheme leaves off), in Console.app
-with the iPhone selected, or for the Simulator with
-`xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
+many seconds it took, the host why it turned an invitation down or could not seat a phone that had connected. When
+iOS turns down advertising the room or looking for rooms, the phone logs "Could not advertise the room" or "Could not
+look for rooms" with the error, and when it tries again. Read it in Xcode's console (it shows the app's log also
+without the debugger, which the Run scheme leaves off), in Console.app with the iPhone selected, or for the Simulator
+with `xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "de.juliusedel.eggscape"'`.
 
-- [ ] The Local Network prompt appears only when entering "In der Nähe", with the explanatory text.
+- [ ] The Local Network prompt appears only once Raum erstellen or Beitreten is tapped, with the explanatory text.
+- [ ] Two fresh installs that both see the prompt for the first time (the App Review setup): Raum erstellen on A,
+      Beitreten on B, "Erlauben" on both. B lists A's room within a few seconds, without leaving the screen. iOS may
+      turn down the first search while its prompt is up; the app looks again once it is active.
+- [ ] Host alone in its room: below the host, "Warte auf Mitspieler …" and "Auf den anderen Handys: Mehrspieler →
+      In der Nähe → Beitreten."; after about 10 s alone, a hint on "Lokales Netzwerk" with "Einstellungen öffnen",
+      which opens Eggscape's page in the iOS Settings. Both go once a player joins.
+- [ ] Joiner with no room for about 10 s (no host yet): the room list adds the hint on "Lokales Netzwerk" with
+      "Einstellungen öffnen"; it goes as soon as a room is listed.
+- [ ] "Nicht erlauben" on one phone: neither phone sees the other, and both show the hint after about 10 s. Allowing
+      "Lokales Netzwerk" in the settings and coming back to the app brings the room up, without leaving the screen.
 - [ ] Raum erstellen on phone A, Beitreten on phone B: B sees A's nickname and joins; A accepts automatically.
 - [ ] Lobby shows players, egg colors and ready states; only the host changes distance and weather.
 - [ ] The 3-2-1 countdown starts at the same moment on all phones (film both screens to compare).
@@ -202,6 +240,10 @@ with the iPhone selected, or for the Simulator with
 - [ ] VoiceOver reads every button in the menus and the HUD (pause, sprint, eggs left, weather).
 - [ ] Dynamic Type at the largest size keeps the menus usable.
 - [ ] German and English: no untranslated texts, no truncation (Settings → General → Language & Region).
+- [ ] A phone whose languages include neither German nor English (e.g. only French) shows the app, the camera
+      and local network prompts and the help pages in English; a German phone shows the prompts in German.
+- [ ] Einstellungen → Hilfe & Rechtliches: "Datenschutz" and "Support & Impressum" open the German pages in Safari
+      when the app runs in German, the English pages otherwise; "Version" shows the version and build.
 - [ ] On an iPad the app runs in iPhone mode without crashing.
 
 ### Waiting in rooms and invitations

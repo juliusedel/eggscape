@@ -1,6 +1,43 @@
 import EggscapeCore
 import SpriteKit
 
+/// How lightning lights up the screen. Normally two quick flickers warn of a strike, which then turns the picture
+/// almost white and fades fast. With Dim Flashing Lights (iOS Settings → Accessibility → Motion) nothing flickers or
+/// jumps: the picture brightens a little and slowly while a strike approaches, so the warning stays, and the strike
+/// lifts it to about a third and fades slowly. The thunder and the push on the egg stay the same.
+struct LightningFlash: Equatable {
+    /// Two quick flickers warn of a strike; otherwise the picture slowly brightens to `warningGlow`.
+    var flickers: Bool
+    /// Opacity of the white the picture slowly brightens to before a strike, when it does not flicker.
+    var warningGlow: CGFloat
+    /// Opacity of the white at the strike.
+    var strikeOpacity: CGFloat
+    /// Seconds the strike takes to get there; 0 is a flash.
+    var strikeRise: TimeInterval
+    /// Seconds the strike takes to fade.
+    var strikeFade: TimeInterval
+
+    static let standard = LightningFlash(
+        flickers: true,
+        warningGlow: 0,
+        strikeOpacity: 0.9,
+        strikeRise: 0,
+        strikeFade: 0.35
+    )
+    static let dimmed = LightningFlash(
+        flickers: false,
+        warningGlow: 0.1,
+        strikeOpacity: 0.3,
+        strikeRise: 0.15,
+        strikeFade: 0.9
+    )
+
+    /// - Parameter dimsFlashingLights: the player's Dim Flashing Lights setting (`MADimFlashingLightsEnabled()`).
+    static func forSetting(dimsFlashingLights: Bool) -> LightningFlash {
+        dimsFlashingLights ? .dimmed : .standard
+    }
+}
+
 /// Screen-fixed weather effects on top of the spoon: color grading, rain streaks, drops landing on the spoon, blowing
 /// leaves and lightning. It is attached to the camera, so it does not bob or shake with the spoon.
 final class WeatherOverlayNode: SKNode {
@@ -13,12 +50,14 @@ final class WeatherOverlayNode: SKNode {
     private var size = CGSize.zero
     private var dropBudget = 0.0
     private var rng = SplitMix64(seed: 0xD20B)
+    private let lightning: LightningFlash
 
     /// Over the camera image the grading is a translucent overlay and needs to be a little stronger to be seen.
     var isOverCamera = false
 
-    init(artwork: GameArtwork) {
+    init(artwork: GameArtwork, lightning: LightningFlash) {
         raindrops = artwork.raindrops
+        self.lightning = lightning
         super.init()
         grading.alpha = 0
         grading.zPosition = 0
@@ -99,23 +138,33 @@ final class WeatherOverlayNode: SKNode {
         }
     }
 
-    /// A short double flicker during the warning before a strike.
+    /// The warning before a strike: a short double flicker, or a slow glow that fades again unless the strike takes
+    /// over from it.
     func lightningWarning() {
         flash.removeAction(forKey: "flash")
-        flash.run(
-            .sequence([
+        let warning: SKAction = lightning.flickers
+            ? .sequence([
                 .fadeAlpha(to: 0.12, duration: 0.05), .fadeAlpha(to: 0, duration: 0.12),
                 .wait(forDuration: 0.12),
                 .fadeAlpha(to: 0.18, duration: 0.05), .fadeAlpha(to: 0, duration: 0.15),
-            ]),
-            withKey: "flash"
-        )
+            ])
+            : .sequence([
+                .fadeAlpha(to: lightning.warningGlow, duration: 0.45),
+                .wait(forDuration: 0.3),
+                .fadeAlpha(to: 0, duration: 0.5),
+            ])
+        flash.run(warning, withKey: "flash")
     }
 
     func lightningStrike() {
         flash.removeAction(forKey: "flash")
-        flash.alpha = 0.9
-        flash.run(.fadeAlpha(to: 0, duration: 0.35), withKey: "flash")
+        flash.run(
+            .sequence([
+                .fadeAlpha(to: lightning.strikeOpacity, duration: lightning.strikeRise),
+                .fadeAlpha(to: 0, duration: lightning.strikeFade),
+            ]),
+            withKey: "flash"
+        )
     }
 
     /// Stops all weather, e.g. when the run is over.

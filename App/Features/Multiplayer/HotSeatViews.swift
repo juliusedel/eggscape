@@ -4,36 +4,38 @@ import SwiftUI
 /// Players, distance and weather for a hot-seat race.
 struct HotSeatSetupView: View {
     @Environment(AppServices.self) private var services
-    @State private var names: [String] = ["", ""]
+    @State private var roster = HotSeatRoster()
     @State private var distance = RaceDistance.short
     @State private var weather = WeatherOption.off
 
     var body: some View {
         Form {
             Section {
-                ForEach(names.indices, id: \.self) { index in
-                    TextField(text: $names[index]) {
-                        Text("Spieler \(index + 1)")
+                // Rows by the player's id, and each field bound to its player's name by that id, not by position: see
+                // `HotSeatRoster`.
+                ForEach(roster.players) { player in
+                    TextField(text: $roster[nameOf: player.id]) {
+                        Text("Spieler \(roster.number(of: player))")
                     }
                     .textContentType(.nickname)
                     .autocorrectionDisabled()
-                    .onChange(of: names[index]) { _, value in
-                        if value.count > SettingsStore.maxNameLength {
-                            names[index] = String(value.prefix(SettingsStore.maxNameLength))
-                        }
+                    .onChange(of: player.name) {
+                        roster.limitNames()
                     }
+                    // With the fewest players a race takes, a swipe would offer a delete that does nothing.
+                    .deleteDisabled(!roster.canRemovePlayer)
+                    .accessibilityIdentifier("hotSeat.name")
                 }
                 .onDelete { offsets in
-                    if names.count - offsets.count >= HotSeatSession.playerRange.lowerBound {
-                        names.remove(atOffsets: offsets)
-                    }
+                    roster.removePlayers(atOffsets: offsets)
                 }
-                if names.count < HotSeatSession.playerRange.upperBound {
+                if roster.canAddPlayer {
                     Button {
-                        names.append("")
+                        roster.addPlayer()
                     } label: {
                         Label("Spieler hinzufügen", systemImage: "person.badge.plus")
                     }
+                    .accessibilityIdentifier("hotSeat.addPlayer")
                 }
             } header: {
                 Text("Mitspieler")
@@ -55,7 +57,7 @@ struct HotSeatSetupView: View {
 
             Section {
                 Button {
-                    services.launcher.startHotSeat(players: playerNames, distance: distance, weather: weather)
+                    services.launcher.startHotSeat(players: roster.playerNames, distance: distance, weather: weather)
                 } label: {
                     Text("Rennen starten")
                         .font(.headline)
@@ -68,16 +70,94 @@ struct HotSeatSetupView: View {
         }
         .navigationTitle("An einem Handy")
         .onAppear {
-            if names[0].isEmpty, !services.settings.playerName.isEmpty {
-                names[0] = services.settings.playerName
+            roster.prefillFirstName(services.settings.playerName)
+        }
+    }
+}
+
+/// The players of the hot-seat setup before the race, in running order: two to four (`HotSeatSession.playerRange`).
+///
+/// Every row has an id of its own, and its text field reads and writes the name by that id. The setup used to bind each
+/// field to `names[index]`: deleting a row then removed the last row's cell instead of the deleted one, and a deleted
+/// row keeps its binding while it animates out, so a field still being edited could read or write through it. By
+/// position that binding points at the next row's name, or after deleting the last row past the end of the list, which
+/// crashes ("Index out of range"). `ForEach($players)` would not help, as it also binds each row by position. Here a
+/// field whose row is gone reads an empty name and changes nothing.
+@MainActor
+struct HotSeatRoster {
+    struct Player: Identifiable {
+        let id = UUID()
+        var name = ""
+    }
+
+    /// Changes only through `addPlayer()` and `removePlayers(atOffsets:)`, which keep the count in range.
+    private(set) var players: [Player]
+
+    init() {
+        players = (0 ..< HotSeatSession.playerRange.lowerBound).map { _ in Player() }
+    }
+
+    /// The name typed for the player with `id`, for a text field. A player who is no longer on the list has an empty
+    /// name, and setting it changes nothing.
+    subscript(nameOf id: Player.ID) -> String {
+        get {
+            players.first { $0.id == id }?.name ?? ""
+        }
+        set {
+            if let index = players.firstIndex(where: { $0.id == id }) {
+                players[index].name = newValue
             }
         }
     }
 
-    /// Empty fields become "Spieler 1", "Spieler 2", ...
-    private var playerNames: [String] {
-        names.enumerated().map { index, name in
-            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    var canAddPlayer: Bool {
+        players.count < HotSeatSession.playerRange.upperBound
+    }
+
+    var canRemovePlayer: Bool {
+        players.count > HotSeatSession.playerRange.lowerBound
+    }
+
+    mutating func addPlayer() {
+        guard canAddPlayer else { return }
+        players.append(Player())
+    }
+
+    /// Deletes the rows at `offsets`, positions as a list's swipe to delete reports them, unless that would leave fewer
+    /// players than a race takes. Positions that do not exist leave the list as it is.
+    mutating func removePlayers(atOffsets offsets: IndexSet) {
+        guard offsets.allSatisfy(players.indices.contains),
+              players.count - offsets.count >= HotSeatSession.playerRange.lowerBound
+        else { return }
+        players.remove(atOffsets: offsets)
+    }
+
+    /// Cuts every name to `SettingsStore.maxNameLength` characters, the length of the settings' player name. The setup
+    /// calls this after every change instead of limiting the name in its setter: a setter that keeps the old value
+    /// leaves the extra character in the text field.
+    mutating func limitNames() {
+        for index in players.indices where players[index].name.count > SettingsStore.maxNameLength {
+            players[index].name = String(players[index].name.prefix(SettingsStore.maxNameLength))
+        }
+    }
+
+    /// Puts `name`, the player's own name from the settings, in the first row unless something was typed there.
+    mutating func prefillFirstName(_ name: String) {
+        guard !name.isEmpty, players.first?.name.isEmpty == true else { return }
+        players[0].name = String(name.prefix(SettingsStore.maxNameLength))
+    }
+
+    /// The player's place in the running order, from 1, as in the placeholder "Spieler 2". A row that is being deleted
+    /// counts as the last.
+    func number(of player: Player) -> Int {
+        (players.firstIndex { $0.id == player.id } ?? players.count) + 1
+    }
+
+    /// The names the race starts with, in running order: what was typed, without the spaces around it, and for an empty
+    /// row its placeholder, "Spieler 1", "Spieler 2" and so on by its place in the list.
+    var playerNames: [String] {
+        players.enumerated().map { index, player in
+            let trimmed = player.name.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? String(localized: "Spieler \(index + 1)") : trimmed
         }
     }

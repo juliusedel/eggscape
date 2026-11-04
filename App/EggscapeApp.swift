@@ -13,7 +13,7 @@ struct EggscapeApp: App {
                     // never reach a leaderboard. Nor do they pick up StoreKit's unfinished or updated transactions:
                     // these would be credited to a throwaway wallet and finished, so the real one would never get the
                     // coins. StoreKit keeps them for the next normal launch; a pack bought inside such a session is
-                    // still credited by `purchase()`.
+                    // still credited by `StoreService.purchase(_:with:)`.
                     if !LaunchOptions.current.usesEphemeralData {
                         services.store.start()
                         services.gameCenter.authenticate()

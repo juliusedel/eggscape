@@ -37,6 +37,8 @@ In the Simulator there are no motion sensors: drag the egg with a finger instead
 | `make sounds` | Re-synthesizes the sound effects |
 | `make icon` | Re-renders the app icon |
 | `make beta` / `make release` / `make screenshots` | fastlane lanes, see `docs/RELEASE.md` |
+| `make screenshots-sim` | App Store screenshots with simctl alone, no fastlane or UI tests |
+| `make site-check` | Checks the support and privacy pages in `site/` before they go live |
 
 ## Architecture
 

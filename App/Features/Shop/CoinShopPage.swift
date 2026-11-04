@@ -5,6 +5,7 @@ import SwiftUI
 /// The shop's coin page: the coin packs sold through the App Store.
 struct CoinShopPage: View {
     @Environment(AppServices.self) private var services
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         let store = services.store
@@ -34,17 +35,36 @@ struct CoinShopPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
                 .background(.background, in: .rect(cornerRadius: 20))
+            } else if dynamicTypeSize.isAccessibilitySize {
+                // At accessibility sizes the row would not fit a 375 pt phone.
+                packCards(store.products, best: best, isStacked: true)
             } else {
-                ForEach(store.products, id: \.id) { product in
-                    if let pack = CoinPack.pack(productID: product.id) {
-                        CoinPackCard(product: product, pack: pack, isBestValue: pack == best)
-                    }
+                // A row where the coins fit between the pile and the price. On a 320 pt screen (Display Zoom on an
+                // iPhone SE or mini) at a larger text size, or next to a wide price such as "CHF 6.00", they do not;
+                // squeezed in, SwiftUI broke the number itself ("2.00" / "0"), so the cards stack there instead.
+                ViewThatFits(in: .horizontal) {
+                    packCards(store.products, best: best, isStacked: false)
+                    packCards(store.products, best: best, isStacked: true)
                 }
             }
-            Label {
-                Text("Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr.")
-            } icon: {
-                Image(systemName: "figure.run")
+            VStack(alignment: .leading, spacing: 10) {
+                // Hot-seat runs earn nothing (`RunRules.hotSeat`), so the note names the modes that do.
+                Label {
+                    Text(
+                        "Münzen verdienst du im Einzelspieler und bei Rennen in der Nähe oder online: je weiter, schneller und wetterfester, desto mehr."
+                    )
+                } icon: {
+                    Image(systemName: "figure.run")
+                }
+                // The wallet has no copy in the cloud, and the App Store does not restore consumables such as the
+                // coin packs, so buyers learn before they buy that deleting the app also deletes these coins.
+                Label {
+                    Text(
+                        "Münzen werden nur auf diesem Gerät gespeichert. Löschst du die App oder setzt du die Daten zurück, sind sie weg, auch gekaufte."
+                    )
+                } icon: {
+                    Image(systemName: "iphone")
+                }
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
@@ -61,6 +81,18 @@ struct CoinShopPage: View {
         .task {
             if store.products.isEmpty {
                 await store.loadProducts()
+            }
+        }
+    }
+
+    /// The cards under each other, all in a row or all stacked, so they always look alike: the row counts as fitting
+    /// only if it fits on every card.
+    private func packCards(_ products: [Product], best: CoinPack?, isStacked: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(products, id: \.id) { product in
+                if let pack = CoinPack.pack(productID: product.id) {
+                    CoinPackCard(product: product, pack: pack, isBestValue: pack == best, isStacked: isStacked)
+                }
             }
         }
     }
@@ -94,43 +126,44 @@ private struct CoinPackCard: View {
     let product: Product
     let pack: CoinPack
     let isBestValue: Bool
+    /// The pile, the text and the price under each other instead of side by side; `CoinShopPage` decides.
+    let isStacked: Bool
     @Environment(AppServices.self) private var services
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// StoreKit's buy action for this view's scene (see `StoreService.purchase(_:with:)`).
+    @Environment(\.purchase) private var purchase
 
     var body: some View {
         let store = services.store
-        // One row at normal text sizes; stacked at accessibility sizes, where the row would not fit a 375 pt phone.
-        let layout = dynamicTypeSize.isAccessibilitySize
+        let purchase = purchase
+        let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
             : AnyLayout(HStackLayout(spacing: 14))
         Button {
-            Task { await store.purchase(product) }
+            Task { await store.purchase(product, with: { try await purchase($0) }) }
         } label: {
             layout {
                 CoinPile(count: (CoinPack.all.firstIndex(of: pack) ?? 0) + 1, size: 34)
-                VStack(alignment: .leading, spacing: 4) {
-                    if isBestValue {
-                        Text("Bestes Angebot")
-                            .font(.caption.bold())
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color(.accentFill), in: .capsule)
-                    }
-                    HStack(alignment: .firstTextBaseline, spacing: 5) {
-                        Text(pack.coins, format: .number)
-                            .font(.title.bold())
-                            .monospacedDigit()
-                        Text("Münzen")
-                            .font(.headline)
+                ZStack(alignment: .leading) {
+                    // Stands for the text in the card's ideal width, which the page's ViewThatFits compares with the
+                    // screen: the number is the narrowest the text may get, while its longest line would ask for more
+                    // than it needs, as the rest wraps. So the row stays exactly as long as the number fits.
+                    coins(pack.coins)
+                        .hidden()
+                    VStack(alignment: .leading, spacing: 4) {
+                        if isBestValue {
+                            bestValueBadge
+                        }
+                        coinCount
+                        // Wraps instead of being cut off: App Store Connect allows names of up to 30 characters.
+                        Text(product.displayName)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    Text(product.displayName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                    // The coins get all the room the pile and the price leave. A spacer here added the row's spacing
+                    // on both of its sides, which left too little for "2.000 Münzen" on a 402 pt iPhone. The ideal
+                    // width of 0 leaves the hidden number to stand for the text.
+                    .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
                 }
-                Spacer(minLength: 8)
                 priceTag
             }
             .padding(18)
@@ -148,7 +181,57 @@ private struct CoinPackCard: View {
         .accessibilityIdentifier("shop.pack.\(product.id)")
     }
 
-    /// The App Store's localized price on the accent color, like the app's primary buttons.
+    /// A capsule on one line. Where it has to wrap, as "Bestes Angebot" does at large text sizes on a small phone, the
+    /// round ends of a capsule would cut into the text, so it gets rounded corners instead.
+    private var bestValueBadge: some View {
+        let label = Text("Bestes Angebot")
+            .font(.caption.bold())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+        return ViewThatFits(in: .horizontal) {
+            label.background(Color(.accentFill), in: .capsule)
+            label.background(Color(.accentFill), in: .rect(cornerRadius: 8))
+        }
+    }
+
+    /// "2.000 Münzen" on one line where it fits, otherwise "Münzen" under the number: squeezed into one line, SwiftUI
+    /// broke the number itself ("2.00" / "0"). The line counts as fitting only if the biggest pack's line would, so the
+    /// three cards always look alike. The number alone always fits, as the page stacks the cards where it would not.
+    private var coinCount: some View {
+        ViewThatFits(in: .horizontal) {
+            ZStack(alignment: .leading) {
+                countLine(CoinPack.all.map(\.coins).max() ?? pack.coins)
+                    .hidden()
+                countLine(pack.coins)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                coins(pack.coins)
+                coinUnit
+            }
+        }
+    }
+
+    private func countLine(_ count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            coins(count)
+            coinUnit
+        }
+    }
+
+    private func coins(_ count: Int) -> Text {
+        Text(count, format: .number)
+            .font(.title.bold())
+            .monospacedDigit()
+    }
+
+    private var coinUnit: Text {
+        Text("Münzen")
+            .font(.headline)
+            .foregroundStyle(.secondary)
+    }
+
+    /// The App Store's localized price on the accent color, like the app's primary buttons. It keeps its one line.
     private var priceTag: some View {
         ZStack {
             // Keeps the tag's width while the spinner shows.
@@ -165,6 +248,7 @@ private struct CoinPackCard: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(.accentFill), in: .capsule)
+        .fixedSize()
     }
 
     private var isPurchasing: Bool {

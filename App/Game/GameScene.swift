@@ -26,6 +26,9 @@ final class GameScene: SKScene {
         /// The egg already reacts to the tilt, but the run has not started (countdown).
         case warmUp
         case running
+        /// App Store screenshots: the run stands still at the moment it skipped to while the weather goes on, so a
+        /// capture shows that moment however late it comes (`RunSession.stageForScreenshot(skipping:egg:)`).
+        case staged
         case paused
         case ended
     }
@@ -55,6 +58,7 @@ final class GameScene: SKScene {
     private(set) var engine: RunEngine
     private let appearance: EggAppearance
     private let reduceMotion: Bool
+    private let lightning: LightningFlash
     private var timestep: FixedTimestep
     private var lastUpdate: TimeInterval?
     private var events: [RunEvent] = []
@@ -82,10 +86,14 @@ final class GameScene: SKScene {
     private let cameraNode = SKCameraNode()
     private var weather: WeatherOverlayNode?
 
-    init(engine: RunEngine, appearance: EggAppearance, reduceMotion: Bool) {
+    /// - Parameters:
+    ///   - reduceMotion: Reduce Motion is on: no bob and no shake.
+    ///   - dimsFlashingLights: Dim Flashing Lights is on: softer lightning (`LightningFlash`).
+    init(engine: RunEngine, appearance: EggAppearance, reduceMotion: Bool, dimsFlashingLights: Bool) {
         self.engine = engine
         self.appearance = appearance
         self.reduceMotion = reduceMotion
+        lightning = .forSetting(dimsFlashingLights: dimsFlashingLights)
         timestep = FixedTimestep(rate: engine.config.simulationRate)
         layout = SceneLayout(size: CGSize(width: 402, height: 874), config: engine.config)
         super.init(size: CGSize(width: 402, height: 874))
@@ -128,7 +136,7 @@ final class GameScene: SKScene {
         if artwork == nil {
             let artwork = GameArtwork.shared(screenScale: screenScale)
             self.artwork = artwork
-            let overlay = WeatherOverlayNode(artwork: artwork)
+            let overlay = WeatherOverlayNode(artwork: artwork, lightning: lightning)
             overlay.zPosition = 100
             overlay.isOverCamera = showsCamera
             cameraNode.addChild(overlay)
@@ -243,6 +251,9 @@ final class GameScene: SKScene {
                 hudCountdown = 0.1
                 onHUD(hudSnapshot)
             }
+            updateCamera(dt: frameDuration)
+        case .staged:
+            weather?.update(weather: engine.weather, dt: frameDuration)
             updateCamera(dt: frameDuration)
         }
         render()

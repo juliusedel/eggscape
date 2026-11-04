@@ -44,17 +44,18 @@ final class AppServices {
         }
     }
 
-    /// "Daten zurücksetzen": settings, records, coins and skins on this device.
+    /// "Daten zurücksetzen": settings, records, coins and skins on this device, and every name stored for nearby play.
     func resetAllData() {
         settings.reset()
         // Resetting the data does not reset the iOS camera permission. After an earlier "no" the default camera would
-        // show white in every run while the settings say Kamera, and tapping Kamera there, already selected, would
-        // never explain how to allow it.
-        if settings.background == .camera, CameraFeed.isDeniedBySystem {
+        // show white in every run, so the reset keeps the player's answer and picks Weiß, which is what the runs show.
+        if settings.background == .camera, camera.isDeniedBySystem {
             settings.background = .white
         }
         records.reset()
         wallet.reset()
+        // Nearby play keeps a peer id for every name it was played under; the settings hold only the current name.
+        MultipeerTransport.resetStoredPeerIDs()
     }
 }
 

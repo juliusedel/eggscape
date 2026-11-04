@@ -38,6 +38,8 @@
 /// - The seed travels as a decimal string: many JSON tools read numbers as doubles, which would lose its low bits.
 /// - Times are seconds of the sender's own monotonic clock (for example `ProcessInfo.processInfo.systemUptime`),
 ///   except `startAt` and `hostTime`, which are always on the host's clock.
+/// - Receivers drop a message with numbers no real phone sends, such as 1e300 meters (`isPlausible(eggsPerRun:)`).
+///   That is a check on the values, not a change of the format.
 ///
 /// `NetEnvelope` explains which changes need a new protocol version.
 public enum NetMessage: Equatable, Sendable {
@@ -123,6 +125,50 @@ public enum NetMessage: Equatable, Sendable {
         case .ready, .progress, .eggDropped, .finished, .ping:
             false
         }
+    }
+
+    /// The distances a message may carry, in meters. The longest course is 100 m, so this leaves room for any real
+    /// run and keeps out numbers no phone can show (see `isPlausible(eggsPerRun:)`).
+    public static let plausibleMeters = 0.0 ... 10000.0
+
+    /// The race times a message may carry, in seconds: an hour, where a real race takes well under a minute. The race
+    /// clock runs on while a phone is in the background, so a phone that was away longer reports an hour
+    /// (`NearbySession.reportFinish(_:)` in the app).
+    public static let plausibleSeconds = 0.0 ... 3600.0
+
+    /// Whether every number in the message is one a real phone sends: distances within `plausibleMeters`, race times
+    /// within `plausibleSeconds`, egg counts from 0 to `eggsPerRun`, places from 1 to `LobbyState.maxPlayers`, and
+    /// clock readings that are finite. Receivers drop any other message.
+    ///
+    /// `NetCodec` only checks the types. JSON carries no NaN or infinity, but it does carry numbers like 1e300, and a
+    /// modified client could send one to crash the other phones, which convert distances and times to `Int` to show
+    /// them. The clock readings (`startAt`, `sentAt`, `pingSentAt`, `hostTime`) count from moments only their phone
+    /// knows and have no natural bounds, so a receiver clamps what it computes from them instead
+    /// (`RaceReferee.startDelay(clamping:)`).
+    public func isPlausible(eggsPerRun: Int = GameConfig.standard.eggsPerRun) -> Bool {
+        switch self {
+        case .lobbyState, .setSettings, .ready:
+            true
+        case let .startRace(_, startAt):
+            startAt.isFinite
+        case let .progress(meters, eggsLeft):
+            Self.plausibleMeters.contains(meters) && Self.isEggCount(eggsLeft, of: eggsPerRun)
+        case let .eggDropped(eggsLeft):
+            Self.isEggCount(eggsLeft, of: eggsPerRun)
+        case let .finished(report):
+            report.isPlausible(eggsPerRun: eggsPerRun)
+        case let .results(results):
+            results.entries.allSatisfy { $0.isPlausible(eggsPerRun: eggsPerRun) }
+        case let .ping(_, sentAt):
+            sentAt.isFinite
+        case let .pong(_, pingSentAt, hostTime):
+            pingSentAt.isFinite && hostTime.isFinite
+        }
+    }
+
+    /// `eggs` is a number of eggs that a run with `eggsPerRun` eggs can have left, or can have lost.
+    static func isEggCount(_ eggs: Int, of eggsPerRun: Int) -> Bool {
+        eggs >= 0 && eggs <= eggsPerRun
     }
 }
 

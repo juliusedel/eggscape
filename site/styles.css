@@ -1,0 +1,291 @@
+/*
+ * Eggscape website: one stylesheet for every page. No web fonts, no scripts; light and dark follow the system.
+ * The colors come from the app: the accent is the app's AccentColor, darkened in light mode so links keep a contrast
+ * of at least 4.5:1 on the page background (5.7:1 light, 9.2:1 dark).
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #fbf7f1;
+  --surface: #ffffff;
+  --text: #1d1915;
+  --muted: #5b5047;
+  --accent: #a8410b;
+  --border: #e7dccf;
+  --radius: 16px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141110;
+    --surface: #1f1a17;
+    --text: #f3ebe3;
+    --muted: #c2b4a7;
+    --accent: #ff9d5c;
+    --border: #3b312a;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Visible only while focused, for keyboard users. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+.wrap {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Header: icon and name on the left, the other language on the right. */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.125rem;
+  text-decoration: none;
+}
+
+.brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: 22%;
+}
+
+.site-header nav a {
+  font-weight: 600;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.375rem);
+  margin: 1.5rem 0 0.25rem;
+}
+
+h2 {
+  font-size: 1.375rem;
+  margin: 2.5rem 0 0.5rem;
+}
+
+h3 {
+  font-size: 1.125rem;
+  margin: 1.75rem 0 0.25rem;
+}
+
+p,
+ul,
+ol,
+address,
+dl {
+  margin: 0 0 1rem;
+}
+
+ul,
+ol {
+  padding-left: 1.25rem;
+}
+
+li + li {
+  margin-top: 0.375rem;
+}
+
+address {
+  font-style: normal;
+}
+
+.updated,
+.lead {
+  color: var(--muted);
+}
+
+.lead {
+  font-size: 1.1875rem;
+}
+
+/* A highlighted box: the summary at the top of the privacy policy and the right to object. */
+.box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.box > :last-child {
+  margin-bottom: 0;
+}
+
+.box h2 {
+  margin-top: 0;
+  font-size: 1.125rem;
+}
+
+/* Contact details: label and value side by side, stacked on narrow screens. */
+.contact {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+
+.contact dt {
+  color: var(--muted);
+}
+
+.contact dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 26rem) {
+  .contact {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .contact dd + dt {
+    margin-top: 0.5rem;
+  }
+}
+
+/* Landing page: the app at the top, then one card per language. */
+.hero {
+  text-align: center;
+  padding: 2rem 0 0.5rem;
+}
+
+.hero img {
+  width: 112px;
+  height: 112px;
+  border-radius: 22%;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.hero h1 {
+  margin-top: 1rem;
+}
+
+.languages {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+}
+
+@media (min-width: 46rem) {
+  .languages {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.languages section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.languages h2 {
+  margin-top: 0;
+}
+
+.languages ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  padding-bottom: 2.5rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.site-footer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.site-footer li + li {
+  margin-top: 0;
+}
+
+.site-footer p {
+  margin: 0;
+}

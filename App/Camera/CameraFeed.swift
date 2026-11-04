@@ -13,15 +13,40 @@ final class CameraFeed {
         case unavailable
         /// The player declined camera access.
         case denied
+        /// iOS has not asked for camera access yet, and a run waits for the camera: its calibration screen first says
+        /// what the camera is for and then asks (`askForAccess(for:)`).
+        case notAsked
+        /// The iOS prompt for camera access is up.
+        case asking
+    }
+
+    /// What iOS knows and asks about camera access; tests answer in its place.
+    struct Access {
+        var status: @MainActor () -> AVAuthorizationStatus
+        var request: @MainActor () async -> Bool
+        var hasRearCamera: @MainActor () -> Bool
+
+        static var system: Access {
+            Access(
+                status: { AVCaptureDevice.authorizationStatus(for: .video) },
+                request: { await AVCaptureDevice.requestAccess(for: .video) },
+                hasRearCamera: { CaptureController.hasRearCamera }
+            )
+        }
     }
 
     private(set) var status = Status.idle
     @ObservationIgnored let controller = CaptureController()
     /// Called when the player answers the system's camera prompt with "no"; `AppServices` then switches the background
-    /// to white, so the settings show what the player sees and choosing "Kamera" there explains how to allow it.
+    /// to white, so the settings show what the player sees.
     @ObservationIgnored var onDeclined: () -> Void = {}
     /// The runs that show the camera; on "Nochmal" the new one starts before the old one stops.
     @ObservationIgnored private var owners = Leases()
+    @ObservationIgnored private let access: Access
+
+    init(access: Access = .system) {
+        self.access = access
+    }
 
     /// `true` if the camera can be shown right now or after `start(for:)`.
     var isUsable: Bool {
@@ -30,18 +55,19 @@ final class CameraFeed {
 
     /// The player said "no" earlier, or camera access is restricted on this device: iOS will not ask again, so only
     /// the iOS settings can allow it.
-    static var isDeniedBySystem: Bool {
-        [.denied, .restricted].contains(AVCaptureDevice.authorizationStatus(for: .video))
+    var isDeniedBySystem: Bool {
+        [.denied, .restricted].contains(access.status())
     }
 
     /// Asks for camera access if needed; returns whether the camera may be used.
     func requestAccess() async -> Bool {
         let granted: Bool
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        switch access.status() {
         case .authorized:
             granted = true
         case .notDetermined:
-            granted = await AVCaptureDevice.requestAccess(for: .video)
+            status = .asking
+            granted = await access.request()
             if !granted {
                 onDeclined()
             }
@@ -50,42 +76,51 @@ final class CameraFeed {
         }
         if !granted {
             status = .denied
-        } else if status == .denied {
-            // Allowed in the iOS settings after an earlier "no".
+        } else if [.denied, .notAsked, .asking].contains(status) {
+            // Allowed in the prompt, or in the iOS settings after an earlier "no".
             status = .idle
         }
         return granted
     }
 
     /// Shows the camera for `owner` until the last owner has called `stop(for:)`. If the player has never been asked
-    /// for access (a fresh install, where the camera is the default, or after resetting the privacy settings), it asks
-    /// first when `mayAskForAccess` is set, and otherwise leaves the question to a later start. Without a rear camera,
-    /// as in the Simulator, it does not ask at all: there is nothing to allow.
-    func start(for owner: AnyObject, mayAskForAccess: Bool = true) {
+    /// for access (a fresh install, where the camera is the default, or after resetting the privacy settings), it
+    /// waits as `.notAsked` for `askForAccess(for:)`, so the prompt comes once the player can tell what it is for.
+    /// Without a rear camera, as in the Simulator, it does not wait at all: there is nothing to allow.
+    func start(for owner: AnyObject) {
         owners.acquire(owner)
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        switch access.status() {
         case .authorized:
             startSession()
         case .notDetermined:
-            guard CaptureController.hasRearCamera else {
+            if !access.hasRearCamera() {
                 status = .unavailable
-                return
-            }
-            guard mayAskForAccess else { return }
-            Task {
-                if await requestAccess(), owners.isHeld {
-                    startSession()
-                }
+            } else if status != .asking {
+                status = .notAsked
             }
         default:
             status = .denied
         }
     }
 
+    /// Brings up the iOS prompt for camera access, then shows the camera for `owner` if the player allowed it. While
+    /// the prompt is up, a second call (a quick second tap) changes nothing.
+    func askForAccess(for owner: AnyObject) {
+        owners.acquire(owner)
+        guard status != .asking else { return }
+        status = .asking
+        Task {
+            if await requestAccess(), owners.isHeld {
+                startSession()
+            }
+        }
+    }
+
     func stop(for owner: AnyObject) {
         guard owners.release(owner) else { return }
         controller.stop()
-        if status == .running {
+        // A run that waited for the question is gone; the next one waits again.
+        if status == .running || status == .notAsked {
             status = .idle
         }
     }

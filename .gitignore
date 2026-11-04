@@ -9,8 +9,9 @@ DerivedData/
 .build/
 .swiftpm/
 
-# Tools built by scripts/bootstrap.sh
-.tools/
+# Tools built by scripts/bootstrap.sh. A worktree links to the main checkout's copy, and a symlink is no directory for
+# git, so the pattern has no trailing slash: it ignores both.
+.tools
 
 # fastlane
 fastlane/report.xml

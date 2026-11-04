@@ -316,17 +316,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One Phone"
-          }
-        }
-      }
-    },
-    "Andere Spieler sehen diesen Namen im Mehrspieler-Modus." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other players see this name in multiplayer."
+            "value" : "Pass the Phone"
           }
         }
       }
@@ -367,6 +357,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accept"
+          }
+        }
+      }
+    },
+    "Auch gekaufte Münzen gehen verloren. Das kann nicht rückgängig gemacht werden." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchased coins are lost too. This cannot be undone."
+          }
+        }
+      }
+    },
+    "Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the other phones: Multiplayer → Nearby → Join."
           }
         }
       }
@@ -511,16 +521,6 @@
         }
       }
     },
-    "Das kann nicht rückgängig gemacht werden." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This cannot be undone."
-          }
-        }
-      }
-    },
     "Das Rennen läuft weiter" : {
       "localizations" : {
         "en" : {
@@ -541,6 +541,16 @@
         }
       }
     },
+    "Datenschutz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        }
+      }
+    },
     "Dein Ei" : {
       "localizations" : {
         "en" : {
@@ -551,12 +561,12 @@
         }
       }
     },
-    "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich laufen willst." : {
+    "Dein Handy ist der Löffel. Halte es flach vor dir, so wie du gleich spielen willst." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your phone is the spoon. Hold it flat in front of you, the way you want to run."
+            "value" : "Your phone is the spoon. Hold it flat in front of you, the way you want to play."
           }
         }
       }
@@ -637,6 +647,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The leaderboard could not be loaded."
+          }
+        }
+      }
+    },
+    "Die Strecke läuft von selbst, du kannst also auch im Stehen spielen. Wenn du mitläufst, dann nur, wo Platz ist, und achte auf deine Umgebung." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The course runs by itself, so you can also play standing still. If you walk or run along, only do it where there is room, and watch your surroundings."
           }
         }
       }
@@ -761,6 +781,16 @@
         }
       }
     },
+    "Eggscape darf die Kamera nicht nutzen, darum spielst du auf Weiß. Erlauben kannst du sie in den iOS-Einstellungen." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eggscape isn’t allowed to use the camera, so you play on the white background. You can allow it in the iOS Settings."
+          }
+        }
+      }
+    },
     "Ei" : {
       "localizations" : {
         "en" : {
@@ -877,16 +907,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Results"
-          }
-        }
-      }
-    },
-    "Erlaube Eggscape den Kamerazugriff in den iOS-Einstellungen, um den Kamera-Hintergrund zu nutzen." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allow Eggscape to use the camera in the iOS Settings to use the camera background."
           }
         }
       }
@@ -1021,6 +1041,16 @@
         }
       }
     },
+    "Gleich fragt iOS nach der Kamera" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS is about to ask for the camera"
+          }
+        }
+      }
+    },
     "Gold" : {
       "localizations" : {
         "en" : {
@@ -1041,22 +1071,22 @@
         }
       }
     },
-    "Halte dein Handy so, wie du beim Laufen den Löffel halten willst, und tippe auf „Kalibrieren“." : {
+    "Halte dein Handy so, wie du beim Spielen den Löffel halten willst, und tippe auf „Kalibrieren“." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold your phone the way you want to hold the spoon while running and tap “Calibrate”."
+            "value" : "Hold your phone the way you want to hold the spoon while playing and tap “Calibrate”."
           }
         }
       }
     },
-    "Halte dein Handy so, wie du laufen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade." : {
+    "Halte dein Handy so, wie du spielen willst, wenn du auf „Kalibrieren und bereit“ tippst: Diese Haltung gilt als gerade." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold your phone the way you want to run when you tap “Ready”: that pose counts as level."
+            "value" : "Hold your phone the way you want to play when you tap “Calibrate and Ready”: that pose counts as level."
           }
         }
       }
@@ -1071,12 +1101,12 @@
         }
       }
     },
-    "Halte es so, wie du gleich laufen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade." : {
+    "Halte es so, wie du gleich spielen willst, und tippe auf „Kalibrieren“. Diese Haltung gilt dann als gerade." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold it the way you want to run and tap “Calibrate”. That pose then counts as level."
+            "value" : "Hold it the way you want to play and tap “Calibrate”. That pose then counts as level."
           }
         }
       }
@@ -1087,6 +1117,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hold"
+          }
+        }
+      }
+    },
+    "Hilfe & Rechtliches" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help & Legal"
           }
         }
       }
@@ -1241,12 +1281,12 @@
         }
       }
     },
-    "Kein Kamerazugriff" : {
+    "Kein Raum zu sehen? Dann erlaube auf beiden Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No Camera Access"
+            "value" : "No room showing up? Then allow “Local Network” for Eggscape in the iOS Settings on both phones."
           }
         }
       }
@@ -1421,12 +1461,12 @@
         }
       }
     },
-    "Löscht Einstellungen, Bestzeiten, Münzen und gekaufte Eier auf diesem Gerät." : {
+    "Löscht Einstellungen, Bestzeiten, freigeschaltete Eier und alle Münzen auf diesem Gerät, auch gekaufte." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deletes settings, best times, coins and bought eggs on this device."
+            "value" : "Deletes settings, best times, unlocked eggs and all coins on this device, including purchased ones."
           }
         }
       }
@@ -1491,6 +1531,16 @@
         }
       }
     },
+    "Mit ihr siehst du durch dein Handy hindurch auf den Boden. Ohne Kamera spielst du auf Weiß." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With it you look through your phone at the ground. Without it you play on the white background."
+          }
+        }
+      }
+    },
     "Mitspieler" : {
       "localizations" : {
         "en" : {
@@ -1541,12 +1591,22 @@
         }
       }
     },
-    "Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr." : {
+    "Münzen verdienst du im Einzelspieler und bei Rennen in der Nähe oder online: je weiter, schneller und wetterfester, desto mehr." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You earn coins with every run: the further, faster and stormier, the more."
+            "value" : "You earn coins in single player and in nearby or online races: the further, faster and stormier, the more."
+          }
+        }
+      }
+    },
+    "Münzen werden nur auf diesem Gerät gespeichert. Löschst du die App oder setzt du die Daten zurück, sind sie weg, auch gekaufte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coins are stored on this device only. Deleting the app or resetting its data removes them, purchased coins included."
           }
         }
       }
@@ -1918,6 +1978,16 @@
         }
       }
     },
+    "Sehen die anderen deinen Raum nicht? Dann erlaube auf allen Handys in den iOS-Einstellungen „Lokales Netzwerk“ für Eggscape." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The others can’t see your room? Then allow “Local Network” for Eggscape in the iOS Settings on every phone."
+          }
+        }
+      }
+    },
     "Selten" : {
       "localizations" : {
         "en" : {
@@ -2084,6 +2154,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Looking for rooms nearby …"
+          }
+        }
+      }
+    },
+    "Support & Impressum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support & Legal Notice"
           }
         }
       }

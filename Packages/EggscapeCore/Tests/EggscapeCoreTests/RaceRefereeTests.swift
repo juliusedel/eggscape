@@ -135,24 +135,64 @@ struct RaceRefereeTests {
         #expect(referee.results().entries.map(\.status) == [.finished(time: 34), .disconnected(meters: 0)])
     }
 
-    @Test func rejectsReportsNoRunCanProduce() {
+    @Test func rejectsReportsNoRunCanProduce() throws {
         var referee = race("anna")
         let impossible = [
             FinishReport(completed: true, time: .nan, meters: RaceDistance.long.meters, eggsLost: 0),
+            FinishReport(completed: true, time: .infinity, meters: RaceDistance.long.meters, eggsLost: 0),
             FinishReport(completed: true, time: -2, meters: RaceDistance.long.meters, eggsLost: 0),
+            // A modified phone could send these, and every phone would crash showing the time in the results.
+            FinishReport(completed: true, time: 1e300, meters: RaceDistance.long.meters, eggsLost: 0),
+            FinishReport(completed: false, time: 9, meters: 1e300, eggsLost: 3),
             FinishReport(completed: false, time: 9, meters: -1, eggsLost: 3),
             FinishReport(completed: true, time: 9, meters: RaceDistance.long.meters, eggsLost: -1),
+            FinishReport(completed: false, time: 9, meters: 50, eggsLost: 4),
         ]
         for report in impossible {
             let accepted = referee.recordFinished(report, from: "anna")
             #expect(!accepted, "\(report)")
         }
-        let infiniteProgress = referee.recordProgress(meters: .infinity, eggsLeft: 1, from: "anna")
-        let negativeProgress = referee.recordProgress(meters: -5, eggsLeft: 1, from: "anna")
-        #expect(!infiniteProgress)
-        #expect(!negativeProgress)
+        let progress: [(meters: Double, eggsLeft: Int)] = [
+            (.infinity, 1), (.nan, 1), (-5, 1), (1e300, 1), (-1, 1), (10, -1), (10, 4),
+        ]
+        for (meters, eggsLeft) in progress {
+            let accepted = referee.recordProgress(meters: meters, eggsLeft: eggsLeft, from: "anna")
+            #expect(!accepted, "\(meters) m, \(eggsLeft) eggs")
+        }
+        for eggsLeft in [-1, 4] {
+            let accepted = referee.recordEggDropped(eggsLeft: eggsLeft, from: "anna")
+            #expect(!accepted, "\(eggsLeft) eggs")
+        }
+        let anna = try #require(referee.runner("anna"))
+        #expect(anna.meters == 0)
+        #expect(anna.eggsLeft == 3)
         #expect(!referee.isComplete)
         #expect(referee.arrivals.isEmpty)
+    }
+
+    @Test func acceptsTheEdgesOfARealRun() {
+        var referee = race("anna", "ben")
+        let progress = referee.recordProgress(meters: 0, eggsLeft: 0, from: "anna")
+        let egg = referee.recordEggDropped(eggsLeft: 0, from: "anna")
+        let report = FinishReport(completed: false, time: 3600, meters: 10000, eggsLost: 3)
+        let finished = referee.recordFinished(report, from: "ben")
+        #expect(progress)
+        #expect(egg)
+        #expect(finished)
+    }
+
+    @Test func aFarOffStartWaitsAtMostAFewSeconds() {
+        #expect(RaceReferee.startDelay(clamping: 2.75) == 2.75)
+        #expect(RaceReferee.startDelay(clamping: 1e300) == RaceReferee.startDelays.upperBound)
+        #expect(RaceReferee.startDelay(clamping: 60) == RaceReferee.startDelays.upperBound)
+        #expect(RaceReferee.startDelay(clamping: 0.1) == RaceReferee.startDelays.lowerBound)
+        #expect(RaceReferee.startDelay(clamping: -1) == RaceReferee.startDelays.lowerBound)
+        #expect(RaceReferee.startDelay(clamping: -1e300) == RaceReferee.startDelays.lowerBound)
+        // No number at all: as if the clock had no estimate yet.
+        for noNumber in [Double.nan, .infinity, -.infinity] {
+            #expect(RaceReferee.startDelay(clamping: noNumber) == RaceReferee.startDelay)
+        }
+        #expect(RaceReferee.startDelays.contains(RaceReferee.startDelay))
     }
 
     @Test func progressNeverGoesBackwards() throws {

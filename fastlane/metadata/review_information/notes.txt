@@ -1,0 +1,26 @@
+Eggscape is a digital egg-and-spoon race. There is no login and no account. Game Center is optional: only Online races and the Game Center leaderboards need it.
+
+HOW TO PLAY
+1. On first launch a short tutorial appears. Skip jumps to its last step, which asks for a player name; the name can stay empty.
+2. Single Player > Start Time Trial. Hold the phone flat like a spoon and tap Calibrate.
+3. After the countdown the run moves forward by itself at a fixed speed. Tilt the phone gently to keep the egg in the middle of the spoon; tilt too far and the egg falls off. Hold Sprint to go faster.
+4. Nobody has to walk or run: the game can be played standing or seated. A note on the tutorial, the calibration screen and the multiplayer lobby asks anyone who walks or runs along to watch their surroundings.
+5. In the Simulator, which has no motion sensors, drag the egg with a finger instead of tilting. The calibration button then reads Let’s go.
+
+CAMERA
+The default background is the live rear camera, so the phone looks see-through. On the first Single Player or Pass the Phone run, the calibration screen first says what the camera is for, and Next brings up the iOS camera prompt. The picture is only shown on screen, never recorded, stored or sent. If access is declined, the background switches to White. Settings (gear button, top right) > Background switches between White and Camera.
+
+MULTIPLAYER
+- Pass the Phone works on one device: Multiplayer > Pass the Phone, Add Player, Start Race. 2 to 4 players take turns on the same phone.
+- Nearby needs a second iPhone. On the first: Multiplayer > Nearby > Create Room. On the second: Multiplayer > Nearby > Join, then tap the room. Allow Local Network on both devices when iOS asks. The joining player taps Calibrate and Ready, then the host taps Start Race.
+- Online needs two devices signed in to different Game Center accounts. On both: Multiplayer > Online > Find Players, then invite the other player or let Game Center match you (2 to 4 players). Once everyone is connected the race room opens; one device becomes the host automatically and taps Start Race when the others are ready.
+- The Leaderboard tab shows personal bests and, with Game Center, the global and friends leaderboards.
+
+IN-APP PURCHASES
+Shop > Coins sells three consumable coin packs: 600, 2,000 and 5,000 coins (de.juliusedel.eggscape.coins.small, .medium and .large). Coins unlock egg skins under Shop > Eggs and are also earned by playing. Consumable purchases cannot be restored, so the app has no Restore button.
+
+LANGUAGE
+The app is in German and English and follows the device language: German on a device set to German, English on a device set to English or any other language.
+
+PRIVACY AND SUPPORT
+The app has no server of its own and collects no data. The privacy policy and the support page with the legal notice are linked in Settings > Help & Legal.

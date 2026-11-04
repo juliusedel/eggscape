@@ -44,7 +44,7 @@ final class AppServices {
         }
     }
 
-    /// "Daten zurücksetzen": settings, records, coins and skins on this device.
+    /// "Daten zurücksetzen": settings, records, coins and skins on this device, and every name stored for nearby play.
     func resetAllData() {
         settings.reset()
         // Resetting the data does not reset the iOS camera permission. After an earlier "no" the default camera would
@@ -55,6 +55,8 @@ final class AppServices {
         }
         records.reset()
         wallet.reset()
+        // Nearby play keeps a peer id for every name it was played under; the settings hold only the current name.
+        MultipeerTransport.resetStoredPeerIDs()
     }
 }
 

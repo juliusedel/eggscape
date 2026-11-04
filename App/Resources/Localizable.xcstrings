@@ -371,6 +371,16 @@
         }
       }
     },
+    "Auch gekaufte Münzen gehen verloren. Das kann nicht rückgängig gemacht werden." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchased coins are lost too. This cannot be undone."
+          }
+        }
+      }
+    },
     "Aus" : {
       "localizations" : {
         "en" : {
@@ -507,16 +517,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accepting it means leaving the room."
-          }
-        }
-      }
-    },
-    "Das kann nicht rückgängig gemacht werden." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This cannot be undone."
           }
         }
       }
@@ -1441,12 +1441,12 @@
         }
       }
     },
-    "Löscht Einstellungen, Bestzeiten, Münzen und gekaufte Eier auf diesem Gerät." : {
+    "Löscht Einstellungen, Bestzeiten, freigeschaltete Eier und alle Münzen auf diesem Gerät, auch gekaufte." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deletes settings, best times, coins and bought eggs on this device."
+            "value" : "Deletes settings, best times, unlocked eggs and all coins on this device, including purchased ones."
           }
         }
       }
@@ -1567,6 +1567,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You earn coins with every run: the further, faster and stormier, the more."
+          }
+        }
+      }
+    },
+    "Münzen werden nur auf diesem Gerät gespeichert. Löschst du die App oder setzt du die Daten zurück, sind sie weg, auch gekaufte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coins are stored on this device only. Deleting the app or resetting its data removes them, purchased coins included."
           }
         }
       }

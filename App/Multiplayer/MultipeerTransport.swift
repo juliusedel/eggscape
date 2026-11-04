@@ -325,20 +325,32 @@ final class MultipeerTransport: NearbyTransport {
         return name.isEmpty ? "Eggscape" : name
     }
 
-    /// Reuses the same MCPeerID per name across sessions, as Apple recommends, to avoid ghost peers.
-    private static func peerID(for displayName: String) -> MCPeerID {
+    /// Where `peerID(for:in:)` keeps a peer id, followed by the player name it belongs to.
+    private static let peerIDKeyPrefix = "nearby.peerID."
+
+    /// Reuses the same MCPeerID per name across sessions, as Apple recommends, to avoid ghost peers. Each name played
+    /// under keeps its own, until `resetStoredPeerIDs(in:)`.
+    static func peerID(for displayName: String, in defaults: UserDefaults = .standard) -> MCPeerID {
         let name = peerName(for: displayName)
-        let key = "nearby.peerID.\(name)"
-        if let data = UserDefaults.standard.data(forKey: key),
+        let key = peerIDKeyPrefix + name
+        if let data = defaults.data(forKey: key),
            let stored = try? NSKeyedUnarchiver.unarchivedObject(ofClass: MCPeerID.self, from: data)
         {
             return stored
         }
         let peer = MCPeerID(displayName: name)
         if let data = try? NSKeyedArchiver.archivedData(withRootObject: peer, requiringSecureCoding: true) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         }
         return peer
+    }
+
+    /// "Daten zurücksetzen": forgets the peer id of every name played under, so no earlier name stays on the device.
+    /// The next room makes a new one.
+    static func resetStoredPeerIDs(in defaults: UserDefaults = .standard) {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(peerIDKeyPrefix) {
+            defaults.removeObject(forKey: key)
+        }
     }
 }
 

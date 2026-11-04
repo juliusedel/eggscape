@@ -73,7 +73,10 @@ struct SettingsView: View {
                         confirmsReset = true
                     }
                 } footer: {
-                    Text("Löscht Einstellungen, Bestzeiten, Münzen und gekaufte Eier auf diesem Gerät.")
+                    // Coins live only on this device, and the App Store does not restore coin packs.
+                    Text(
+                        "Löscht Einstellungen, Bestzeiten, freigeschaltete Eier und alle Münzen auf diesem Gerät, auch gekaufte."
+                    )
                 }
 
                 // App Review asks for the privacy policy and a way to contact the developer inside the app (guidelines
@@ -103,7 +106,7 @@ struct SettingsView: View {
                     services.resetAllData()
                 }
             } message: {
-                Text("Das kann nicht rückgängig gemacht werden.")
+                Text("Auch gekaufte Münzen gehen verloren. Das kann nicht rückgängig gemacht werden.")
             }
             .alert("Kein Kamerazugriff", isPresented: $showsCameraDenied) {
                 Button("Einstellungen öffnen") {

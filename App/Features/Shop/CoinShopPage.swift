@@ -41,10 +41,21 @@ struct CoinShopPage: View {
                     }
                 }
             }
-            Label {
-                Text("Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr.")
-            } icon: {
-                Image(systemName: "figure.run")
+            VStack(alignment: .leading, spacing: 10) {
+                Label {
+                    Text("Münzen verdienst du bei jedem Lauf: je weiter, schneller und wetterfester, desto mehr.")
+                } icon: {
+                    Image(systemName: "figure.run")
+                }
+                // The wallet has no copy in the cloud, and the App Store does not restore consumables such as the
+                // coin packs, so buyers learn before they buy that deleting the app also deletes these coins.
+                Label {
+                    Text(
+                        "Münzen werden nur auf diesem Gerät gespeichert. Löschst du die App oder setzt du die Daten zurück, sind sie weg, auch gekaufte."
+                    )
+                } icon: {
+                    Image(systemName: "iphone")
+                }
             }
             .font(.footnote)
             .foregroundStyle(.secondary)

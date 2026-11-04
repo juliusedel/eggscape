@@ -209,3 +209,8 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   notice share one page) and the version. The rows open the project's GitHub Pages site (`site/`) in Safari, the German
   pages when the app runs in German and the English ones otherwise, so the pages speak the app's language. The
   addresses live in `WebPages` (`SettingsView.swift`), are the ones App Store Connect gets, and a unit test pins them.
+- **Coins live on this device, and the app says so (2026-11-03).** Coins and eggs stay in `UserDefaults` without a
+  cloud copy (see "Coin shop and the Apple Account"), and the App Store does not restore coin packs, so deleting the app
+  or "Daten zurücksetzen" also deletes coins that were bought. The Münzen page says so under the packs, and the footer
+  and the question of "Daten zurücksetzen" name bought coins. The reset now also forgets the nearby peer ids, which are
+  stored per player name (`nearby.peerID.<Name>`), so no earlier name stays on the device.

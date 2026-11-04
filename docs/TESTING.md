@@ -92,7 +92,8 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       their rows and the race hands the phone to them in that order. With two players no row offers a delete.
 - [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works. A clean
       run in calm weather that sets no new best shows "+8 Münzen" over 15 m, "+28" over 50 m and "+55" over 100 m.
-- [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins.
+- [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins; its footer and its question say
+      that bought coins go too.
 
 ### Shop
 - [ ] On fresh data (or after Daten zurücksetzen) only Klassisch Weiß is unlocked; every other egg shows a padlock
@@ -108,6 +109,7 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       its top, also when the egg was at the bottom of the grid; "Abbrechen" stays on the Eier page.
 - [ ] Tapping an unlocked egg puts it on without asking; the next run shows it in the spoon.
 - [ ] Tapping the coin balance (with the plus) on the Eier page opens the Münzen page; the picker switches back.
+- [ ] The Münzen page says under the packs that coins, bought ones too, are stored only on this device.
 - [ ] VoiceOver on an egg: name, then "Gesperrt" and its price, then "Schaltet das Ei frei." or how many coins are
       missing; unlocked eggs say "Freigeschaltet", the egg in use is announced as selected. The balance says what it
       opens; every coin pack reads its name, price, coins and, on one of them, "bestes Angebot".

@@ -11,6 +11,10 @@ public struct RaceReferee: Sendable, Equatable {
     /// Seconds from `startRace` to the start signal: time for the message to reach every phone and for a countdown.
     public static let startDelay = 3.0
 
+    /// The waits for the start signal a joiner accepts, in seconds: a moment for its countdown at least, and at most a
+    /// few seconds more than `startDelay`, so a wrong clock estimate cannot hold a phone back for long.
+    public static let startDelays = 0.5 ... 10.0
+
     /// One player's race as the host knows it.
     public struct Runner: Sendable, Equatable, Identifiable {
         public let id: PlayerID
@@ -58,6 +62,17 @@ public struct RaceReferee: Sendable, Equatable {
         hostNow + startDelay
     }
 
+    /// How long a joiner waits for the start signal when the host's `startAt`, converted with its clock estimate
+    /// (`ClockSync`), lies `seconds` ahead: within `startDelays`, and `startDelay` when the conversion gave no number.
+    /// The estimate rests on the host's pongs, whose clock readings may be any finite number, so a far-off result
+    /// would otherwise become a wait no phone can count down (`Duration.seconds(1e300)` traps).
+    public static func startDelay(clamping seconds: Double) -> Double {
+        guard seconds.isFinite else {
+            return startDelay
+        }
+        return min(max(seconds, startDelays.lowerBound), startDelays.upperBound)
+    }
+
     public func runner(_ id: PlayerID) -> Runner? {
         runners.first { $0.id == id }
     }
@@ -94,39 +109,43 @@ public struct RaceReferee: Sendable, Equatable {
     }
 
     /// - Returns: `false`, ignoring the update, for unknown players, players whose run is over or who left, and
-    ///   distances that are negative or not finite.
+    ///   numbers no run can produce (see `NetMessage.isPlausible(eggsPerRun:)`).
     @discardableResult
     public mutating func recordProgress(meters: Double, eggsLeft: Int, from id: PlayerID) -> Bool {
-        guard let index = racingIndex(id), meters.isFinite, meters >= 0 else {
+        guard let index = racingIndex(id), NetMessage.plausibleMeters.contains(meters),
+              NetMessage.isEggCount(eggsLeft, of: eggsPerRun)
+        else {
             return false
         }
         // Progress travels unreliably and can arrive out of order, but a run never loses meters or regains eggs.
         runners[index].meters = max(runners[index].meters, meters)
-        runners[index].eggsLeft = min(runners[index].eggsLeft, max(eggsLeft, 0))
+        runners[index].eggsLeft = min(runners[index].eggsLeft, eggsLeft)
         return true
     }
 
-    /// - Returns: `false`, ignoring the update, for unknown players and players whose run is over or who left.
+    /// - Returns: `false`, ignoring the update, for unknown players, players whose run is over or who left, and egg
+    ///   counts no run can have.
     @discardableResult
     public mutating func recordEggDropped(eggsLeft: Int, from id: PlayerID) -> Bool {
-        guard let index = racingIndex(id) else {
+        guard let index = racingIndex(id), NetMessage.isEggCount(eggsLeft, of: eggsPerRun) else {
             return false
         }
-        runners[index].eggsLeft = min(runners[index].eggsLeft, max(eggsLeft, 0))
+        runners[index].eggsLeft = min(runners[index].eggsLeft, eggsLeft)
         return true
     }
 
     /// Records the end of a run. The order of these calls is the finish order of the completed runs.
     /// - Returns: `false`, ignoring the report, for unknown players, a second report, players who left, and reports
-    ///   no run can produce (negative or not finite numbers).
+    ///   no run can produce (`FinishReport.isPlausible(eggsPerRun:)`): a time of 1e300 seconds would otherwise be
+    ///   ranked and sent to everybody in the results.
     @discardableResult
     public mutating func recordFinished(_ report: FinishReport, from id: PlayerID) -> Bool {
-        guard let index = racingIndex(id), Self.isPlausible(report) else {
+        guard let index = racingIndex(id), report.isPlausible(eggsPerRun: eggsPerRun) else {
             return false
         }
         runners[index].report = report
         runners[index].meters = report.meters
-        runners[index].eggsLeft = max(eggsPerRun - report.eggsLost, 0)
+        runners[index].eggsLeft = eggsPerRun - report.eggsLost
         arrivals.append(id)
         return true
     }
@@ -165,12 +184,6 @@ public struct RaceReferee: Sendable, Equatable {
     /// A runner who may still report: registered, connected and without a report.
     private func racingIndex(_ id: PlayerID) -> Int? {
         runners.firstIndex { $0.id == id && !$0.isDone }
-    }
-
-    /// A report a real run can produce; anything else would only corrupt the ranking.
-    private static func isPlausible(_ report: FinishReport) -> Bool {
-        report.time.isFinite && report.time >= 0 && report.meters.isFinite && report.meters >= 0
-            && report.eggsLost >= 0
     }
 
     /// Sorted by distance, furthest first. Equal distances keep their order, because `sorted` is not guaranteed to be

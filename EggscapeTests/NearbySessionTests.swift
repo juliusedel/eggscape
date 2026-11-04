@@ -388,3 +388,92 @@ struct NearbyDiscoveryTests {
         #expect(NearbySession.retryDelay(afterFailures: 1000, first: .seconds(2)) == .seconds(30))
     }
 }
+
+/// Numbers from other phones: JSON carries any finite number, and a modified phone could send one that crashes the
+/// others when they show it. A joiner in a lobby or a race keeps the screen awake, so these tests never wait.
+@MainActor
+struct NearbyNumbersTests {
+    private let mia = RemotePeer(id: "peer-mia", displayName: "Mia")
+
+    private func makeServices() -> AppServices {
+        let suite = "eggscape.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite) ?? .standard
+        defaults.removePersistentDomain(forName: suite)
+        return AppServices(
+            settings: SettingsStore(defaults: defaults),
+            records: RecordsStore(defaults: defaults),
+            wallet: WalletStore(defaults: defaults)
+        )
+    }
+
+    /// `message` as Mia's phone, the host, sends it.
+    private func fromMia(_ message: NetMessage) throws -> TransportEvent {
+        try .received(NetCodec().encode(message, from: PlayerID("Mia")), from: mia)
+    }
+
+    /// A joiner in Mia's lobby.
+    private func makeJoiner() throws -> NearbySession {
+        let joiner = NearbySession(role: .joiner, services: makeServices(), nearby: FakeNearbyTransport())
+        joiner.join(DiscoveredRoom(id: mia.id, hostName: mia.displayName, playerCount: nil))
+        joiner.handle(.connected(mia))
+        var lobby = LobbyState(host: PlayerInfo(id: PlayerID("Mia"), nickname: "Mia", eggSkinID: "classic"))
+        lobby.join(joiner.me)
+        try joiner.handle(fromMia(.lobbyState(lobby)))
+        return joiner
+    }
+
+    /// Mia won in `time` seconds.
+    private func results(_ time: Double) -> RaceResults {
+        let entry = RaceResultEntry(
+            place: 1,
+            playerID: PlayerID("Mia"),
+            nickname: "Mia",
+            status: .finished(time: time),
+            eggsLost: 0
+        )
+        return RaceResults(entries: [entry])
+    }
+
+    @Test func resultsNoRaceCanProduceAreDropped() throws {
+        let joiner = try makeJoiner()
+        defer { joiner.leave() }
+        #expect(joiner.stage == .lobby)
+        try joiner.handle(fromMia(.results(results(1e300))))
+        #expect(joiner.stage == .lobby)
+        try joiner.handle(fromMia(.results(results(35.8))))
+        #expect(joiner.stage == .results(results(35.8)))
+    }
+
+    @Test func progressNoRunCanProduceIsDropped() throws {
+        let joiner = try makeJoiner()
+        defer { joiner.leave() }
+        try joiner.handle(fromMia(.startRace(seed: 7, startAt: 5)))
+        let run = try #require(joiner.run)
+        #expect(run.opponents.map(\.meters) == [0])
+        for (meters, eggsLeft) in [(1e300, 2), (-1, 2), (12.5, 7), (12.5, -1)] {
+            try joiner.handle(fromMia(.progress(meters: meters, eggsLeft: eggsLeft)))
+        }
+        try joiner.handle(fromMia(.finished(FinishReport(completed: true, time: 1e300, meters: 15, eggsLost: 0))))
+        #expect(run.opponents.map(\.meters) == [0])
+        #expect(run.opponents.map(\.eggsLeft) == [GameConfig.standard.eggsPerRun])
+        #expect(run.opponents.map(\.isDone) == [false])
+
+        try joiner.handle(fromMia(.progress(meters: 12.5, eggsLeft: 2)))
+        #expect(run.opponents.map(\.meters) == [12.5])
+        #expect(run.opponents.map(\.eggsLeft) == [2])
+    }
+
+    @Test(arguments: [-1e300, 1e300])
+    func aFarOffStartStillStartsWithinSeconds(hostTime: Double) throws {
+        let joiner = try makeJoiner()
+        defer { joiner.leave() }
+        // A pong whose clock reading puts the host's clock 1e300 seconds away: `startAt` then converts to a start
+        // 1e300 seconds ahead or behind.
+        try joiner.handle(fromMia(.pong(id: 0, pingSentAt: 0, hostTime: hostTime)))
+        let before = ContinuousClock.now
+        try joiner.handle(fromMia(.startRace(seed: 7, startAt: 5)))
+        let startAt = try #require(joiner.run?.race?.startAt)
+        #expect(startAt >= before + .seconds(RaceReferee.startDelays.lowerBound))
+        #expect(startAt <= .now + .seconds(RaceReferee.startDelays.upperBound))
+    }
+}

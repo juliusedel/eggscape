@@ -470,7 +470,7 @@ final class NearbySession: Identifiable {
         let settings = lobby.settings
         let setup = RunSetup(mode: .timeTrial(settings.distance, settings.weather), raceSeed: seed)
         let hooks = RaceHooks(
-            startAt: .now + .seconds(max(seconds, 0.5)),
+            startAt: .now + .seconds(RaceReferee.startDelay(clamping: seconds)),
             isReferee: isHost,
             onProgress: { [weak self] meters, eggsLeft in
                 self?.reportProgress(meters: meters, eggsLeft: eggsLeft)
@@ -577,6 +577,13 @@ final class NearbySession: Identifiable {
         case let .received(data, peer):
             do {
                 let envelope = try codec.decode(data)
+                // JSON carries numbers like 1e300 meters, which would crash this phone as it shows them; a real phone
+                // never sends them.
+                guard envelope.message.isPlausible(eggsPerRun: GameConfig.standard.eggsPerRun) else {
+                    let kind = envelope.message.kind.rawValue
+                    logger.error("Dropped a \(kind, privacy: .public) message with numbers no race can produce")
+                    return
+                }
                 receive(envelope.message, from: envelope.sender, peer: peer)
             } catch {
                 logger.error("Dropped a message: \(String(describing: error))")

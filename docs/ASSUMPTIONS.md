@@ -240,3 +240,12 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   reads "Warte auf Mitspieler …" with "Auf den anderen Handys: Mehrspieler → In der Nähe → Beitreten." The texts say
   "Handy" like the rest of the app, not "iPhone". The existing footer of the room list already asks for "Raum
   erstellen", so the joiner's hint adds only Local Network. Not yet checked on two fresh devices.
+- **Numbers from other phones are checked (2026-11-03).** JSON carries no NaN or infinity, but it does carry 1e300,
+  and converting such a distance or time to `Int` for the HUD or the results traps, as does waiting for a start that
+  far away, so a modified client could crash every other phone in a race (online matches include strangers). Now a
+  receiver drops a message with numbers no real phone sends (`NetMessage.isPlausible(eggsPerRun:)`): distances from 0
+  to 10 000 m, race times from 0 to 3 600 s, egg counts from 0 to the eggs of a run, places from 1 to 4, and finite
+  clock readings. The referee ignores reports outside the same bounds, a joiner waits 0.5 to 10 s for the start signal
+  whatever its clock estimate says (3 s when it gives no number), and `RaceFormat` shows any number without trapping.
+  A real race covers at most 100 m in well under a minute, so legitimate messages always pass; the wire format and the
+  protocol version stay as they are.

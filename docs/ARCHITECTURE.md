@@ -176,7 +176,9 @@ keeps its eggs in any weather and after any retuning of `GameConfig`.
 app hides MultipeerConnectivity (Nearby) and GameKit (`GKMatch`, Online); `NearbyTransport` adds hosting, browsing
 and joining for nearby rooms, so `NearbySession`'s join and discovery logic can be tested with a fake. Advertising or
 browsing that iOS turned down arrives as `TransportEvent.discoveryFailed`, which `NearbySession` tries again rather
-than ending the room.
+than ending the room. Receivers drop messages with numbers no real phone sends (`NetMessage.isPlausible(eggsPerRun:)`),
+the referee ignores such reports, and a joiner clamps its wait for the start signal
+(`RaceReferee.startDelay(clamping:)`), so a modified client cannot crash the others.
 
 ## Economy contract
 

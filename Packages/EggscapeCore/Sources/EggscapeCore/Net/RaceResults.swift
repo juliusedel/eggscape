@@ -17,6 +17,12 @@ public struct FinishReport: Codable, Hashable, Sendable {
         self.eggsLost = eggsLost
     }
 
+    /// A report a real run can produce (see `NetMessage.isPlausible(eggsPerRun:)`); the referee ignores any other.
+    public func isPlausible(eggsPerRun: Int = GameConfig.standard.eggsPerRun) -> Bool {
+        NetMessage.plausibleSeconds.contains(time) && NetMessage.plausibleMeters.contains(meters)
+            && NetMessage.isEggCount(eggsLost, of: eggsPerRun)
+    }
+
     /// The report for a run that is over, `nil` while it is still going.
     public init?(run: RunEngine) {
         switch run.phase {
@@ -86,6 +92,18 @@ public struct RaceResultEntry: Codable, Hashable, Sendable, Identifiable {
 
     public var id: PlayerID {
         playerID
+    }
+
+    /// An entry a real race can produce (see `NetMessage.isPlausible(eggsPerRun:)`).
+    public func isPlausible(eggsPerRun: Int = GameConfig.standard.eggsPerRun) -> Bool {
+        let hasPlausibleStatus = switch status {
+        case let .finished(time):
+            NetMessage.plausibleSeconds.contains(time)
+        case let .outOfEggs(meters), let .disconnected(meters):
+            NetMessage.plausibleMeters.contains(meters)
+        }
+        return hasPlausibleStatus && (1 ... LobbyState.maxPlayers).contains(place)
+            && NetMessage.isEggCount(eggsLost, of: eggsPerRun)
     }
 
     /// The JSON keys are part of the wire format: when renaming a property, keep its key (`case newName = "oldName"`).

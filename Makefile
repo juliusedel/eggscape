@@ -18,7 +18,7 @@ XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath 
 SIM_FLAGS := CODE_SIGNING_ALLOWED=NO
 
 .PHONY: help bootstrap gen build test test-core test-app test-ui run format lint strings icon sounds art beta release \
-	screenshots screenshots-sim clean
+	screenshots screenshots-sim site-check clean
 
 help: ## List the available targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -76,6 +76,9 @@ screenshots: ## Capture App Store screenshots with fastlane snapshot (UI tests, 
 
 screenshots-sim: gen ## Capture the same App Store screenshots with simctl, without fastlane or UI tests
 	scripts/capture_screenshots.sh
+
+site-check: ## Check the support and privacy website in site/ before publishing it
+	scripts/check_site.sh
 
 clean: ## Remove build products and the generated project
 	rm -rf .build $(PROJECT) $(CORE)/.build

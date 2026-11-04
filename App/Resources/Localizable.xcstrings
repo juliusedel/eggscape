@@ -316,7 +316,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One Phone"
+            "value" : "Pass the Phone"
           }
         }
       }
@@ -1071,12 +1071,12 @@
         }
       }
     },
-    "Halte dein Handy so, wie du spielen willst, wenn du auf „Bereit“ tippst: Diese Haltung gilt als gerade." : {
+    "Halte dein Handy so, wie du spielen willst, wenn du auf „Kalibrieren und bereit“ tippst: Diese Haltung gilt als gerade." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold your phone the way you want to play when you tap “Ready”: that pose counts as level."
+            "value" : "Hold your phone the way you want to play when you tap “Calibrate and Ready”: that pose counts as level."
           }
         }
       }

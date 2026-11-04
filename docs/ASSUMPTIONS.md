@@ -5,7 +5,7 @@ revisited deliberately.
 
 ## Environment and tooling
 
-- **Toolchain.** Built and tested with Xcode 27.1 (Swift 6.4, iOS 27.1 SDK) on macOS 27. The deployment target stays
+- **Toolchain.** Built and tested with Xcode 27.2 (Swift 6.4, iOS 27.2 SDK) on macOS 27. The deployment target stays
   at iOS 17.0 as specified; APIs newer than iOS 17 are used only behind `#available` checks.
 - **No Homebrew on the build Mac.** `brew install xcodegen` was not possible, so `scripts/bootstrap.sh` builds pinned
   versions of XcodeGen (2.46.0) and SwiftFormat (0.64.4) from source into `.tools/` (git-ignored). The Makefile
@@ -14,7 +14,8 @@ revisited deliberately.
   started in a local repository whose first commit mirrored the GitHub "Initial commit". That history was later
   replayed onto GitHub's initial commit and merged into `main`.
 - **fastlane is not installed on the build Mac** (system Ruby 2.6 is too old for current fastlane). The lanes are
-  written and syntax-checked but could not be executed; they need `brew install fastlane` (or `bundle install`).
+  written and syntax-checked but could not be executed; they need `brew install fastlane`, or Ruby 3.2 or later
+  (rbenv, mise) and `bundle install` (docs/RELEASE.md step 6).
 - **Swift 6 language mode** everywhere, with strict concurrency checking.
 - **Tests** use Swift Testing for `EggscapeCore` and the app unit tests, and XCTest for the UI tests (Swift Testing has
   no UI testing support).

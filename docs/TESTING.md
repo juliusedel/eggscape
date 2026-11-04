@@ -87,6 +87,9 @@ least one older (e.g. iPhone XR/11) and one current iPhone. Tick every line.
       Endlos record is still there.
 - [ ] Endlos: the weather gets rougher every 100 m; the record is kept.
 - [ ] Gemeinsam an einem Handy: 2–4 players, pass-the-phone screens, final standings, "Nochmal".
+- [ ] An einem Handy with four named players: type in the third row, swipe it away while the keyboard is up, then
+      delete the second and start: no crash, the deleted row slides out (not the last one), the other names stay in
+      their rows and the race hands the phone to them in that order. With two players no row offers a delete.
 - [ ] Coins are credited after runs; unlocking, equipping and seeing a new egg skin in the next run works. A clean
       run in calm weather that sets no new best shows "+8 Münzen" over 15 m, "+28" over 50 m and "+55" over 100 m.
 - [ ] Einstellungen → Daten zurücksetzen clears settings, bests, coins and skins.

@@ -207,6 +207,8 @@ with the iPhone selected, or for the Simulator with
 - [ ] VoiceOver reads every button in the menus and the HUD (pause, sprint, eggs left, weather).
 - [ ] Dynamic Type at the largest size keeps the menus usable.
 - [ ] German and English: no untranslated texts, no truncation (Settings → General → Language & Region).
+- [ ] A phone whose languages include neither German nor English (e.g. only French) shows the app, the camera
+      and local network prompts and the help pages in English; a German phone shows the prompts in German.
 - [ ] Einstellungen → Hilfe & Rechtliches: "Datenschutz" and "Support & Impressum" open the German pages in Safari
       when the app runs in German, the English pages otherwise; "Version" shows the version and build.
 - [ ] On an iPad the app runs in iPhone mode without crashing.

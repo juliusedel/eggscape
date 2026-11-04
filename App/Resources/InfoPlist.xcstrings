@@ -7,7 +7,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Eggscape"
           }
         },
@@ -25,7 +25,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Eggscape"
           }
         },
@@ -43,7 +43,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Im Kamera-Modus siehst du durch dein Handy hindurch auf den Boden. Das Bild wird nur angezeigt, nie gespeichert oder gesendet."
           }
         },
@@ -61,7 +61,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Eggscape nutzt dein lokales Netzwerk nur, um mit Handys in deiner Nähe zu spielen."
           }
         },

@@ -214,3 +214,15 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   or "Daten zurücksetzen" also deletes coins that were bought. The Münzen page says so under the packs, and the footer
   and the question of "Daten zurücksetzen" name bought coins. The reset now also forgets the nearby peer ids, which are
   stored per player name (`nearby.peerID.<Name>`), so no earlier name stays on the device.
+- **English for every other language (2026-11-03).** iOS shows an app in the first of the player's languages it has,
+  and otherwise in the language `CFBundleDevelopmentRegion` names. That was German (`$(DEVELOPMENT_LANGUAGE)`), so a
+  phone set to, say, only French showed the German app. For a worldwide release English is the better guess, so the key
+  is now `en` in `App/Info.plist`. German stays the source language of the String Catalogs (`developmentLanguage: de`
+  in project.yml): the German texts are the keys, and German and English phones get their own language as before. One
+  catch: a German phone looks for the permission texts in the German `InfoPlist.strings` and, without one, takes the
+  English one of the fallback language. The build writes the German table only because the German entries of
+  `InfoPlist.xcstrings` are marked translated, and `InfoPlistTests` fail if it goes missing. Checked in the Simulator:
+  launched with `-AppleLanguages (fr)` the app is English, with `(de)` German and with `(en)` English, and the
+  Info.plist and link tests pass with the test language set to de, en and fr. Setting the key back to
+  `$(DEVELOPMENT_LANGUAGE)` restores the German fallback. The App Store page's language is chosen in App Store Connect
+  (Primary Language) and is not affected.

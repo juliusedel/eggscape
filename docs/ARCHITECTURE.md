@@ -68,7 +68,8 @@ App/                              iOS app target "Eggscape"
   No force unwraps outside tests. No `print`; use `os.Logger` if logging is needed.
 - **Strings.** German is the base language (du-form, generic masculine). UI code uses German literals
   (`Text("Spielen")`, `String(localized: "…")`), which the String Catalog translates to English. Every key needs an
-  English translation in `App/Resources/Localizable.xcstrings`.
+  English translation in `App/Resources/Localizable.xcstrings`. Phones in any other language get English
+  (`CFBundleDevelopmentRegion` is `en`).
 
 ## Screen composition (game)
 

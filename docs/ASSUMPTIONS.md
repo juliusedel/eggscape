@@ -265,3 +265,12 @@ See `docs/ARCHITECTURE.md` for the full list. Consequences for the original spec
   hint while every run was white, and tapping the selected segment did nothing. Now the choice stays and a row under
   the picker says why the runs are white, with "Einstellungen öffnen"; the alert that switched back to Weiß is gone. A
   "no" in the prompt itself still picks Weiß, and "Daten zurücksetzen" still picks Weiß while iOS denies the camera.
+- **Purchases through SwiftUI's purchase action (2026-11-03).** The coin shop bought with `Product.purchase()`, which
+  gives StoreKit no window to show its sheet over. Apple's documentation recommends `PurchaseAction` for SwiftUI apps
+  (from iOS 17, the deployment target), and on iOS 18.2 `purchase()` was reported to fail with "Could not get
+  confirmation scene ID" when other windows were up, as Game Center's can be. So a coin card now buys through the
+  `purchase` action of its environment and hands the answer to `StoreService.purchase(_:with:)`, which verifies,
+  credits, finishes and reports errors as before; `Transaction.updates` and the unfinished transactions at launch are
+  unchanged. The unit tests buy through the same entry point with `Product.purchase()` in a StoreKitTest session, and
+  play the other answers (pending, cancelled, errors) with a stand-in. The sheet itself can only be checked by hand,
+  with TestFlight, ideally also on iOS 17 or 18.

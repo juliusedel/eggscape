@@ -152,6 +152,9 @@ developer program. `make test-app` loads the packs from the same file and buys o
 
 On a device with a **Sandbox Apple Account** (Settings → Developer):
 - [ ] The three coin packs load with localized prices.
+- [ ] Buying shows the App Store's sheet over the app (the shop buys through SwiftUI's purchase action), with
+      TestFlight on iOS 17 or 18 as well if a device has it; iOS 18.2 was reported to fail `Product.purchase()` without
+      a scene.
 - [ ] Buying a pack credits the coins exactly once, also after force-quitting the app during the purchase.
 - [ ] "Ask to Buy" (Family Sharing child account) says once that the purchase waits for approval, and credits the
       coins after approval; cancelling the App Store sheet shows no message.

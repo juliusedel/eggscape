@@ -107,15 +107,18 @@ private struct CoinPackCard: View {
     let isBestValue: Bool
     @Environment(AppServices.self) private var services
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// StoreKit's buy action for this view's scene (see `StoreService.purchase(_:with:)`).
+    @Environment(\.purchase) private var purchase
 
     var body: some View {
         let store = services.store
+        let purchase = purchase
         // One row at normal text sizes; stacked at accessibility sizes, where the row would not fit a 375 pt phone.
         let layout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
             : AnyLayout(HStackLayout(spacing: 14))
         Button {
-            Task { await store.purchase(product) }
+            Task { await store.purchase(product, with: { try await purchase($0) }) }
         } label: {
             layout {
                 CoinPile(count: (CoinPack.all.firstIndex(of: pack) ?? 0) + 1, size: 34)

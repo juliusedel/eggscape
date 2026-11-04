@@ -1,9 +1,9 @@
 # Publishes site/ (privacy policy, support and Impressum) on GitHub Pages: https://juliusedel.github.io/eggscape/
 #
-# The pages still carry TODO(owner) placeholders for the address, email and phone. While any is left, the check job
-# reports them with a warning and the deploy job is skipped, so the run stays green and nothing half-filled goes
-# public. Broken pages or links fail the run. One-time setup: Settings → Pages → Build and deployment → Source:
-# GitHub Actions.
+# The pages still carry TODO(owner) placeholders for the owner's details. While any is left, the check job reports
+# them with a warning and the deploy job is skipped, so the run stays green and nothing half-filled goes public.
+# Broken pages or links fail the run. One-time setup: Settings → Pages → Build and deployment → Source: GitHub
+# Actions.
 name: Pages
 
 on:

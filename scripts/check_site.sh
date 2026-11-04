@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks the website in site/ before .github/workflows/pages.yml publishes it on GitHub Pages:
 #
-#   - lists the TODO(owner) placeholders that still wait for the owner's data (address, email, phone), as file:line,
+#   - lists the TODO(owner) placeholders that still wait for the owner's data (address, email, phone, email
+#     provider), as file:line,
 #   - checks that the landing page and the four privacy and support pages exist, with the Impressum anchor,
 #   - checks that every internal href and src resolves to a file inside site/, and every #fragment to an id,
 #   - checks that the page URLs in fastlane/metadata/*/ point at pages that exist.

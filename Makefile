@@ -17,10 +17,11 @@ FASTLANE := $(shell command -v fastlane 2>/dev/null || echo bundle exec fastlane
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED) -quiet
 SIM_FLAGS := CODE_SIGNING_ALLOWED=NO
 
-.PHONY: help bootstrap gen build test test-core test-app test-ui run format lint strings icon sounds art beta release screenshots clean
+.PHONY: help bootstrap gen build test test-core test-app test-ui run format lint strings icon sounds art beta release \
+	screenshots screenshots-sim site-check clean
 
 help: ## List the available targets
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
+	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
 
 bootstrap: ## Build XcodeGen and SwiftFormat from source into .tools/ (only needed without Homebrew)
 	scripts/bootstrap.sh
@@ -70,8 +71,14 @@ beta: ## Build and upload a TestFlight build (needs signing, see docs/RELEASE.md
 release: ## Upload a build plus App Store metadata (see docs/RELEASE.md)
 	$(FASTLANE) release
 
-screenshots: ## Capture App Store screenshots with fastlane snapshot
+screenshots: ## Capture App Store screenshots with fastlane snapshot (UI tests, needs Automation Mode)
 	$(FASTLANE) screenshots
+
+screenshots-sim: gen ## Capture the same App Store screenshots with simctl, without fastlane or UI tests
+	scripts/capture_screenshots.sh
+
+site-check: ## Check the support and privacy website in site/ before publishing it
+	scripts/check_site.sh
 
 clean: ## Remove build products and the generated project
 	rm -rf .build $(PROJECT) $(CORE)/.build

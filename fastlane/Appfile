@@ -1,4 +1,5 @@
 app_identifier("de.juliusedel.eggscape")
 
-# Your 10-character Apple Developer Team ID (also replace <TEAM_ID> in project.yml), see docs/RELEASE.md.
+# Your 10-character Apple Developer Team ID, which the lanes also hand to the build as DEVELOPMENT_TEAM; see
+# docs/RELEASE.md.
 team_id(ENV["EGGSCAPE_TEAM_ID"]) if ENV["EGGSCAPE_TEAM_ID"]
